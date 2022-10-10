@@ -1,0 +1,28 @@
+{
+    "version": "0",
+    "id": "758ba417-0152-bf02-4ab9-815bf1048c28",
+    "detail-type": "Object Created",
+    "source": "aws.s3",
+    "account": "012345678910",
+    "time": "2022-07-07T15:57:19Z",
+    "region": "us-east-1",
+    "resources": [
+      "arn:aws:s3:::aws-cloudtrail-logs-012345678910-8a775113"
+    ],
+    "detail": {
+      "version": "0",
+      "bucket": {
+        "name": "aws-cloudtrail-logs-012345678910-8a775113"
+      },
+      "object": {
+        "key": "AWSLogs/012345678910/CloudTrail/ap-southeast-1/2022/07/07/012345678910_CloudTrail_ap-southeast-1_20220707T1600Z_mLO5JPg5oW7HOYIl.json.gz",
+        "size": 3654,
+        "etag": "e3ff128b372bd659e40a6cb969e3a885",
+        "sequencer": "0062C7025F0F2D9F21"
+      },
+      "request-id": "J4BZ1V80YHDFB9N4",
+      "requester": "cloudtrail.amazonaws.com",
+      "source-ip-address": "13.251.107.74",
+      "reason": "PutObject"
+    }
+  }

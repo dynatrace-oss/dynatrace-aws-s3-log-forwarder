@@ -1,0 +1,48 @@
+# Copyright 2022 Dynatrace LLC
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#      https://www.apache.org/licenses/LICENSE-2.0
+
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+name: CloudTrail
+# Prefix: <optional_prefix>/AWSLogs/<AWS_account_Id>/CloudTrail/<region>/YYYY/MM/DD/
+# File Name: AccountID_CloudTrail_RegionName_YYYYMMDDTHHmmZ_UniqueString.json.gz / UniqueString=16 chars
+known_key_path_pattern: '^.*?{aws_logs_prefix}/{aws_account_id_pattern}/(CloudTrail)/{aws_region_pattern}/{year_pattern}/{month_pattern}/{day_pattern}/{aws_account_id_pattern}_(CloudTrail)_{aws_region_pattern}_{year_pattern}{month_pattern}{day_pattern}T{hour_pattern}{minutes_pattern}Z_[a-zA-Z0-9]{{16}}.json.gz$'
+source: aws
+
+log_format: json
+log_entries_key: Records
+
+annotations:
+  log.source: aws.cloudtrail
+  cloud.provider: aws
+
+requester: 
+  - cloudtrail.amazonaws.com
+
+attribute_extraction_from_key_name:
+  aws.account.id: '{aws_account_id_pattern}'
+  aws.region: '{aws_region_pattern}'
+
+attribute_extraction_grok_expression: 
+
+attribute_extraction_jmespath_expression:
+  timestamp: eventTime
+  audit.action: eventName
+  audit.identity_type: "userIdentity.type || 'NotProvided'"
+
+  # Identity might be an ARN, an AWS Service or an AWS account Id
+  # (or principalId for WebIdentity user, e.g. Federated Users, Kubernetes IRSA)
+  audit.identity: "userIdentity.arn || userIdentity.invokedBy || userIdentity.principalId || userIdentity.accountId"
+  # if errorCode then Failed.errorCode, otherwise Succeed
+  audit.result: "errorCode && join('.', ['Failed', errorCode]) || 'Succeeded'"
+  # if errorCode exists -> ERROR, otherwise INFO
+  severity: "errorCode && 'ERROR' || 'INFO'"

@@ -1,0 +1,388 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  dynatrace-s3-log-forwarder
+
+  SAM Template to deploy the dynatrace-s3-log-forwarder
+
+Metadata:
+  License:
+    Description: >
+      Copyright 2022 Dynatrace LLC
+
+      Licensed under the Apache License, Version 2.0 (the "License");
+      you may not use this file except in compliance with the License.
+      You may obtain a copy of the License at
+
+           https://www.apache.org/licenses/LICENSE-2.0
+
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      See the License for the specific language governing permissions and
+      limitations under the License.
+
+Parameters:
+  LogsBucket1Name:
+    Description: "Name of the Amazon S3 bucket where your logs are to be consumed."
+    Type: String
+    AllowedPattern: "^[0-9a-z]+([0-9a-z-]{1,61}[0-9a-z])$"
+  LogsBucket1Prefix:
+    Description: 'Prefix for S3 log object keys that you want to forward to Dynatrace (e.g. "AWSLogs/"). If you want to send notifications for all objects created in the bucket, leave this value empty.'
+    Type: String
+    Default: ""
+  LogsBucket2Name:
+    Description: "Name of the additional Amazon S3 bucket where your logs are to be consumed. If none, leave this empty."
+    Type: String
+    Default: ""
+  LogsBucket2Prefix:
+    Description: 'Prefix for S3 log object keys that you want to forward to Dynatrace (e.g. "AWSLogs/"). If you want to send notifications for all objects created in the bucket, leave this value empty.'
+    Type: String
+    Default: ""
+  DynatraceEnvironment1URL:
+    Description: URL of your Dynatrace environment.
+    Type: String
+  DynatraceEnvironment1ApiKeyParameter:
+    Description: Name of the SecureString Parameter in AWS Parameter Store storing the Dynatrace API Key.
+    Type: String
+    Default: /dynatrace/s3-log-forwarder/dynatrace-s3-log-forwarder/tenant/api-key
+  DynatraceEnvironment2URL:
+    Description: "[Optional]: URL of an additional Dynatrace environment you want to forward logs to. If none, leave this empy."
+    Type: String
+  DynatraceEnvironment2ApiKeyParameter:
+    Description: "[Optional]: Name of the SecureString Parameter in AWS Parameter Store storing the Dynatrace Environment 2 API Key."
+    Type: String
+    Default: ""
+  NotificationsEmail:
+    Description: E-mail address to send alarm notifications to.
+    Type: String
+  ProcessorArchitecture:
+    Description: Processor architecture for the Lambda function
+    Type: String
+    AllowedValues:
+      - arm64
+      - x86_64
+    Default: arm64
+  LambdaFunctionMemorySize:
+    Description: Memory size of the queue processing Lambda function
+    Type: Number
+    Default: "256"
+    MinValue: "128"
+    MaxValue: "10240"
+  LambdaLoggingLevel:
+    Description: Logging verbosity of the Lambda function
+    Type: String
+    Default: "INFO"
+    AllowedValues:
+      - "DEBUG"
+      - "INFO"
+      - "WARNING"
+      - "ERROR"
+      - "CRITICAL"
+  EnableLambdaInsights:
+    Description: Enable Amazon CloudWatch Lambda Insights
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "false"
+
+Conditions:
+  SecondS3BucketSpecified: !Not [!Equals [!Ref LogsBucket2Name, ""]]
+  SecondDTEnvironmentSpecified: !Not [!Equals [!Ref DynatraceEnvironment2URL, "" ]]
+
+Globals:
+  Function:
+    Timeout: 120
+    Environment:
+      Variables:
+        POWERTOOLS_METRICS_NAMESPACE: !Sub dynatrace-s3-log-forwarder
+        DEPLOYMENT_NAME: !Ref AWS::StackName
+
+Resources:
+  QueueProcessingFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      DockerTag: !Ref ProcessorArchitecture
+      DockerContext: .
+      Dockerfile: Dockerfile
+      DockerBuildArgs:
+        ARCH: !Ref ProcessorArchitecture
+        ENABLE_LAMBDA_INSIGHTS: !Ref EnableLambdaInsights
+    Properties:
+      PackageType: Image
+      MemorySize: !Ref LambdaFunctionMemorySize
+      Environment:
+        Variables:
+          DYNATRACE_1_ENV_URL: !Ref DynatraceEnvironment1URL
+          DYNATRACE_1_API_KEY_PARAM: !Ref DynatraceEnvironment1ApiKeyParameter
+          DYNATRACE_2_ENV_URL: !If [ SecondDTEnvironmentSpecified, !Ref DynatraceEnvironment2URL, !Ref "AWS::NoValue"]
+          DYNATRACE_2_API_KEY_PARAM: !If [ SecondDTEnvironmentSpecified, !Ref DynatraceEnvironment2ApiKeyParameter, !Ref "AWS::NoValue"]
+          QueueName: !GetAtt S3NotificationsQueue.QueueName
+          LOGGING_LEVEL: !Ref LambdaLoggingLevel
+      Architectures:
+        - !Ref ProcessorArchitecture
+      Events:
+        SQSMessages:
+          Type: SQS
+          Properties:
+            BatchSize: 4
+            Enabled: True
+            MaximumBatchingWindowInSeconds: 20
+            Queue: !GetAtt S3NotificationsQueue.Arn
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+      Policies:
+        - SQSPollerPolicy:
+            QueueName: !GetAtt S3NotificationsQueue.QueueName
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub dynatrace/s3-log-forwarder/${AWS::StackName}/*
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+
+  # S3ReadPolicy SAM Template is too broad. Need our own policy.
+  LambdaS3Bucket1AccessIAMPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ${AWS::StackName}-ReadAccessBucket1
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "AllowReadAccessToBucket1"
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:GetBucketLocation
+              - s3:GetObjectVersion
+            Resource:
+              - !Join
+                - ":"
+                - - arn
+                  - !Ref AWS::Partition
+                  - s3
+                  - ""
+                  - ""
+                  - !Ref LogsBucket1Name
+              - !Join
+                - ":"
+                - - arn
+                  - !Ref AWS::Partition
+                  - s3
+                  - ""
+                  - ""
+                  - !Sub ${LogsBucket1Name}/${LogsBucket1Prefix}*
+      Roles:
+        - !Ref QueueProcessingFunctionRole
+
+  # If specified, create a Policy to access bucket 2
+  LambdaS3Bucket2AccessIAMPolicy:
+    Condition: SecondS3BucketSpecified
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ${AWS::StackName}-ReadAccessBucket2
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "AllowReadAccessToBucket2"
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:GetBucketLocation
+              - s3:GetObjectVersion
+            Resource:
+              - !Join
+                - ":"
+                - - arn
+                  - !Ref AWS::Partition
+                  - s3
+                  - ""
+                  - ""
+                  - !Ref LogsBucket2Name
+              - !Join
+                - ":"
+                - - arn
+                  - !Ref AWS::Partition
+                  - s3
+                  - ""
+                  - ""
+                  - !Sub ${LogsBucket2Name}/${LogsBucket2Prefix}*
+      Roles:
+        - !Ref QueueProcessingFunctionRole
+
+  S3NotificationsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      # Use crafted queue name to avoid circular dependency with RedriveAllowPolicy
+      QueueName: !Sub ${AWS::StackName}-S3NotificationsQueue
+      ReceiveMessageWaitTimeSeconds: 10
+      VisibilityTimeout: 130
+      MessageRetentionPeriod: 43200
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SQSDeadLetterQueue.Arn
+        maxReceiveCount: 3
+
+  # Allow EventBridge rules to send messages to SQS
+  S3NotificationsQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Id: "S3NotificationsSQSPolicy"
+        Statement:
+          - Sid: "Allow EventBridge rules to Send Messages"
+            Effect: "Allow"
+            Principal:
+              Service: "events.amazonaws.com"
+            Action: "sqs:SendMessage"
+            Resource: !GetAtt S3NotificationsQueue.Arn
+            Condition:
+              ArnEquals:
+                "aws:SourceArn": !Sub "arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/${AWS::StackName}-*"
+      Queues:
+        - !Ref S3NotificationsQueue
+
+  SQSDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${AWS::StackName}-S3NotificationsDQL
+      # Keep messages during 1 day for troubleshooting purposes and redrive.
+      MessageRetentionPeriod: 86400
+      RedriveAllowPolicy:
+        redrivePermission: byQueue
+        # Hand-crafted ARN to avoid circular dependency
+        sourceQueueArns:
+          - !Join
+            - ":"
+            - - arn
+              - !Ref AWS::Partition
+              - sqs
+              - !Ref AWS::Region
+              - !Ref AWS::AccountId
+              - !Sub ${AWS::StackName}-S3NotificationsQueue
+
+  AlarmsSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${AWS::StackName}-Alarms
+      Subscription:
+        - Endpoint: !Ref NotificationsEmail
+          Protocol: "email"
+  AlarmsSNSTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Id: "AlarmsSNSTopicPolicy"
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "Allow_CW_Alarms_to_publish"
+            Effect: Allow
+            Principal:
+              Service:
+                - "cloudwatch.amazonaws.com"
+            Action: "sns:Publish"
+            Resource: !Ref AlarmsSNSTopic
+      Topics:
+        - !Ref AlarmsSNSTopic
+
+  # Alarm if DLQ gets messages
+  SQSDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: "Messages landed on the Dead Letter Queue"
+      AlarmName: !Sub "${AWS::StackName}-MessagesInDQL"
+      Metrics:
+        - Id: "m1"
+          Label: "MessagesVisibleMin"
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: QueueName
+                  Value: !GetAtt SQSDeadLetterQueue.QueueName
+              MetricName: ApproximateNumberOfMessagesVisible
+              Namespace: "AWS/SQS"
+            Period: 300 # evaluate maximum over period of 5 min
+            Stat: Minimum
+            Unit: Count
+          ReturnData: false
+        - Id: "m2"
+          Label: "MessagesVisibleMax"
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: QueueName
+                  Value: !GetAtt SQSDeadLetterQueue.QueueName
+              MetricName: ApproximateNumberOfMessagesVisible
+              Namespace: "AWS/SQS"
+            Period: 300 # evaluate maximum over period of 5 min
+            Stat: Maximum
+            Unit: Count
+          ReturnData: false
+        - Expression: "m2-m1"
+          Id: "e1"
+          Label: "ChangeInAmountVisible"
+          ReturnData: true
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Threshold: 1
+      DatapointsToAlarm: 1
+      EvaluationPeriods: 1
+      AlarmActions:
+        - !Ref AlarmsSNSTopic
+
+  LogsBucket1EventBridgeRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub ${AWS::StackName}-LogsBucket1-to-SQS
+      EventBusName: default
+      State: ENABLED
+      EventPattern:
+        source:
+          - "aws.s3"
+        detail-type:
+          - "Object Created"
+        detail:
+          bucket:
+            name:
+              - !Ref LogsBucket1Name
+          object:
+            key:
+              - prefix: !Ref LogsBucket1Prefix
+      Targets:
+        - Id: "SQSQueue"
+          Arn: !GetAtt S3NotificationsQueue.Arn
+
+  # If specified, create EventBridge rule for bucket 2
+  LogsBucket2EventBridgeRule:
+    Condition: SecondS3BucketSpecified
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub ${AWS::StackName}-LogsBucket2-to-SQS
+      EventBusName: default
+      State: ENABLED
+      EventPattern:
+        source:
+          - "aws.s3"
+        detail-type:
+          - "Object Created"
+        detail:
+          bucket:
+            name:
+              - !Ref LogsBucket2Name
+          object:
+            key:
+              - prefix: !Ref LogsBucket2Prefix
+      Targets:
+        - Id: "SQSQueue"
+          Arn: !GetAtt S3NotificationsQueue.Arn
+
+Outputs:
+  QueueProcessingFunction:
+    Description: "Queue Processing Lambda Function ARN"
+    Value: !GetAtt QueueProcessingFunction.Arn
+  QueueProcessingFunctionIamRole:
+    Description: "Implicit IAM Role created for QueueProcessingFunction"
+    Value: !GetAtt QueueProcessingFunctionRole.Arn
+  SQSProcessingQueue:
+    Description: "SQS Queue for Lambda to consume notifications from."
+    Value: !GetAtt S3NotificationsQueue.Arn
+  SQSDeadLetterQueue:
+    Description: "Dead letter queue for failed messages."
+    Value: !GetAtt SQSDeadLetterQueue.Arn

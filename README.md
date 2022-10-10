@@ -1,74 +1,85 @@
-# :tada: :tada: Welcome to your new Project on GitHub :tada: :tada:
+# dynatrace-s3-log-forwarder
 
-> **Note**
-> This product is not officially supported by Dynatrace!
+This project deploys a Serverless architecture to forward logs from Amazon S3 to Dynatrace. 
 
-Congratulations, your project on GitHub was successfully created and you can start your Open Source Adventure!
+> **Note** 
+> This product is not officially supported by Dynatrace but maintained on a best effort basis
 
-As each adventure starts with good preparations, we also have something we would like you to do upe front.
+![Architecture](docs/images/architecture.jpg)
 
-- [ ] Read this ReadMe carefully, to get an overview of the files within your project.
-- [ ] Write your own ReadMe which reflects your project
-- [ ] Check if the [default community files](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/creating-a-default-community-health-file)(CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md, ..) within the organization `.github`[-project](https://github.com/dynatrace-oss/.github/) match your project's needs. If not, you can always provide your own, but we kindly ask you, that you also update those from time to time.
-- [ ] Check if there is a `LICENSE` file within your project. If not, please create one containing the `Apache License 2.0`.
-- [ ] Explicitly state that this project is not officially supported by Dynatrace in your ReadMe, eg. by using following lines on top of your ReadMe:
+## Deployment instructions
+### Prerequisites
 
-    > **Note**
-    > This product is not officially supported by Dynatrace!
+You'll need the following software installed:
+* [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+* [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
+* Docker Engine
 
-## How can I make my project public?
+You'll also need:
+* A [Dynatrace access token](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication) for your tenant with the `logs.ingest` APIv2 scope.
 
-At first, the project will be private, as we (OSPO) want to ensure that you followed the guidelines and that everything is in place.
+### Deploy the solution
 
-As soon as you are done with your initial commits, you can inform OSPO and we will take a close look at the project, and set it to public if we do think all guidelines are followed.
+1. Create an AWS SSM SecureString Parameter with your Dynatrace access token to ingest logs. The SAM template that you will deploy will grant AWS Lambda permissions to access SSM parameters on the hierarchy `/dynatrace/s3-log-forwarder/${AWS::StackName}/*`. This allows you to have multiple deployments of the forwarder, each using its own DT access token securely stored. You can also configure a single forwarder to route logs to multiple Dynatrace instances. Create a parameter within the hierarchy for each of the Dynatrace instances needed. Example: 
 
-There is also some automation running, which will set projects, which do not follow the guidelines, to private.
+    ```bash
+    export PARAMETER_NAME="/dynatrace/s3-log-forwarder/my-deployed-stack-name/my-dynatrace-instance-id/api-key"
+    export PARAMETER_VALUE=your_dynatrace_api_key_here
+    aws ssm put-parameter --name $PARAMETER_NAME --type SecureString --value $PARAMETER_VALUE
+    ```
+    **NOTE:** Your API Key is stored encyrpted with the default AWS-managed alias: `aws/ssm`. If you want to use a Customer-managed Key, you'll need to grant Decrypt permissions to AWS Lambda. 
 
-## Provided Tools
+1. Clone this repository.
 
-### Markdownlint
+1. Under the `config/log_forwarding_rules` folder, create a `<bucket_name>.yaml` file for each Amazon S3 bucket you want this Lambda function to forward logs to Dynatrace. On the rules file, add the log source (`aws`,`generic` or `custom`), a `prefix` with a regular expression for the log prefixes you want to forward to Dynatrace and add any user-defined annotations you may want to add to the log entries. The `sinks` parameter is optional, and it's a list of Dynatrace environments to forward logs to. If sinks is not defined, logs will be forwarded to sink `1` (the default if you have a single Dynatrace Environment). For more information about how to use log forwarding rules, check the [forwarding rules](docs/forwarding_rules.md) docs. The following is an example log forwarding configuration file:
 
-To make it easier for the project to keep the Markdown files in a good shape, we added `markdownlint-cli` to the project.
+    ```yaml
+    - rule_name: fwd_ctral_and_elb_logs
+      # Match any CloudTrail and ELB logs for any AWS account in this bucket
+      prefix: "^AWSLogs/.*/(CloudTrail|elasticloadbalancing)/.*"
+      source: aws
+      sinks: 
+        - '1'
+        - '2'
+      annotations: 
+        environment: dev
+    - rule_name: fwd_jenkins_logs
+      source: custom
+      source_name: jenkins
+      sinks: 
+        - '2'
+      # Match any file prefixed with "jenkins/"" and ending in ".log"
+      prefix: "^jenkins/.*(\\.log)$"
+    - rule_name: fwd_application_logs
+      source: generic
+      # Match any file prefixed with "app/"" and ending in ".log"
+      prefix: "^app/.*(\\.log)$"
+      annotations:
+        log.source: app1
+    ```
 
-1. with a `makefile` for easier execution locally, based on docker images, so it can be used in every environment as long as `docker` and `make` are available.
-1. with a workflow for pull request verification based on the `makefile`.
+    **Note:** Log forwarding rules serve 2 purposes: The first is giving you the ability to define custom annotations to add to your logs which its file name matches the regular expression defined on the "prefix" field. The second is prefixes provide finer grained filtering compared to S3 notifications for files created, as wilcards are not supported in EventBridge rules. This gives you the ability to discard logs you may not want ingested on Dynatrace, without having to create multiple complex EventBridge rules if your bucket aggregates logs for multiple services and AWS Accounts. If you want to send all the logs matching the S3 Notification rules, simply add a single rule with prefix: ".*" and optionally any annotations you may want to add. You can find more info on the [forwarding rules docs](docs/forwarding_rules.md).
 
-The following files are part of this integration:
+1. From the project root directory, execute the following command to build the Serverless application:
+    ```bash
+    sam build 
+    ```
+    **NOTE:** By default, we set the processor architecture to arm64 to build the container image for the dynatrace-s3-log-forwarder. If you build the function on an x86 machine and OS that doesn't support arm64 emulation, you can build an amd64 container image overriding the default value of the `ProcessorArchitecture` parameter. 
+    ```bash
+    sam build --parameter-overrides ProcessorArchitecture=x86_64
+    ```
 
-- `makefile`: as it contains the targets for execution
-- `.markdownlint.yml`: as it contains the configuration for `markdownlint-cli`
-- `.github/workflows/makefile.yml`: as it contains the GitHub Action configuration
+1. Execute the following command to deploy the application. You'll be prompted for the required configuration parameters, e.g. S3 buckets and prefixes you want to pull logs from (as of now, the template takes at least 1 bucket, maximum 2, but it can be extended), your Dynatrace tenant(s) URL(s) and the SSM Parameter Name(s) storing your Dynatrace API key created on step 1 (the SAM template supports up to 2 Dynatrace tenants, you can simply extend it to more if needed)... **Make sure you use the same StackName you've used to create the SSM Parameter (`my-deployed-stack-name` on the example of step 1)**. If you've built the container image for x86_64 architecture make sure you set the `ProcessorArchitecture` parameter to `x86_64` here.
+    ```bash
+    sam deploy --guided
+    ```
 
-## Licensing
+    **Note:** You will also be prompted for your e-mail address, so you'll receive notifications when log files can't be processed and messages are arriving to the Dead Letter Queue.
 
-We are using Apache License 2.0 as our default.
+1. Go to your S3 bucket(s) and enable notifications via EventBridge following instructions [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html). The stack will deploy the EventBridge rules required as per your input, so at this point you're done.
 
-### Source Code Headers
+### Next steps
 
-Every file containing source code must include copyright and license
-information. This includes any JS/CSS files that you might be serving out to
-browsers. (This is to help well-intentioned people avoid accidental copying that
-doesn't comply with the license.)
+At this stage, your deployment should be already ingesting logs to your Dynatrace tenant. The current SAM template allows you to configure up to 2 Amazon S3 buckets to ingest from and up to 2 Dynatrace instances to send logs to. If you need to extend the SAM template, you can find more information on the [docs/extending_sam_template.md](docs/extending_sam_template.md) documentation.
 
-Apache header:
-
-    Copyright 2022 Dynatrace LLC
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-        https://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-
-## Additional Questions/Remarks
-
-If you do have additional questions/remarks, feel free to reach out to OSPO, either via slack or email.
-
-If you think this template did not solve all your problems, please also let us know, either with a message or a pull request.
-Together we can improve this template to make it easier for our future projects.
+For more detailed information, visit the documentation in the `docs` folder. 

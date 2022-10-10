@@ -1,0 +1,8 @@
+requests==2.28.1
+jmespath==1.0.1
+pygrok==1.0.0
+PyYAML==6.0
+regex==2022.6.2
+aws-lambda-powertools==1.26.4
+jsonslicer==0.1.7
+Jinja2==3.1.2

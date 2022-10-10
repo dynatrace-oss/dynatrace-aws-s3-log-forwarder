@@ -1,0 +1,40 @@
+# Copyright 2022 Dynatrace LLC
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#      https://www.apache.org/licenses/LICENSE-2.0
+
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+name: NLB
+
+# https://docs.aws.amazon.com/elasticloadbalancing/latest/network/load-balancer-access-logs.html
+# Prefix: [/prefix]/AWSLogs/aws-account-id/elasticloadbalancing/region/yyyy/mm/dd/
+# File Name: aws-account-id_elasticloadbalancing_region_net.load-balancer-id_end-time_random-string.log.gz
+# Random string is 8 chars?
+# IMPORTANT: NLB Access Logs are only created if there's a TLS listener and they only contain information about TLS requests.
+known_key_path_pattern: '^.*?{aws_logs_prefix}/{aws_account_id_pattern}/(elasticloadbalancing)/{aws_region_pattern}/{year_pattern}/{month_pattern}/{day_pattern}/{aws_account_id_pattern}_(elasticloadbalancing)_{aws_region_pattern}_(net.){elbv2_id_pattern}_{year_pattern}{month_pattern}{day_pattern}T{hour_pattern}{minutes_pattern}Z_[a-zA-Z0-9]{{8}}(.log.gz)$'
+source: aws
+
+log_format: text
+
+annotations:
+  log.source: aws.nlb
+  cloud.provider: aws
+  aws.service: nlb
+
+# https://docs.aws.amazon.com/elasticloadbalancing/latest/network/load-balancer-access-logs.html#access-logging-bucket-requirements
+requester: 
+  - delivery.logs.amazonaws.com
+
+attribute_extraction_from_key_name:
+  aws.account.id: '{aws_account_id_pattern}'
+  aws.region: '{aws_region_pattern}'
+
+attribute_extraction_grok_expression: "%{WORD:listener_type} %{NOTSPACE:version} %{TIMESTAMP_ISO8601:timestamp} %{DATA:elb_id} %{DATA:listener} %{IP:client_ip}:%{INT:client_port} %{IP:destination_ip}:%{INT:destination_port} %{INT:connection_time} %{INT:tls_handshake_time} %{INT:received_bytes} %{INT:sent_bytes} (?:-|%{INT:incoming_tls_alert}) (?:-|%{DATA:chosen_cert_arn}) (?:-|%{DATA:chosen_cert_serial}) (?:-|%{DATA:tls_cipher}) (?:-|%{DATA:tls_protocol_version}) (?:-|%{DATA:tls_named_group}) (?:-|%{DATA:domain_name}) (?:-|%{DATA:alpn_fe_protocol}) (?:-|%{DATA:alpn_be_protocol}) (?:-|%{GREEDYDATA:alpn_client_preference_list})"

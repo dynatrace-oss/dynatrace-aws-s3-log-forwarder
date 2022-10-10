@@ -1,0 +1,88 @@
+ {
+    "Records": [
+        {
+            "eventVersion": "1.08",
+            "userIdentity": {
+                "type": "AssumedRole",
+                "principalId": "AROAXOQVZPGHRMHPEWD3I:dynatrace-monitoring-izs31363-CloudEnthusiastsAccount",
+                "arn": "arn:local:sts::012345678910:assumed-role/test",
+                "accountId": "012345678910",
+                "accessKeyId": "ASIAXOQVZPGHSX4D6KG2",
+                "sessionContext": {
+                    "sessionIssuer": {
+                        "type": "Role",
+                        "principalId": "AROAXOQVZPGHRMHPEWD3I",
+                        "arn": "arn:aws:iam::012345678910:role/Dynatrace_monitoring_role",
+                        "accountId": "012345678910",
+                        "userName": "Dynatrace_monitoring_role"
+                    },
+                    "attributes": {
+                        "creationDate": "2022-09-08T08:26:04Z",
+                        "mfaAuthenticated": "false"
+                    }
+                }
+            },
+            "eventTime": "{{next_log_timestamp()}}",
+            "eventSource": "dynamodb.amazonaws.com",
+            "eventName": "ListTables",
+            "awsRegion": "ap-northeast-1",
+            "sourceIPAddress": "54.82.44.161",
+            "userAgent": "aws-sdk-java/1.11.789 Linux/5.11.0-1020-aws OpenJDK_64-Bit_Server_VM/11.0.13+8 java/11.0.13 vendor/Eclipse_Adoptium",
+            "requestParameters": null,
+            "responseElements": null,
+            "requestID": "COQOPOROSAEB78FISDHLR9FAHNVV4KQNSO5AEMVJF66Q9ASUAAJG",
+            "eventID": "e2fe1c6f-e5a2-4be3-a93f-fcca72092ada",
+            "readOnly": true,
+            "eventType": "AwsApiCall",
+            "apiVersion": "2012-08-10",
+            "managementEvent": true,
+            "recipientAccountId": "012345678910",
+            "eventCategory": "Management",
+            "tlsDetails": {
+                "clientProvidedHostHeader": "dynamodb.ap-northeast-1.amazonaws.com"
+            }
+        },
+        {
+            "eventVersion": "1.08",
+            "userIdentity": {
+                "type": "AssumedRole",
+                "principalId": "AROAXOQVZPGHRMHPEWD3I:dynatrace-monitoring-izs31363-CloudEnthusiastsAccount",
+                "arn": "arn:aws:sts::012345678910:assumed-role/Dynatrace_monitoring_role/dynatrace-monitoring-izs31363-CloudEnthusiastsAccount",
+                "accountId": "012345678910",
+                "accessKeyId": "ASIAXOQVZPGHSX4D6KG2",
+                "sessionContext": {
+                    "sessionIssuer": {
+                        "type": "Role",
+                        "principalId": "AROAXOQVZPGHRMHPEWD3I",
+                        "arn": "arn:aws:iam::012345678910:role/Dynatrace_monitoring_role",
+                        "accountId": "012345678910",
+                        "userName": "Dynatrace_monitoring_role"
+                    },
+                    "attributes": {
+                        "creationDate": "2021-12-31T23:26:04Z",
+                        "mfaAuthenticated": "false"
+                    }
+                }
+            },
+            "eventTime": "{{next_log_timestamp()}}",
+            "eventSource": "dynamodb.amazonaws.com",
+            "eventName": "ListTables",
+            "awsRegion": "ap-northeast-1",
+            "sourceIPAddress": "54.82.44.161",
+            "userAgent": "aws-sdk-java/1.11.789 Linux/5.11.0-1020-aws OpenJDK_64-Bit_Server_VM/11.0.13+8 java/11.0.13 vendor/Eclipse_Adoptium",
+            "requestParameters": null,
+            "responseElements": null,
+            "requestID": "RFLAFE7SH1AL7VC7ROOI2R36MBVV4KQNSO5AEMVJF66Q9ASUAAJG",
+            "eventID": "e0a683d2-7137-424a-b103-beffb6e0f5f8",
+            "readOnly": true,
+            "eventType": "AwsApiCall",
+            "apiVersion": "2012-08-10",
+            "managementEvent": true,
+            "recipientAccountId": "012345678910",
+            "eventCategory": "Management",
+            "tlsDetails": {
+                "clientProvidedHostHeader": "dynamodb.ap-northeast-1.amazonaws.com"
+            }
+        }
+    ]
+}        

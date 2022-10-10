@@ -1,0 +1,66 @@
+# Copyright 2022 Dynatrace LLC
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#      https://www.apache.org/licenses/LICENSE-2.0
+
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+name: ALB
+
+ # https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html
+ # Prefix:[/prefix]/AWSLogs/aws-account-id/elasticloadbalancing/region/yyyy/mm/dd/aws-account-id_elasticloadbalancing_region
+ # File Name: aws-account-id_elasticloadbalancing_region_app.load-balancer-id_end-time_ip-address_random-string.log.gz
+ # Random string is 8 chars?
+known_key_path_pattern: '^.*?{aws_logs_prefix}/{aws_account_id_pattern}/(elasticloadbalancing)/{aws_region_pattern}/{year_pattern}/{month_pattern}/{day_pattern}/{aws_account_id_pattern}_(elasticloadbalancing)_{aws_region_pattern}_(app.){elbv2_id_pattern}_{year_pattern}{month_pattern}{day_pattern}T{hour_pattern}{minutes_pattern}Z_{ipv4_address_pattern}_[a-zA-Z0-9]{{8}}(.log.gz)$'
+
+source: aws
+
+log_format: text
+
+annotations:
+  log.source: aws.alb
+  cloud.provider: aws
+  aws.service: alb
+
+# https://docs.aws.amazon.com/elasticloadbalancing/latest/application/enable-access-logging.html#attach-bucket-policy
+requester: 
+  - "127311923021"
+  - "033677994240"
+  - "027434742980"
+  - "797873946194"
+  - "098369216593"
+  - "754344448648"
+  - "589379963580"
+  - "718504428378"
+  - "383597477331"
+  - "600734575887"
+  - "114774131450"
+  - "783225319266"
+  - "582318560864"
+  - "985666609251"
+  - "054676820928"
+  - "156460612806"
+  - "652711504416"
+  - "635631232127"
+  - "009996457667"
+  - "897822967062"
+  - "076674570225"
+  - "507241528517"
+  - "048591011584"
+  - "190560391635"
+
+attribute_extraction_from_key_name:
+  aws.account.id: '{aws_account_id_pattern}'
+  aws.region: '{aws_region_pattern}'
+
+attribute_extraction_grok_expression: '%{DATA:request_type} %{TIMESTAMP_ISO8601:timestamp} %{NOTSPACE:elbv2_id} %{IP:client_ip}:%{INT:client_port:int} (?:(%{IP:target_ip}:?:%{INT:target_port:int})|-) %{NUMBER:request_processing_time:float} %{NUMBER:target_processing_time:float} %{NUMBER:response_processing_time:float} %{INT:elb_status_code:int} (?:-|%{INT:target_status_code:int}) %{INT:received_bytes:int} %{INT:sent_bytes:int} "%{WORD:http_method} %{URIPROTO:uriproto}://%{URIHOST:urihost}%{URIPATH:uripath} %{NOTSPACE:http_version}" "%{DATA:user_agent}" (?:-|%{DATA:ssl_cipher}) (?:-|%{DATA:ssl_protocol}) %{NOTSPACE:target_group_arn} "%{NOTSPACE:x_amzn_trace_id}" "(?:-|%{DATA:domain_name})" "(?:-|%{NOTSPACE:chosen_cert_arn})" (?:-|%{INT:matched_rule_priority}) %{TIMESTAMP_ISO8601:request_creation_time} "(?:-|%{NOTSPACE:actions_executed})" "(?:-|%{DATA:redirect_url})" "(?:-|%{DATA:error_reason})" "(?:-|%{GREEDYDATA:target_port_list})" "(?:-|%{GREEDYDATA:target_status_code_list})" "(?:-|%{DATA:classification})" "(?:-|%{DATA:classification_reason})"'
+
+attribute_extraction_jmespath_expression:
+  severity: "((elb_status_code.to_number(@) >= `400` && elb_status_code.to_number(@) < `500`) && 'WARN') || (elb_status_code.to_number(@) >= `500` && 'ERROR') || 'INFO'"

@@ -1,0 +1,15 @@
+- rule_name: Send Elastic Load Balancing logs to Dynatrace Prod instance
+  prefix: "^AWSLogs/.*/(elasticloadbalancing)/.*"
+  source: aws
+  sinks:
+    - '1'
+  annotations: 
+    environment: prod
+- rule_name: Send CloudTrail logs to Security Dynatrace instance
+  prefix: "^AWSLogs/.*/(CloudTrail)/.*"
+  source: aws
+  sinks: 
+    - '2'
+  annotations:
+    environment: prod
+    aws_account_name: internal_resources_pro

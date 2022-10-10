@@ -1,0 +1,89 @@
+{
+  "Records": [
+      {
+          "messageId": "95756402-e5ea-4a09-a3f7-a5758a65efd0",
+          "receiptHandle": "AQEBkoxC7yp8EW1YCJ/rw7FDwWnBauDlrGdX5ACV9Fbg6YRtDShd3GIyBC/47EvH1f03wyAWaBksiPI0G9x1FLG0MOwlU2LUJSCKD74E9bSbOqmi3AOfQRtM/7O5JaVio2SLfUWGMBcyzE7JSZVAal+w50EWL/78IA2Y7QQdSrrpYbESbXnjf1wIvnfIJcekNc/clA8WqxFHvjw4MISi9sqyYnR3tI2qdp6J6VsZGRLdWlw3aXn9jF6M5NSf7n1B4qB+hkKie5CXrYlmI9OGG3Hlj2oc357vODCTKNoMjVrC1lCWZWyS+hRfANWAQP304TILYXKHQCUCTWeYBZpEr2kJOQ3vWJTHctOpraYxIBDXZk70pIc6goiyPvbjlzK1C3jrvdmd5P2DzPwmFq9CJ3B8Y+odBe2MMunzjlDVabOUuo8Osutcd6QIVUvQjRAO3ei2wlA0SchO0oIkBUOQoPKSfA==",
+          "body": "{\"version\":\"0\",\"id\":\"9a0fb58a-40b1-5c6d-48da-f53b0c7e7c14\",\"detail-type\":\"Object Created\",\"source\":\"aws.s3\",\"account\":\"012345678910\",\"time\":\"2022-07-12T16:29:18Z\",\"region\":\"us-east-1\",\"resources\":[\"arn:aws:s3:::my-logs-s3-bucket\"],\"detail\":{\"version\":\"0\",\"bucket\":{\"name\":\"my-logs-s3-bucket\"},\"object\":{\"key\":\"AWSLogs/012345678910/CloudTrail/ca-central-1/2022/07/12/012345678910_CloudTrail_ca-central-1_20220712T1630Z_2qE5X0w3OkA50tAj.json.gz\",\"size\":950,\"etag\":\"39168a9f15fb92d5aaf8e3421a93c144\",\"sequencer\":\"0062CDA15ED1DD9942\"},\"request-id\":\"68FJA1R4K3J3S5V3\",\"requester\":\"cloudtrail.amazonaws.com\",\"source-ip-address\":\"52.60.42.48\",\"reason\":\"PutObject\"}}",
+          "attributes": {
+              "ApproximateReceiveCount": "1",
+              "SentTimestamp": "1657643361443",
+              "SenderId": "AIDAXXXXXXXXXXXXXXXXX",
+              "ApproximateFirstReceiveTimestamp": "1657643361444"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "d1542694ec363a7586eee4045085d4d3",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:aws:sqs:us-east-1:012345678910:dynatrace-s3-log-forwarder-S3NotificationsQueue-PZrlLG9YIdRg",
+          "awsRegion": "us-east-1"
+      },
+      {
+          "messageId": "3a02a078-5785-45e0-b546-f31a47519760",
+          "receiptHandle": "AQEBZmuVFMkPgVKKgaLDAInzpmy637BgSNJRbRvQyFikm++/KFZGgRbwZRfM9y0SV7wk8MUr4uG6bahPikFyOlJWuzEFK8hG3YgjX0dyoEUHVkkYGGq3SKCRdiC5UoFEMrVCNtRBJdnaHkJOkbTsY3mzkrI2XgfHUAt2ie/SVjcb151JE++aFcU6LNUTzsVeXJe3hK9FLZqTooWp5s5MJJdB5akPAmk/XAjzwI9XqDlubLsA7wnmJSdPa/wHGeVvllMb0NygpZC6NrPZEiGIVBrrln1uDvE9MydMTJYXD6Ve2aY+MnESB937ElmJg4SWHJySuEnPtQXwph3VgNXVt1W8UBCQSJW+/bIOpCjwohm+xJVgtkRduoRGVWuIo3yIpLMZiDsKEox19XhVmZLeK0Us1bBVlvGin4e4iMcSks9c6i8Uzy7t8ulDiVnrlQNtVzU90hiSUNNXrCvG92eEqyHDgg==",
+          "body": "{\"version\":\"0\",\"id\":\"d0c35283-2caa-557d-c98a-927840778212\",\"detail-type\":\"Object Created\",\"source\":\"aws.s3\",\"account\":\"012345678910\",\"time\":\"2022-07-12T16:29:23Z\",\"region\":\"us-east-1\",\"resources\":[\"arn:aws:s3:::my-logs-s3-bucket\"],\"detail\":{\"version\":\"0\",\"bucket\":{\"name\":\"my-logs-s3-bucket\"},\"object\":{\"key\":\"AWSLogs/012345678910/CloudTrail/ca-central-1/2022/07/12/012345678910_CloudTrail_ca-central-1_20220712T1630Z_jDOw1Y7D4afz8gQ6.json.gz\",\"size\":3207,\"etag\":\"da78568de56963070ebebda26921a818\",\"sequencer\":\"0062CDA162E556EB5B\"},\"request-id\":\"5RKRJHBJG9Q2Q3NK\",\"requester\":\"cloudtrail.amazonaws.com\",\"source-ip-address\":\"52.60.42.48\",\"reason\":\"PutObject\"}}",
+          "attributes": {
+              "ApproximateReceiveCount": "1",
+              "SentTimestamp": "1657643366571",
+              "SenderId": "AIDAXXXXXXXXXXXXXXXXX",
+              "ApproximateFirstReceiveTimestamp": "1657643366575"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "1c6c2a42837fe17ac10a838ea84f5c9e",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:aws:sqs:us-east-1:012345678910:dynatrace-s3-log-forwarder-S3NotificationsQueue-PZrlLG9YIdRg",
+          "awsRegion": "us-east-1"
+      },
+      {
+          "messageId": "77ea780d-373d-413d-b748-36a190de1ca1",
+          "receiptHandle": "AQEB9j276IKJiWg7y4U429OA96HFCkX2Yn8GL922RrGeZw2GGWmsTzjrXvT59+jm+IwEO9levfyyLxg3Hj+6nEt+/qXgAqJ9ZzClYFcBZ17t4Emp4nY0MrpzOFLBrw04MHeKWJHm6mnkJxkETAfZAgWJpO0HwNCOzHJTKh608uc68mgLINTmK0GZLNBgXSjEX6RmJ+gsg+OUNPkfmc6di9p4DJN1l9Q3n4SNIar7RinP0W58qzMHhv11TMfMULLrfrHAzjBoFHQc7bCqrz37gqQkj2Unbd5IRTiuXabhIe7g4/Ggjws6rH7KGVzfTg8g6cI/xBvojAYYlgIWKQoSeFgvE4SPvnw8qoybuWJUEgTlfIGu9wzAE3R0ShIeJQCYtwu2i/y5dvjB2dO9E1TQCtZskrmSoxNjU1lQRVEoadh00e5ll7ELRDxDGemxIQFCWOVFp8NykovYuvUL9keCaB4eVg==",
+          "body": "{\"version\":\"0\",\"id\":\"02b2a853-715f-3763-f780-25dc3ea2aa04\",\"detail-type\":\"Object Created\",\"source\":\"aws.s3\",\"account\":\"012345678910\",\"time\":\"2022-07-12T16:29:31Z\",\"region\":\"us-east-1\",\"resources\":[\"arn:aws:s3:::my-logs-s3-bucket\"],\"detail\":{\"version\":\"0\",\"bucket\":{\"name\":\"my-logs-s3-bucket\"},\"object\":{\"key\":\"AWSLogs/012345678910/CloudTrail/us-east-2/2022/07/12/012345678910_CloudTrail_us-east-2_20220712T1630Z_XsXql3T6RxQkuwVX.json.gz\",\"size\":3705,\"etag\":\"47c442d8bfa8003c9737fab095ad53fd\",\"sequencer\":\"0062CDA16B568375E6\"},\"request-id\":\"229NG1VNT8QJW0CF\",\"requester\":\"cloudtrail.amazonaws.com\",\"source-ip-address\":\"18.217.94.74\",\"reason\":\"PutObject\"}}",
+          "attributes": {
+              "ApproximateReceiveCount": "1",
+              "SentTimestamp": "1657643373635",
+              "SenderId": "AIDAXXXXXXXXXXXXXXXXX",
+              "ApproximateFirstReceiveTimestamp": "1657643373641"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "12ac62bc9f93fd2dc433119b30eba118",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:aws:sqs:us-east-1:012345678910:dynatrace-s3-log-forwarder-S3NotificationsQueue-PZrlLG9YIdRg",
+          "awsRegion": "us-east-1"
+      },
+      {
+          "messageId": "b7297671-468a-4219-8ad7-52d134df1036",
+          "receiptHandle": "AQEBxx4qbliHLLK60ne1vURlTzBVHMqpPRR2n4vkUpnw4obk2Umk6T2antXEQ5dPjYp4y5aydb/2RkYoS9OcyUK64Lxg5pywMlbsZtOeCDq2w97n1h4i30qbS7uAMTNoqmc6UNG6AXQnPX0KNiN774lkAN4cF/YwGtOf8mg87WKXbpMm2z02E9Yu7VO7CH5VoF0iItjbnOp1y2/O2XZrgUpwBRkvgDsASvxqfZxu2pL2KCtYtZbmvF+whSi/ZofipM8g4r0qCq42YH7ZaNlLXOUm+WT9XRFszv1KO/gIIXv+35qqD46ajq//Pps1Bdzz1C02sFrs0v76QnLAcCEPPH8fZuyWQz+dUdwWJ270HmE90h5pMAdrbyT61FARFUHe1sm+FrOzw68rP3wvdLkzoQAtU8SxDsnrOkHToqoLK6ybJDMpW/KZ/L+0OuWnMSh7+d0H0DAseq+oBvdafQW/Rab3Uw==",
+          "body": "{\"version\":\"0\",\"id\":\"2f7c3385-d69f-9d00-f115-dbe692360da0\",\"detail-type\":\"Object Created\",\"source\":\"aws.s3\",\"account\":\"012345678910\",\"time\":\"2022-07-12T16:29:31Z\",\"region\":\"us-east-1\",\"resources\":[\"arn:aws:s3:::my-logs-s3-bucket\"],\"detail\":{\"version\":\"0\",\"bucket\":{\"name\":\"my-logs-s3-bucket\"},\"object\":{\"key\":\"AWSLogs/012345678910/CloudTrail/sa-east-1/2022/07/12/012345678910_CloudTrail_sa-east-1_20220712T1630Z_Y19o6hPCmLkpNhMm.json.gz\",\"size\":3649,\"etag\":\"369cbaf06b66c329c6c79bcec1310ac0\",\"sequencer\":\"0062CDA16B6D4C0A70\"},\"request-id\":\"229R8S1KT2QZHGT4\",\"requester\":\"cloudtrail.amazonaws.com\",\"source-ip-address\":\"54.233.92.6\",\"reason\":\"PutObject\"}}",
+          "attributes": {
+              "ApproximateReceiveCount": "1",
+              "SentTimestamp": "1657643373866",
+              "SenderId": "AIDAXXXXXXXXXXXXXXXXX",
+              "ApproximateFirstReceiveTimestamp": "1657643373867"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "d09ac91c8ea0666a61257d70833f9363",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:aws:sqs:us-east-1:012345678910:dynatrace-s3-log-forwarder-S3NotificationsQueue-PZrlLG9YIdRg",
+          "awsRegion": "us-east-1"
+      },
+      {
+          "messageId": "276e5415-18cc-4923-b0a6-d4c04679c7f3",
+          "receiptHandle": "AQEBLbIXuEjRLDL9AeV+tWtFw//1kkDXkI4lK2OVj7HYmboF2FbsFNe15Bh8MkbvPurL0/Lio78B7uS1bNxckmXjNK7VEklJ6ocPbDrntu2PAZiq0nl/04mSnfsVlbhb2L/HhvQtENZOhVJjFLco9rpY0f1kW4BxPTTwfNHopzlh5Odqe4Zgl+0youFjenWGWSOe3TbdT/UGh4J90KxiE9bzyGp8o3IYZCT7b1B7jIIxbuzPCQYjAYGCQJLsNDR8uogANAYMLXq4WTzi7Ct1Rjl/vtpdOvIiTMKDQUU9+TDHWCaw1CIOA+R4f13I5rD6/tEdSUrkOJxu4KI6vIWyM6pxBup8zFhdJdY63uuvGTJMVAAHO2JfLHaHim9ePNaRwFcgch41mTT1DaBZSJm5zd8Pz7/da27TauHALwNtIOnyE1j2wtPYLXVxTGqgyWVFQemmkTlK9gStIlrS4E13lVkCkA==",
+          "body": "{\"version\":\"0\",\"id\":\"30f38a41-0316-f340-f365-aa464eda3f89\",\"detail-type\":\"Object Created\",\"source\":\"aws.s3\",\"account\":\"012345678910\",\"time\":\"2022-07-12T16:29:32Z\",\"region\":\"us-east-1\",\"resources\":[\"arn:aws:s3:::my-logs-s3-bucket\"],\"detail\":{\"version\":\"0\",\"bucket\":{\"name\":\"my-logs-s3-bucket\"},\"object\":{\"key\":\"AWSLogs/012345678910/CloudTrail/ap-southeast-1/2022/07/12/012345678910_CloudTrail_ap-southeast-1_20220712T1630Z_jRIT3wU4JlETrKSH.json.gz\",\"size\":7297,\"etag\":\"5cdcca4de477efc9d56645c414d3f566\",\"sequencer\":\"0062CDA16C415AB61D\"},\"request-id\":\"30D3T29F1N8BGWXD\",\"requester\":\"cloudtrail.amazonaws.com\",\"source-ip-address\":\"13.251.107.74\",\"reason\":\"PutObject\"}}",
+          "attributes": {
+              "ApproximateReceiveCount": "1",
+              "SentTimestamp": "1657643375111",
+              "SenderId": "AIDAXXXXXXXXXXXXXXXXX",
+              "ApproximateFirstReceiveTimestamp": "1657643375112"
+          },
+          "messageAttributes": {},
+          "md5OfMessageAttributes": null,
+          "md5OfBody": "d4c8e0d9b52bb5de549b3354508f7cbb",
+          "eventSource": "aws:sqs",
+          "eventSourceARN": "arn:aws:sqs:us-east-1:012345678910:dynatrace-s3-log-forwarder-S3NotificationsQueue-PZrlLG9YIdRg",
+          "awsRegion": "us-east-1"
+      }
+  ]
+}

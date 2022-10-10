@@ -1,0 +1,17 @@
+- rule_name: Send CloudTrail and Elastic Load Balancing logs to Dynatrace
+  prefix: "^AWSLogs/.*/(CloudTrail|elasticloadbalancing)/.*"
+  source: aws
+  annotations: 
+    environment: dev
+    team: cloud_ops
+- rule_name: Send My App logs
+  prefix: "^myapp/.*(\\.log)$"
+  sinks: 
+    - '2'
+  source: custom
+  source_name: my_app
+- rule_name: Test_logs
+  prefix: "^test/.*"
+  source: generic
+- rule_name: this is an invalid rule
+  random_attribute: blablabla
