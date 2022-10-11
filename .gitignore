@@ -252,6 +252,5 @@ samconfig.toml
 .vscode/launch.json
 .vscode/settings.json
 
-config/log_forwarding_rules/*
-dev
-s3-log-forwarder
+config
+.dev

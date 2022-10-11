@@ -27,6 +27,7 @@ from aws_lambda_powertools.utilities import parameters
 from aws_lambda_powertools import Metrics
 from aws_lambda_powertools.metrics import MetricUnit
 from utils.helpers import ENCODING
+from version import get_version
 
 logger = logging.getLogger()
 
@@ -52,6 +53,10 @@ DYNATRACE_CONNECT_TIMEOUT = 3
 DYNATRACE_READ_TIMEOUT = 5
 
 metrics = Metrics()
+
+default_headers = {
+    "User-Agent" : f"dynatrace-aws-s3-log-forwarder/{get_version()}"
+}
 
 class DynatraceSink():
     def __init__(self, dt_url: str, dt_api_key_parameter: str):
@@ -146,10 +151,14 @@ class DynatraceSink():
         if session is None:
             session = requests.Session()
 
-        headers = {
+        headers = {}
+        headers.update(default_headers)
+        headers.update({
             'Authorization': f'Api-Token {dt_api_key}',
             'Content-Type': 'application/json; charset=utf-8'
-        }
+        })
+
+        print(headers)
 
         request_data = data
 
