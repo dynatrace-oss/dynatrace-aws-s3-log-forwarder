@@ -157,8 +157,7 @@ class DynatraceSink():
             'Authorization': f'Api-Token {dt_api_key}',
             'Content-Type': 'application/json; charset=utf-8'
         })
-
-        print(headers)
+        
 
         request_data = data
 
