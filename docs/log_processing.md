@@ -19,6 +19,8 @@ There are 3 different kinds of log processing rules:
 
 If `aws` or `custom` is defined as source on the log_forwarding_rule and there're no matches against the processed log object, the dynatrace-s3-log-forwarder falls back to the `generic` processing rule.
 
+**NOTE:** If you're ingesting logs using the `generic` processing rule, you can use the Dynatrace [log processing](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing) functionality for attribute extraction.
+
 ## Built-in log processing rules
 
 The solution currently supports log processing for:

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-- rule_name: Send CloudTrail and Elastic Load Balancing logs to Dynatrace
+- rule_name: fwd_ctrail_and_elb_logs
   prefix: "^AWSLogs/.*/(CloudTrail|elasticloadbalancing)/.*"
   source: aws
   sinks: 
@@ -21,9 +21,9 @@
   annotations: 
     environment: dev
     team: cloud_enthusiasts
-- rule_name: Send Jenkins logs
+- rule_name: fwd_nginx_logs
   prefix: "^nginx/.*(\\.log)$"
-  source: custom
+  source: generic
   source_name: nginx
   annotations:
     log.source: nginx
