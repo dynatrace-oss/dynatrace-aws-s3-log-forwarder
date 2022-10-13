@@ -36,7 +36,9 @@ attribute_extraction_grok_expression:
 
 attribute_extraction_jmespath_expression:
   timestamp: eventTime
+  audit.event_source: eventSource
   audit.action: eventName
+  audit.read_only: readOnly
   audit.identity_type: "userIdentity.type || 'NotProvided'"
 
   # Identity might be an ARN, an AWS Service or an AWS account Id

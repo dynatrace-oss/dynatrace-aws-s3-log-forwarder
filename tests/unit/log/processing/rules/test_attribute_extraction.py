@@ -49,7 +49,9 @@ class TestCloudTrailAttributeExtraction(unittest.TestCase):
 
     expected_attributes = {
                             "timestamp": cloudtrail_test_entry['eventTime'],
+                            "audit.event_source": cloudtrail_test_entry['eventSource'],
                             "audit.action": cloudtrail_test_entry['eventName'],
+                            "audit.read_only": cloudtrail_test_entry['readOnly'],
                             "audit.identity_type": cloudtrail_test_entry['userIdentity']['type'],
                             "audit.identity": cloudtrail_test_entry['userIdentity']['arn'],
                             "audit.result": "Succeeded",
