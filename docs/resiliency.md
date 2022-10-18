@@ -1,6 +1,6 @@
 # Resiliency
 
-The `dynatrace-s3-log-forwarder` will attempt up to 3 times to forward a log object to Dynatrace. In the scenario where a log file has failed to be processed more than 3 times, the SQS message with the object details will be redrived to the Dead Letter Queue, where it will be retained for up to 1 hour.
+The `dynatrace-aws-s3-log-forwarder` will attempt up to 3 times to forward a log object to Dynatrace. In the scenario where a log file has failed to be processed more than 3 times, the SQS message with the object details will be redriven to the Dead Letter Queue, where it will be retained for up to 1 day.
 
 The SAM template configures a CloudWatch alarm to trigger whenever messages make it to the Dead Letter Queue. When this happens, you'll receive a notification e-mail (you can change this for any valid Amazon SNS target).
 

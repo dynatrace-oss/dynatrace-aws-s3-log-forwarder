@@ -2,14 +2,14 @@
 
 Log forwarding rules are stored within the `config/log_forwarding_rules` directory. You can also modify the location of log forarding rules declaring the environment variable `LOG_FORWARDING_RULES_PATH`. Each origin Amazon S3 bucket from which you want to forward logs from to Dynatrace requires a rule file within the directory with the format `<bucket_name>.yaml`. If the Lambda function receives an S3 Object created notification and the object S3 Key doesn't match any of the rules defined for the bucket, the object is dropped.
 
-Log Forwarding rules allow you to define custom annotations you may want to add to your logs being forwarded from S3 as well as hinting the dynatrace-s3-log-forwarder whether these are AWS-vended logs (source:aws), generic logs (source: generic) or other logs that you've defined log processing rules for (source: custom). The `dynatrace-s3-log-forwarder` automatically annotates logs and extracts relevant attributes for supported AWS services with fields like `aws.account.id`, `aws.region`... The currently supported AWS-vended logs are:
+Log Forwarding rules allow you to define custom annotations you may want to add to your logs being forwarded from S3 as well as hinting the dynatrace-aws-s3-log-forwarder whether these are AWS-vended logs (source:aws), generic logs (source: generic) or other logs that you've defined log processing rules for (source: custom). The `dynatrace-aws-s3-log-forwarder` automatically annotates logs and extracts relevant attributes for supported AWS services with fields like `aws.account.id`, `aws.region`... The currently supported AWS-vended logs are:
 
 * CloudTrail
 * Application Load Balancer
 * Network Load Balancer
 * Classic Load Balancer
 
-You can extend this functionality defining your own log processing rules. For more information, visit the [log_processing_rules](log_processing_rules.md).
+If you're ingesting other logs, you can just ingest them as `generic` logs and [configure Dynatrace to process the logs](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing) or query them with [DQL](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing/log-processing-commands). If needed, you can also extend the log processing functionality of this solution defining your own log processing rules. For more information, visit the [log_processing_rules](log_processing_rules.md).
 
 ## Configuring log forwarding rules
 
@@ -60,7 +60,7 @@ If you're ingesting non-supported AWS-vended logs, we recommend you to configure
 
 With the above rule, you can then create a rule in your Dynatrace tenant log processing that extracts attributes for any logs with attribute `log.source: aws.vpcflowlogs`
 
-The Log forwarding rules allow also for fine-grained content filtering with the prefix field, which is a regular expression matched against the Amazon S3 Key name of your logs. While Amazon EvenBridge rules allows you to narrow down the S3 Object Created notifications that are sent to the `dynatrace-s3-log-forwarder` to process; they don't allow for complex expressions (e.g. they don't support wildcard). See the [EventBridge documentation](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html) for more details.  
+The Log forwarding rules allow also for fine-grained content filtering with the prefix field, which is a regular expression matched against the Amazon S3 Key name of your logs. While Amazon EvenBridge rules allows you to narrow down the S3 Object Created notifications that are sent to the `dynatrace-aws-s3-log-forwarder` to process; they don't allow for complex expressions (e.g. they don't support wildcard). See the [EventBridge documentation](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html) for more details.  
 
 For example, if you want to forward logs under the prefix `jenkins/` but only those log files with the `.log` extension, the narrowest Amazon EventBridge rule you can configure would be to get notifications for any file under `jenkins/*`. With a log forwarding rule, you can define a more specific rule that only matches files under `jenkins/` prefix but that have the `.log` extension, so the solution doesn't forward content of other files that may be under the same prefix:
 
@@ -73,6 +73,10 @@ For example, if you want to forward logs under the prefix `jenkins/` but only th
 ```
 
 If you want to send all the logs matching the S3 Notification rules, simply add a single rule with prefix: ".*".
+
+## Forwarding large log files to Dynatrace
+
+The `dynatrace-aws-s3-log-forwarder` solution is designed to be able to handle multi-GB large log files, as data is streamed in chunks from Amazon S3 as it's processed and forwarded to Dynatrace. Even if the solution is able to do this with very low memory footrpint, allocating low memory to the function means also low CPU and bandwidth resources and your Lambda function execution may timeout (the configured lambda execution timeout configuration is 120 seconds). For more information, refer to the AWS Lambda [documentation](https://docs.aws.amazon.com/lambda/latest/operatorguide/computing-power.html).
 
 ## Forward logs to multiple Dynatrace tenants
 

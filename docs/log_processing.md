@@ -2,7 +2,7 @@
 
 Once a log S3 Object is marked to be forwarded to Dynatrace, its content is then pulled and processed before sending it to Dynatrace according to the defined log processing rules. Log processing rules, define attribute extraction and log enrichment directives.
 
-The `dynatrace-s3-log-forwarder` supports processing plain text and JSON logs either gzipped or not. If the log is gzipped, its file extension must be `.gz`. If the log is in JSON format, the file extension must be `.json`.
+The `dynatrace-aws-s3-log-forwarder` supports processing plain text and JSON logs either gzipped or not. If the log is gzipped, its file extension must be `.gz`. If the log is in JSON format, the file extension must be `.json`.
 
 For all processed logs, the forwarder enriches the entries with the following attributes:
 
@@ -17,7 +17,7 @@ There are 3 different kinds of log processing rules:
 * `aws`: Allows you to ingest supported AWS-vended logs and extract relevant attributes for them. To determine the service vending the log and exact rule to apply, the S3 Key of the log object is matched against the known format. You can find the processing rules on the `src/processing/rules` folder with the details.
 * `custom`: Allows you to ingest logs and apply user-defined processing rules. When using these rules, you also need to define the `source_name` attribute with the name that identifies your custom processing rule on the log_forwarding_rule.
 
-If `aws` or `custom` is defined as source on the log_forwarding_rule and there're no matches against the processed log object, the dynatrace-s3-log-forwarder falls back to the `generic` processing rule.
+If `aws` or `custom` is defined as source on the log_forwarding_rule and there're no matches against the processed log object, the dynatrace-aws-s3-log-forwarder falls back to the `generic` processing rule.
 
 **NOTE:** If you're ingesting logs using the `generic` processing rule, you can use the Dynatrace [log processing](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing) functionality for attribute extraction.
 
