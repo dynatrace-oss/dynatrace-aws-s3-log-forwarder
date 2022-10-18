@@ -1,6 +1,6 @@
-# dynatrace-s3-log-forwarder function metrics
+# dynatrace-aws-s3-log-forwarder function metrics
 
-The function publishes the following metrics to CloudWatch under the `dynatrace-s3-log-forwader` metric Namespace:
+The function publishes the following metrics to CloudWatch under a metric namespace named as your SAM StackName:
 
 * `LogFilesProcessed` (Sum): Number of log files that have been correctly processed and ingested to Dynatrace.
 * `LogProcessingFailures` (Sum): Number of failures processing log files. (If there's a failure, the function retries up to 3 times; so a single file failure may be 3 Failures here).
@@ -9,7 +9,7 @@ The function publishes the following metrics to CloudWatch under the `dynatrace-
 * `ReceivedUncompressedLogFileSize`(Avg): Size in bytes of the uncompressed log file that's being processed.
 * `DynatraceHTTP204Success` (Sum): Number of succesful POST requests to Dynatrace.
 * `DynatraceHTTP200PartialSuccess` (Sum): Number of partially successful POST requests to Dynatrace.
-* `DynatraceHTTP413Throttled` (Sum): Number of throttled POST requests to Dynatrace.
+* `DynatraceHTTP429Throttled` (Sum): Number of throttled POST requests to Dynatrace.
 * `DynatraceHTTPErrors` (Sum): Number of HTTP errors received from Dynatrace (includding throttles).
 * `UncompressedLogDTPayloadSize` (Avg / Min / Max): Size of the uncompressed Payload successfully posted to Dynatrace.
 * `LogProcessingTime`(Avg / Min / Max): Time taken in seconds to process logs (iterate to generate attributes and trim, doesn't include batching and posting to Dynatrace).
