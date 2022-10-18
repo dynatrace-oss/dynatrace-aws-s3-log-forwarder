@@ -80,24 +80,26 @@ You'll also need:
 
     **Note:** You will also be prompted for your e-mail address, so you'll receive notifications when log files can't be processed and messages are arriving to the Dead Letter Queue.
 
-1. At this stage, you have successfully deployed the `dynatrace-aws-s3-log-forwarder` solution with your desired configuration. Now, for each Amazon S3 bucket you want to forward logs to Dynatrace, deploy the `s3-log-forwarder-bucket-config-template.yaml` CloudFormation template with appropriate parameters. This template provides IAM permissions to the log forwarding Lambda Function to read objects from your S3 buckets and creates an Amazon EventBridge rule to send "Object Created" notifications for the S3 bucket to the log forwarding solution Amazon SQS queue. This template takes as parameters the log forwarder stack name and the S3 bucket name as mandatory parameters; and optionally between 1 and 10 Amazon S3 key prefixes. If S3 Key prefixes are defined, IAM permissions are narrowed down to only these prefixes, as well the EventBridge rule will only send notifications for objects created within the specified prefixes.
+1. At this stage, you have successfully deployed the `dynatrace-aws-s3-log-forwarder` solution with your desired configuration. Now, for each Amazon S3 bucket you want to forward logs to Dynatrace, deploy the `s3-log-forwarder-bucket-config-template.yaml` CloudFormation template with appropriate parameters. This template provides IAM permissions to the log forwarding Lambda Function to read objects from your S3 buckets and creates an Amazon EventBridge rule to send "Object Created" notifications for the S3 bucket to the log forwarding solution Amazon SQS queue.
 
-For each S3 bucket, execute the AWS CLI command below (substituting relevant parameters):
+    The template takes as parameters the log forwarder stack name you have deployed before and the S3 bucket name as mandatory parameters. Optionally, you can specify between 1 and 10 Amazon S3 key prefixes. If S3 Key prefixes are defined, IAM permissions are narrowed down to only these prefixes, as well the EventBridge rule will only send notifications for objects created within the specified prefixes.
 
-  ```bash
-  aws cloudformation deploy \
-    --template-file s3-log-forwarder-bucket-config-template.yaml \
-    --stack-name dynatrace-aws-s3-log-forwarder-s3-bucket-configuration-<your_bucket_name> \
-    --parameter-overrides DynatraceAwsS3LogForwarderStackName=<name_of_your_log_forwarder_stack> \
-        LogsBucketName=<s3_bucket_name> \
-        LogsBucketPrefix1=<your_s3_prefix1>/ \
-        LogsBucketPrefix2=<your_s3_prefix2>/ \
-        (...)
-        LogsBucketPrefix10=<your_s3_prefix10>/ \
-    --capabilities CAPABILITY_IAM
-  ```
+    For each S3 bucket, execute the AWS CLI command below (substituting relevant parameters):
 
-Once the above stack is deployed, go to your S3 bucket(s) and enable notifications via EventBridge following instructions [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html).
+    ```bash
+    aws cloudformation deploy \
+      --template-file s3-log-forwarder-bucket-config-template.yaml \
+      --stack-name dynatrace-aws-s3-log-forwarder-s3-bucket-configuration-<your_bucket_name> \
+      --parameter-overrides DynatraceAwsS3LogForwarderStackName=<name_of_your_log_forwarder_stack> \
+          LogsBucketName=<s3_bucket_name> \
+          LogsBucketPrefix1=<your_s3_prefix1>/ \
+          LogsBucketPrefix2=<your_s3_prefix2>/ \
+          (...)
+          LogsBucketPrefix10=<your_s3_prefix10>/ \
+      --capabilities CAPABILITY_IAM
+    ```
+
+    Once the above stack is deployed, go to your S3 bucket(s) and enable notifications via EventBridge following instructions [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html).
 
 ### Next steps
 
