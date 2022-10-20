@@ -74,6 +74,7 @@ Parameters:
 
 Conditions:
   SecondDTEnvironmentSpecified: !Not [!Equals [!Ref DynatraceEnvironment2URL, "" ]]
+  LambdaInsightsEnabled: !Equals [ !Ref EnableLambdaInsights, "true" ]
 
 Globals:
   Function:
@@ -121,7 +122,7 @@ Resources:
             QueueName: !GetAtt S3NotificationsQueue.QueueName
         - SSMParameterReadPolicy:
             ParameterName: !Sub dynatrace/s3-log-forwarder/${AWS::StackName}/*
-        - CloudWatchLambdaInsightsExecutionRolePolicy
+        - !If [ LambdaInsightsEnabled, "arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy" , !Ref "AWS::NoValue"] 
 
   S3NotificationsQueue:
     Type: AWS::SQS::Queue

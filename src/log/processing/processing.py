@@ -24,9 +24,7 @@ from aws_lambda_powertools.metrics import MetricUnit
 import jsonslicer
 
 from log.processing.log_processing_rule import LogProcessingRule
-
-
-ENCODING = 'utf-8'
+from utils.helpers import ENCODING
 
 logger = logging.getLogger()
 metrics = Metrics()

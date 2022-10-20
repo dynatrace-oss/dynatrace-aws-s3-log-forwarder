@@ -138,6 +138,11 @@ def lambda_handler(event, context):
                              matched_log_forwarding_rule.source, key_name)
                 metrics.add_metric(name="LogFilesSkipped",
                                    unit=MetricUnit.Count, value=1)
+        except UnicodeDecodeError:
+            logger.exception(
+                'Error decoding log object. Log contains non-UTF-8 characters. Dropping object s3://%s/%s', bucket_name, key_name
+            )
+            metrics.add_metric(name='DroppedObjectsDecodingErrors', unit=MetricUnit.Count, value=1)
         except Exception:
             logger.exception(
                 'Error processing message %s', message['messageId'])

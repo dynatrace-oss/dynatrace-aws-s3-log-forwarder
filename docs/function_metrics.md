@@ -5,6 +5,7 @@ The function publishes the following metrics to CloudWatch under a metric namesp
 * `LogFilesProcessed` (Sum): Number of log files that have been correctly processed and ingested to Dynatrace.
 * `LogProcessingFailures` (Sum): Number of failures processing log files. (If there's a failure, the function retries up to 3 times; so a single file failure may be 3 Failures here).
 * `DroppedObjectsNotMatchingFwdRules` (Sum): Number of S3 objects that the function has received an ObjectCreated notification for, but that don't match any of the defined forwarded rules, so they've been dropped.
+* `DroppedObjectsDecodingErrors` (Sum): Number of objects dropped due to UTF-8 decoding errors.
 * `LogMessagesTrimmed` (Sum): Number of log messages trimmed due to hitting the Dynatrace limit.
 * `ReceivedUncompressedLogFileSize`(Avg): Size in bytes of the uncompressed log file that's being processed.
 * `DynatraceHTTP204Success` (Sum): Number of succesful POST requests to Dynatrace.
