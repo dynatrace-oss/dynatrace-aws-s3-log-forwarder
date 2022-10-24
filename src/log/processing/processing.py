@@ -69,11 +69,13 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
 
     log_obj_http_response = s3_client.get_object(Bucket=bucket, Key=key)
 
-    log_stream = log_obj_http_response['Body']
+    botocore_log_stream = log_obj_http_response['Body']
     log_entries = []
 
     if key.endswith('.gz'):
-        log_stream = gzip.GzipFile(mode='rb', fileobj=log_stream)
+        log_stream = gzip.GzipFile(mode='rb', fileobj=botocore_log_stream)
+    else:
+        log_stream = botocore_log_stream
 
     path_tuple = (None, )
     if key.endswith('.json.gz') or key.endswith('.json'):
@@ -94,7 +96,9 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
 
     # Add context annotations
     log_attributes.update(_get_context_log_attributes(bucket, key))
-
+    log_attributes.update(log_processing_rule.get_attributes_from_s3_key_name(key))
+    log_attributes.update(log_processing_rule.get_processing_log_annotations())
+    
     # Count log entries (can't len() a stream)
     num_log_entries = 0
 
@@ -110,7 +114,7 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
             dt_log_message.update(log_attributes)
 
             # Add extracted attributes and log annotations from log processing rule
-            dt_log_message.update(log_processing_rule.get_all_attributes(log_entry,key))
+            dt_log_message.update(log_processing_rule.get_extracted_log_attributes(log_entry))
 
             # log.content
             if isinstance(log_entry, str):
@@ -134,6 +138,10 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
 
             num_log_entries += 1
 
+            if num_log_entries % 1000 == 0:
+                logger.debug(f"Processed {num_log_entries} entries")
+
+        logger.debug(f"Total log entries processed in batch: {num_log_entries}")
     else:
         logger.warning("Can't find log entries applying processing rule %s on s3://%s/%s",
                    log_processing_rule.name, bucket, key )

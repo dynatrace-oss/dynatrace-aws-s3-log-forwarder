@@ -12,7 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
+import logging
+import sys
 import boto3
 import os
 import json
@@ -24,11 +25,19 @@ import yaml
 import pprint
 
 
+
 pp = pprint.PrettyPrinter(indent=4)
 
-import logging
+
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
+
+# log to stdout
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 def next_log_timestamp_gen(date_format_str):
     log_timestamp = datetime.now(timezone.utc) - timedelta(hours=2, minutes=55)
@@ -114,8 +123,6 @@ def load_s3_test_data_from_disk():
 
 
 if os.environ['AWS_SAM_LOCAL'] == 'True':
-    logging.basicConfig(level=logging.DEBUG, format='%(message)s')
-    logger = logging.getLogger()
     logger.warning('mocking boto3 S3')
     logger.warning('mocking boto3 SSM')
     

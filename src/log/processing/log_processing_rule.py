@@ -39,6 +39,7 @@ class LogProcessingRule:
     attribute_extraction_jmespath_expression: Optional[dict]
     known_key_path_pattern_regex: re.Pattern = field(init=False)
     attribute_extraction_from_key_name_regex: re.Pattern = field(init=False)
+    attribute_extraction_grok_object: Grok = field(init=False)
 
     def validate(self):
         '''
@@ -87,6 +88,12 @@ class LogProcessingRule:
             object.__setattr__(self,"attribute_extraction_from_key_name_regex",compiled_regexes_dict)
         else:
             object.__setattr__(self,"attribute_extraction_from_key_name_regex",None)
+        
+        # Load Grok object once. PyGrok reloads all patterns on __init__
+        if self.attribute_extraction_grok_expression is not None:
+            object.__setattr__(self,"attribute_extraction_grok_object",Grok(self.attribute_extraction_grok_expression))
+        else:
+            object.__setattr__(self,"attribute_extraction_grok_object",None)
 
     def get_attributes_from_s3_key_name(self, key: str):
         '''
@@ -110,9 +117,9 @@ class LogProcessingRule:
         attributes_dict = {}
         json_message = {}
 
-        if self.attribute_extraction_grok_expression is not None:
+        if self.attribute_extraction_grok_object is not None:
             if isinstance(message,str):
-                grok_attributes = Grok(self.attribute_extraction_grok_expression).match(message)
+                grok_attributes = self.attribute_extraction_grok_object.match(message)
                 if grok_attributes is not None:
                     attributes_dict.update(grok_attributes)
                     # Create JSON message, in case we need to apply also JMESPATH to new extracted attributes
@@ -136,6 +143,13 @@ class LogProcessingRule:
 
         return attributes_dict
 
+    def get_processing_log_annotations(self):
+        attributes = {}
+        if self.annotations is not None:
+            attributes.update(self.annotations)
+
+        return attributes
+    
     def get_all_attributes(self,message,s3_key_name):
         '''
         Returns all attributes generated for a given log message (str or dict) and S3 key:
@@ -148,9 +162,7 @@ class LogProcessingRule:
 
         attributes.update(self.get_attributes_from_s3_key_name(s3_key_name))
         attributes.update(self.get_extracted_log_attributes(message))
-
-        if self.annotations is not None:
-            attributes.update(self.annotations)
+        attributes.update(self.get_processing_log_annotations)
 
         return attributes
 

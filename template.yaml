@@ -78,7 +78,7 @@ Conditions:
 
 Globals:
   Function:
-    Timeout: 120
+    Timeout: 300
     Environment:
       Variables:
         POWERTOOLS_METRICS_NAMESPACE: !Sub dynatrace-s3-log-forwarder
@@ -130,7 +130,7 @@ Resources:
       # Use crafted queue name to avoid circular dependency with RedriveAllowPolicy
       QueueName: !Sub ${AWS::StackName}-S3NotificationsQueue
       ReceiveMessageWaitTimeSeconds: 10
-      VisibilityTimeout: 130
+      VisibilityTimeout: 320
       MessageRetentionPeriod: 43200
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt SQSDeadLetterQueue.Arn
