@@ -138,6 +138,9 @@ if os.environ['AWS_SAM_LOCAL'] == 'True':
         def __init__(self):
             self.invoked_function_arn = 'test'
 
+        def get_remaining_time_in_millis(self):
+            return(2500)
+
     @mock_s3
     @mock_ssm
     def run_locally():

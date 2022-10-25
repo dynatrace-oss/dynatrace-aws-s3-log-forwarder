@@ -15,7 +15,7 @@ S3NotificationsQueue:
     # Use crafted queue name to avoid circular dependency with RedriveAllowPolic
     QueueName: !Sub ${AWS::StackName}-S3NotificationsQueue
     ReceiveMessageWaitTimeSeconds: 10
-    VisibilityTimeout: 320
+    VisibilityTimeout: 420
     MessageRetentionPeriod: 43200
     RedrivePolicy:
       deadLetterTargetArn: !GetAtt SQSDeadLetterQueue.Arn
@@ -41,4 +41,4 @@ Properties:
           - !Sub ${AWS::StackName}-S3NotificationsQueue
 ```
 
-**Note:** The VisibilityTimeout value should be slightly higher than the Lambda function timeout (default is 300s), to avoid processing the same message multiple times.
+**Note:** The VisibilityTimeout value should be higher than the Lambda function timeout (default is 300s), to avoid processing the same message multiple times.

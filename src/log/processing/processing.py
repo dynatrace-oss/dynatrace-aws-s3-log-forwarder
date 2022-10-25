@@ -29,6 +29,7 @@ from utils.helpers import ENCODING
 logger = logging.getLogger()
 metrics = Metrics()
 
+EXECUTION_REMAINING_TIME_LIMIT = 10000
 
 def _get_context_log_attributes(bucket: str, key: str):
     '''
@@ -51,7 +52,8 @@ def get_jsonslicer_tuple_from_jmespath_path(jmespath:str):
     return jsonslicer_tuple
 
 
-def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: str, user_defined_annotations: dict = {}, session: boto3.Session = None, log_sinks=None):
+def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: str, log_sinks: list, lambda_context,
+    user_defined_annotations: dict = None, session: boto3.Session = None):
     '''
     Downloads a log from S3, decompresses and reads log messages within it and transforms the messages to Dynatrace LogV2 API format.
     Can read JSON logs (list of dicts) or text line by line (both gzipped or plain).
@@ -64,6 +66,9 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
     # https://github.com/boto/boto3/issues/2707
     if not session:
         session = boto3._get_default_session()
+
+    if user_defined_annotations is None:
+        user_defined_annotations = {}
 
     s3_client = session.client('s3')
 
@@ -98,7 +103,7 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
     log_attributes.update(_get_context_log_attributes(bucket, key))
     log_attributes.update(log_processing_rule.get_attributes_from_s3_key_name(key))
     log_attributes.update(log_processing_rule.get_processing_log_annotations())
-    
+
     # Count log entries (can't len() a stream)
     num_log_entries = 0
 
@@ -141,6 +146,10 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
             if num_log_entries % 1000 == 0:
                 logger.debug(f"Processed {num_log_entries} entries")
 
+                # Check remaining execution time for Lambda function
+                if lambda_context.get_remaining_time_in_millis() <= EXECUTION_REMAINING_TIME_LIMIT :
+                    raise NotEnoughExecutionTimeRemaining
+
         logger.debug(f"Total log entries processed in batch: {num_log_entries}")
     else:
         logger.warning("Can't find log entries applying processing rule %s on s3://%s/%s",
@@ -153,3 +162,6 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
                        unit=MetricUnit.Seconds, value=(end_time - start_time))
     # return number of log entries processed
     return(num_log_entries)
+
+class NotEnoughExecutionTimeRemaining(Exception):
+    pass

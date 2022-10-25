@@ -44,6 +44,17 @@ defined_log_forwarding_rules = log_forwarding_rules.load()
 defined_log_processing_rules = log_processing_rules.load()
 dynatrace_sinks = dynatrace.load_sinks()
 
+def generate_execution_timeout_batch_item_failures(index: int, batch_item_failures: dict, messages: list):
+    '''
+    Gets the current batch_item_failures dict and adds the messages that were left unprocessed due
+    to execution timeout
+    '''
+
+    for message in messages[index:]:
+        batch_item_failures['batchItemFailures'].append({'itemIdentifier': message['messageId']})
+
+    return batch_item_failures
+
 @metrics.log_metrics
 def lambda_handler(event, context):
 
@@ -56,7 +67,7 @@ def lambda_handler(event, context):
         'batchItemFailures': []
     }
 
-    for message in event['Records']:
+    for index, message in enumerate(event['Records']):
 
         # Empty the sinks in case some content was left due to errors and initialize
         # num_batch to 1.
@@ -73,7 +84,7 @@ def lambda_handler(event, context):
         key_name = s3_notification['detail']['object']['key']
 
         logger.debug(
-            'Processing object s3://%s/%s; posted by %s', 
+            'Processing object s3://%s/%s; posted by %s',
              bucket_name, key_name, s3_notification['detail']['requester'])
 
         # Catch all exception. If anything fails, add messageId to batchItemFailures
@@ -122,7 +133,8 @@ def lambda_handler(event, context):
 
                 processing.process_log_object(
                     matched_log_processing_rule,bucket_name, key_name,
-                    user_defined_log_annotations, log_sinks=log_object_destination_sinks,
+                    log_object_destination_sinks, context,
+                    user_defined_annotations=user_defined_log_annotations, 
                     session=boto3_session
                 )
                 
@@ -138,11 +150,30 @@ def lambda_handler(event, context):
                              matched_log_forwarding_rule.source, key_name)
                 metrics.add_metric(name="LogFilesSkipped",
                                    unit=MetricUnit.Count, value=1)
+
         except UnicodeDecodeError:
             logger.exception(
                 'Error decoding log object. Log contains non-UTF-8 characters. Dropping object s3://%s/%s', bucket_name, key_name
             )
             metrics.add_metric(name='DroppedObjectsDecodingErrors', unit=MetricUnit.Count, value=1)
+
+        except processing.NotEnoughExecutionTimeRemaining:
+            logger.exception(
+                'Unable to process log file s3://%s/%s with remaining Lambda execution time. %s total non-processed log files in batch',
+                bucket_name, key_name, (len(event['Records']) - index)
+            )
+
+            metrics.add_metric(name='NotEnoughExecutionTimeRemainingErrors', unit=MetricUnit.Count, value=1)
+
+            total_batch_item_failures = generate_execution_timeout_batch_item_failures(index,batch_item_failures, event['Records'])
+
+            metrics.add_metric(name='LogProcessingFailures', unit=MetricUnit.Count, value=len(
+                total_batch_item_failures['batchItemFailures']))
+            
+            logger.debug(json.dumps(batch_item_failures,indent=2))
+            
+            return total_batch_item_failures
+
         except Exception:
             logger.exception(
                 'Error processing message %s', message['messageId'])

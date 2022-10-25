@@ -68,7 +68,7 @@ class DynatraceSink():
 
         retry_strategy = Retry(
             total = 3,
-            status_forcelist = [429],
+            status_forcelist = [429, 503],
             allowed_methods =['POST'],
             raise_on_status = False,
             backoff_factor = .5
@@ -215,15 +215,22 @@ class DynatraceSink():
             metrics.add_metric(
                 name='DynatraceHTTP200PartialSuccess', unit=MetricUnit.Count, value=1)
         elif resp.status_code == 429:
-            logger.warning("Throttled by Dynatrace. Exhausted retry attempts...")
+            logger.error("Throttled by Dynatrace. Exhausted retry attempts...")
             metrics.add_metric(name='DynatraceHTTP429Throttled',unit=MetricUnit.Count, value=1)
             metrics.add_metric(name='DynatraceHTTPErrors', unit=MetricUnit.Count, value=1)
+            raise DynatraceThrottlingException
+        elif resp.status_code == 503:
+            logger.error("Usable space limit reached. Exhausted retry attempts...")
+            metrics.add_metric(name='DynatraceHTTP503SpaceLimitReached',unit=MetricUnit.Count, value=1)
+            metrics.add_metric(name='DynatraceHTTPErrors', unit=MetricUnit.Count, value=1)
+            raise DynatraceThrottlingException
         else:
             logger.error(
                 "There was a HTTP %d error posting batch %d to Dynatrace. %s",
                 resp.status_code, batch_num, resp.text)
             metrics.add_metric(name='DynatraceHTTPErrors',
                                unit=MetricUnit.Count, value=1)
+            raise DynatraceIngestionException
 
         if success:
             metrics.add_metric(name='UncompressedLogDTPayloadSize',
@@ -264,3 +271,10 @@ def empty_sinks(sinks:list):
     '''
     for name, sink in sinks.items():
         sink.empty_sink()
+
+
+class DynatraceThrottlingException(Exception):
+    pass
+
+class DynatraceIngestionException(Exception):
+    pass
