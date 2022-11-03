@@ -159,7 +159,7 @@ Resources:
   SQSDeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Sub ${AWS::StackName}-S3NotificationsDQL
+      QueueName: !Sub ${AWS::StackName}-S3NotificationsDLQ
       # Keep messages during 1 day for troubleshooting purposes and redrive.
       MessageRetentionPeriod: 86400
       RedriveAllowPolicy:
@@ -205,7 +205,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: "Messages landed on the Dead Letter Queue"
-      AlarmName: !Sub "${AWS::StackName}-MessagesInDQL"
+      AlarmName: !Sub "${AWS::StackName}-MessagesInDLQ"
       Metrics:
         - Id: "m1"
           Label: "MessagesVisibleMin"

@@ -20,6 +20,7 @@ FROM public.ecr.aws/lambda/python:3.9-${ARCH}
 ARG ENV 
 ARG ENABLE_LAMBDA_INSIGHTS
 
+RUN yum update -y
 RUN yum install -y yajl-devel gcc gcc-c++
 
 # Copy function code

@@ -9,7 +9,7 @@ Log Forwarding rules allow you to define custom annotations you may want to add 
 * Network Load Balancer
 * Classic Load Balancer
 
-If you're ingesting other logs, you can just ingest them as `generic` logs and [configure Dynatrace to process the logs](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing) or query them with [DQL](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing/log-processing-commands). If needed, you can also extend the log processing functionality of this solution defining your own log processing rules. For more information, visit the [log_processing_rules](log_processing_rules.md).
+If you're ingesting other logs, you can just ingest them as `generic` logs and [configure Dynatrace to process the logs](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing) or query them with [DQL](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing/log-processing-commands). If needed, you can also extend the log processing functionality of this solution defining your own log processing rules. For more information, visit the [log_processing](log_processing.md).
 
 ## Configuring log forwarding rules
 
@@ -102,3 +102,59 @@ The sink attribute contains a list of sink ids to forward logs to, each represen
 Please ensure that the SSM parameter identified by DYNATRACE_{sink_id}_API_KEY_PARAM exists (refer to section Deploy the solution).
 
 For simplicity, the SAM template uses numeric {sink_id} identifiers (i.e. `DYNATRACE_1_ENV_URL`/`DYNATRACE_1_API_KEY_PARAM` and `DYNATRACE_2_ENV_URL`/`DYNATRACE_2_API_KEY_PARAM`), but you can use a string too to provide more meaningful identifiers. If you decide to use string identifiers though, you'll have to specify the `sinks` attribute on all the forwarding rules, since the default value when the attribute is not present is `1`.
+
+## Forward logs from S3 buckets on different AWS regions
+
+You may want to forward logs from S3 buckets in a different AWS region to the one where you have deployed the `dynatrace-aws-s3-log-forwarder`. To achieve this you have two options:
+
+1. Deploy an instance of the `dynatrace-aws-s3-log-forwarder` on each AWS region where you have S3 buckets with logs.
+2. Deploy Amazon EventBridge rules on the regions where the S3 buckets are to forward events to the AWS region where you deployed the `dynatrace-aws-s3-log-forwarder`.
+
+Considering that all the AWS components used on the solution are serverless and only incur AWS costs if used (aka you won't pay for them if they're idle), option 1 is likely best if you're deployed across a small number of AWS regions.
+
+If you have S3 buckets with logs across a large number of AWS regions, you may want to centralize log forwarding on a single AWS region to avoid the overhead of deploying and managing multiple S3 log forwarders. In this case, you will need to configure Amazon EventBridge rules on each region to forward S3 Object Created notifications for the required buckets to the default event bus on the AWS region where you have deployed the `dynatrace-aws-s3-log-forwarder`.
+
+For each S3 bucket located in a different AWS region, follow the below steps:
+
+1. Deploy the `eventbridge-cross-region-forward-rules.yaml` CloudFormation template. This template will deploy an Amazon EventBridge rule to forward S3 Object Created notifications for the bucket and optional prefixes defined, as well as a required IAM role for EventBridge to forward the notifications to the destination region. You can deploy the template executing the following command:
+
+    ```bash
+    aws cloudformation deploy \
+      --template-file eventbridge-cross-region-forward-rules.yaml \
+      --stack-name dynatrace-aws-s3-log-forwarder-cross-region-notifications-<name-of-your-s3-bucket> \
+      --parameter-overrides DynatraceAwsS3LogForwarderAwsRegion=<aws-region-where-the-dynatrace-aws-s3-log-forwarder-is-deployed> \
+          LogsBucketName=<name-of-your-s3-bucket> \
+          LogsBucketPrefix1=<your_s3_prefix1>/ \
+          LogsBucketPrefix2=<your_s3_prefix2>/ \
+          ...
+          LogsBucketPrefix10=<your_s3_prefix1>10/ \
+      --capabilities CAPABILITY_IAM \
+      --region <aws-region-where-the-s3-bucket-is>
+    ```
+
+    **NOTE:** LogBucketPrefix# parameters are optional. If you don't specify any, S3 Object Created notifications will be sent for any object created on the S3 bucket.
+
+1. Once the above stack is deployed, go to your S3 bucket(s) and enable notifications via EventBridge following instructions [here](https://docs.aws.amazon.com/
+AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html).
+
+1. Last, deploy the `s3-log-forwarder-bucket-config-template.yaml` CloudFormation template on the AWS region where the `dynatrace-aws-s3-log-forwarder` is deployed. This template will deploy the required local Amazon EventBridge rules to send the cross-region forwarded notifications to the S3 forwarder Amazon SQS queue, as well as grant IAM permissions to the AWS Lambda function to access your S3 bucket. If you have defined prefixes on the first step, make sure you specify the same prefixes when deploying this stack.
+
+      ```bash
+      aws cloudformation deploy \
+        --template-file s3-log-forwarder-bucket-config-template.yaml \
+        --stack-name dynatrace-aws-s3-log-forwarder-s3-bucket-configuration-<your_bucket_name> \
+        --parameter-overrides DynatraceAwsS3LogForwarderStackName=<name_of_your_log_forwarder_stack> \
+            LogsBucketName=<s3_bucket_name> \
+            LogsBucketPrefix1=<your_s3_prefix1>/ \
+            LogsBucketPrefix2=<your_s3_prefix2>/ \
+            (...)
+            LogsBucketPrefix10=<your_s3_prefix10>/ \
+        --capabilities CAPABILITY_IAM \
+        --region <region-where-your-s3-log-forwarder-instance-is-deployed>
+      ```
+
+**NOTE:** In this case you'll incurr cross-region data transfer costs between the region where AWS Lambda forwarder function runs and the region where the S3 bucket is located, on top of data transfer between AWS Lambda and the Dynatrace tenant. For more detailed information, check the [AWS Pricing website](https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer).
+
+## Forward logs from S3 buckets on different AWS accounts
+
+At the moment, the `dynatrace-aws-s3-log-forwarder` doesn't support cross-account S3 bucket access. If you need this feature, please file an issue and describe your use case in detail.
