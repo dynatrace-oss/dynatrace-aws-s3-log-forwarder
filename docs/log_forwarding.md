@@ -2,7 +2,7 @@
 
 Log forwarding rules are stored within the `config/log_forwarding_rules` directory. You can also modify the location of log forarding rules declaring the environment variable `LOG_FORWARDING_RULES_PATH`. Each origin Amazon S3 bucket from which you want to forward logs from to Dynatrace requires a rule file within the directory with the format `<bucket_name>.yaml`. If the Lambda function receives an S3 Object created notification and the object S3 Key doesn't match any of the rules defined for the bucket, the object is dropped.
 
-Log Forwarding rules allow you to define custom annotations you may want to add to your logs being forwarded from S3 as well as hinting the dynatrace-aws-s3-log-forwarder whether these are AWS-vended logs (source:aws), generic logs (source: generic) or other logs that you've defined log processing rules for (source: custom). The `dynatrace-aws-s3-log-forwarder` automatically annotates logs and extracts relevant attributes for supported AWS services with fields like `aws.account.id`, `aws.region`... The currently supported AWS-vended logs are:
+Log Forwarding rules allow you to define custom annotations you may want to add to your logs being forwarded from S3 as well as hinting the `dynatrace-aws-s3-log-forwarder` whether these are AWS-vended logs (source:aws), generic logs (source: generic) or other logs that you've defined log processing rules for (source: custom). The `dynatrace-aws-s3-log-forwarder` automatically annotates logs and extracts relevant attributes for supported AWS services with fields like `aws.account.id`, `aws.region`... The currently supported AWS-vended logs are:
 
 * CloudTrail
 * Application Load Balancer
@@ -44,21 +44,19 @@ As an example, if you consolidate logs under a single bucket for multiple accoun
   
 With the above configuration, logs will be shipped to Dynatrace tenants configured on sinks `1` and `2` and log entries will have 'environment: dev' added as an attribute.
 
-You can still ingest non-supported AWS-vended logs. When you specify `aws` as source, S3 keys are matched against the known S3 key format for the supported service logs. If the S3 keys don't match the known formats, the solution will still forward the logs as generic logs (i.e. without enriching the log with attributes). You can also define your own log processing rules to extend the existing functionality. You can find more information on the [log_processing](log_processing.md) logs.
+You can still ingest non-supported AWS-vended logs. When you specify `aws` as source, S3 keys are matched against the known S3 key format for the supported service logs. If the S3 keys don't match the known formats, the solution will still forward the logs as generic logs (i.e. without enriching the log with attributes).
 
 If you're ingesting non-supported AWS-vended logs, we recommend you to configure the log source as `generic` so you can add a log.source annotation and use [Dynatrace log processing](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing) for attribute extraction.  Sample rule below:
 
 ```yaml
 - rule_name: fwd_vpc_flow_logs
-  # Match any CloudTrail and ELB logs for any AWS account in this bucket
-  prefix: "^AWSLogs/.*/(vpcflowlogs)/.*"
+  prefix: "^AWSLogs/.*/vpcflowlogs/.*"
   source: generic
   annotations: 
     log.source: aws.vpcflowlogs
-    environment: dev
 ```
 
-With the above rule, you can then create a rule in your Dynatrace tenant log processing that extracts attributes for any logs with attribute `log.source: aws.vpcflowlogs`
+With the above rule, you can then create a rule in your Dynatrace tenant log processing that extracts attributes for any logs with attribute `log.source: aws.vpcflowlogs`. For more information, check the details on the [log_processing](log_processing.md#ingesting-logs-as-generic-and-perform-attribute-extraction-with-the-dynatrace-log-processing-pipeline) docs.
 
 The Log forwarding rules allow also for fine-grained content filtering with the prefix field, which is a regular expression matched against the Amazon S3 Key name of your logs. While Amazon EvenBridge rules allows you to narrow down the S3 Object Created notifications that are sent to the `dynatrace-aws-s3-log-forwarder` to process; they don't allow for complex expressions (e.g. they don't support wildcard). See the [EventBridge documentation](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html) for more details.  
 
