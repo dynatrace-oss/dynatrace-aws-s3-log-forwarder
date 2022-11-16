@@ -46,15 +46,17 @@ class LogForwardingRule:
             if not isinstance(i,str):
                 raise ValueError(f"{i} is not a str.")
         
-        if self.source != "custom" and self.source_name is not None:
-            raise ValueError("Source name must be 'None' for non custom sources.")
+        if self.source == "aws" and self.source_name is not None:
+            raise ValueError("Source name must be 'None' for aws sources.")
         elif self.source == 'custom' and self.source_name is None:
             raise ValueError("source_name requires a value when source is 'custom'")
 
     def __post_init__(self):
-        self.validate()
         if self.sinks is None:
             object.__setattr__(self,"sinks",["1"])
+        if self.source == "generic" and self.source_name is None:
+            object.__setattr__(self,"source_name","generic")
+        self.validate()
 
 
     def match(self, key_name):

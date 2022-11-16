@@ -30,13 +30,18 @@ class LogProcessingRule:
     source: str
     known_key_path_pattern: str
     log_format: str
-    # if json, a key may contain the list of log entries
+    # if json_stream, we may want to filter out specific objects from a string containing a specific key/value pair
+    filter_json_objects_key: Optional[str]
+    filter_json_objects_value: Optional[str]
+    # if json or json_stream, a key may contain the list of log entries
     log_entries_key: Optional[str]
     annotations: Optional[dict]
     requester: Optional[List[str]]
     attribute_extraction_from_key_name: Optional[dict]
     attribute_extraction_grok_expression: Optional[str]
     attribute_extraction_jmespath_expression: Optional[dict]
+    # if json_stream with log entry list, we may want to inherit attributes from top level json
+    attribute_extraction_from_top_level_json: Optional[dict]
     known_key_path_pattern_regex: re.Pattern = field(init=False)
     attribute_extraction_from_key_name_regex: re.Pattern = field(init=False)
     attribute_extraction_grok_object: Grok = field(init=False)
@@ -53,16 +58,28 @@ class LogProcessingRule:
 
         # validate optional strings
         for i in [self.attribute_extraction_grok_expression,
-                  self.log_entries_key]:
+                  self.log_entries_key,self.filter_json_objects_key,
+                  self.filter_json_objects_value]:
             if not (isinstance(i,str) or i is None):
                 raise ValueError(f"{i} is not a string.")
 
         # validate optional dicts
         for i in [self.annotations, self.attribute_extraction_from_key_name,
-                  self.attribute_extraction_jmespath_expression,]:
+                  self.attribute_extraction_jmespath_expression,
+                  self.attribute_extraction_from_top_level_json]:
             if not (isinstance(i,dict) or i is None):
                 raise ValueError(f"{i} is not a dict.")
         
+        # validate attribute extraction from top level json
+        if (self.attribute_extraction_from_top_level_json and self.log_format != "json_stream" and
+           self.log_entries_key is None):
+            raise ValueError("attribute_extraction_from_top_level_json is only valid for JSON Stream with JSON list entries")
+        
+        #validate filter json key-value if not None
+        if self.filter_json_objects_key:
+            if not self.filter_json_objects_value:
+                raise ValueError("filter_json_objects_value can't be None if filter_json_objects_key is specified")
+
         # validate optional lists
         if not (isinstance(self.requester,list) or self.requester is None):
             raise ValueError("requester is not a list.")
@@ -72,8 +89,8 @@ class LogProcessingRule:
                     raise ValueError("requester list contains non-string items")
 
         # validate log format
-        if self.log_format not in ['text', 'json']:
-            raise ValueError("log_format must be either text or json.")
+        if self.log_format not in ['text', 'json', 'json_stream']:
+            raise ValueError("log_format must be either text, json or json_stream.")
 
     def __post_init__(self):
         self.validate()

@@ -9,7 +9,7 @@ Log Forwarding rules allow you to define custom annotations you may want to add 
 * Network Load Balancer
 * Classic Load Balancer
 
-If you're ingesting other logs, you can just ingest them as `generic` logs and [configure Dynatrace to process the logs](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing) or query them with [DQL](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing/log-processing-commands). If needed, you can also extend the log processing functionality of this solution defining your own log processing rules. For more information, visit the [log_processing](log_processing.md).
+For any other logs you may want to ingest from S3, you can just ingest any text-based logs as `generic` logs (source: generic) and stream of JSON entries logs as `generic_json_stream` (source: generic, source_name: generic_json_stream). Then, you can [configure Dynatrace to process the logs at ingestion time](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing) to enrich them or parse them at query time with [DQL](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing/log-processing-commands). If you need extra-processing done on the Lambda function (e.g. extract log entries from a list in a JSON key), you can also extend the log processing functionality of this solution defining your own log processing rules. For more information, visit the [log_processing](log_processing.md).
 
 ## Configuring log forwarding rules
 
@@ -132,8 +132,7 @@ For each S3 bucket located in a different AWS region, follow the below steps:
 
     **NOTE:** LogBucketPrefix# parameters are optional. If you don't specify any, S3 Object Created notifications will be sent for any object created on the S3 bucket.
 
-1. Once the above stack is deployed, go to your S3 bucket(s) and enable notifications via EventBridge following instructions [here](https://docs.aws.amazon.com/
-AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html).
+1. Once the above stack is deployed, go to your S3 bucket(s) and enable notifications via EventBridge following instructions [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html).
 
 1. Last, deploy the `s3-log-forwarder-bucket-config-template.yaml` CloudFormation template on the AWS region where the `dynatrace-aws-s3-log-forwarder` is deployed. This template will deploy the required local Amazon EventBridge rules to send the cross-region forwarded notifications to the S3 forwarder Amazon SQS queue, as well as grant IAM permissions to the AWS Lambda function to access your S3 bucket. If you have defined prefixes on the first step, make sure you specify the same prefixes when deploying this stack.
 
