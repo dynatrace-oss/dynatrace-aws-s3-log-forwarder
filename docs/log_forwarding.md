@@ -9,7 +9,7 @@ Log Forwarding rules allow you to define custom annotations you may want to add 
 * Network Load Balancer
 * Classic Load Balancer
 
-If you're ingesting other logs, you can just ingest them as `generic` logs and [configure Dynatrace to process the logs](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing) or query them with [DQL](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing/log-processing-commands). If needed, you can also extend the log processing functionality of this solution defining your own log processing rules. For more information, visit the [log_processing](log_processing.md).
+For any other logs you may want to ingest from S3, you can just ingest any text-based logs as `generic` logs (source: generic) and stream of JSON entries logs as `generic_json_stream` (source: generic, source_name: generic_json_stream). Then, you can [configure Dynatrace to process the logs at ingestion time](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing) to enrich them or parse them at query time with [DQL](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing/log-processing-commands). If you need extra-processing done on the Lambda function (e.g. extract log entries from a list in a JSON key), you can also extend the log processing functionality of this solution defining your own log processing rules. For more information, visit the [log_processing](log_processing.md).
 
 ## Configuring log forwarding rules
 

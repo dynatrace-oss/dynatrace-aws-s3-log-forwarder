@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-# default rule for generic logs
+# default rule for generic JSON-stream logs
 name: generic_json_stream
 
 # match anything
