@@ -132,8 +132,7 @@ For each S3 bucket located in a different AWS region, follow the below steps:
 
     **NOTE:** LogBucketPrefix# parameters are optional. If you don't specify any, S3 Object Created notifications will be sent for any object created on the S3 bucket.
 
-1. Once the above stack is deployed, go to your S3 bucket(s) and enable notifications via EventBridge following instructions [here](https://docs.aws.amazon.com/
-AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html).
+1. Once the above stack is deployed, go to your S3 bucket(s) and enable notifications via EventBridge following instructions [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html).
 
 1. Last, deploy the `s3-log-forwarder-bucket-config-template.yaml` CloudFormation template on the AWS region where the `dynatrace-aws-s3-log-forwarder` is deployed. This template will deploy the required local Amazon EventBridge rules to send the cross-region forwarded notifications to the S3 forwarder Amazon SQS queue, as well as grant IAM permissions to the AWS Lambda function to access your S3 bucket. If you have defined prefixes on the first step, make sure you specify the same prefixes when deploying this stack.
 

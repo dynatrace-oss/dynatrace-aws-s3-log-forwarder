@@ -65,7 +65,7 @@ You can ingest any text and JSON-array logs into Dynatrace as generic logs and u
 
     **Processor definition:**
 
-    ```
+    ```bash
     PARSE(content,"INT: version,SPACE,STRING: aws.account.id, SPACE,STRING: aws.eni.interfaceid,SPACE,(IPADDR: srcaddr | STRING),SPACE,(IPADDR: dstaddr|STRING),SPACE,(INT: srcport | STRING),SPACE,(INT: dstport|STRING),SPACE,(INT: protocol|STRING),SPACE,(INT: packets|STRING),SPACE,(INT: bytes|STRING),SPACE,TIMESTAMP('s'): timestamp,SPACE,TIMESTAMP('s'): end_time,SPACE,STRING: action,SPACE,STRING: log_status,EOL")
     ```
 
@@ -109,4 +109,4 @@ ttribute_extraction_from_top_level_json: Optional[dict]  # --> valid only for js
                                                          #     all the log entries
 ```
 
-You can find an example custom processing rule under `config/log_processing_rules/vpcdnsquerylogs.yaml` used to process [VPC DNS Query logs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-query-logs.html) from AWS. 
+You can find an example custom processing rule under `config/log_processing_rules/vpcdnsquerylogs.yaml` used to process [VPC DNS Query logs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-query-logs.html) from AWS.
