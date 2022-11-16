@@ -53,7 +53,8 @@ def create_log_processing_rule(rule_dict):
     required_attributes = ['name', 'source','known_key_path_pattern', 'log_format']
     optional_attributes = ['log_entries_key', 'annotations','requester',
                            'attribute_extraction_from_key_name', 'attribute_extraction_grok_expression',
-                           'attribute_extraction_jmespath_expression']
+                           'attribute_extraction_jmespath_expression', 'filter_json_objects_key',
+                           'filter_json_objects_value','attribute_extraction_from_top_level_json']
 
     for attribute in required_attributes:
         if attribute not in rule_dict.keys():
@@ -65,16 +66,19 @@ def create_log_processing_rule(rule_dict):
 
     try:
         processing_rule = LogProcessingRule(
-            rule_dict['name'],
-            rule_dict['source'],
-            rule_dict['known_key_path_pattern'],
-            rule_dict['log_format'],
-            rule_dict['log_entries_key'],
-            rule_dict['annotations'],
-            rule_dict['requester'],
-            rule_dict['attribute_extraction_from_key_name'],
-            rule_dict['attribute_extraction_grok_expression'],
-            rule_dict['attribute_extraction_jmespath_expression']
+            name= rule_dict['name'],
+            source = rule_dict['source'],
+            known_key_path_pattern = rule_dict['known_key_path_pattern'],
+            log_format = rule_dict['log_format'],
+            filter_json_objects_key = rule_dict['filter_json_objects_key'],
+            filter_json_objects_value = rule_dict['filter_json_objects_value'],
+            log_entries_key = rule_dict['log_entries_key'],
+            annotations = rule_dict['annotations'],
+            requester = rule_dict['requester'],
+            attribute_extraction_from_key_name = rule_dict['attribute_extraction_from_key_name'],
+            attribute_extraction_grok_expression = rule_dict['attribute_extraction_grok_expression'],
+            attribute_extraction_jmespath_expression = rule_dict['attribute_extraction_jmespath_expression'],
+            attribute_extraction_from_top_level_json = rule_dict['attribute_extraction_from_top_level_json']
         )
     except ValueError as e:
         raise InvalidLogProcessingRuleFile("Error parsing processing rule.")
@@ -105,7 +109,7 @@ def load_rules_from_dir(directory: str) -> dict:
                 # Check that source on the rule is valid. (custom is custom.name)
                 source = processing_rule_dict['source'].split('.')[0]
                 if source not in AVAILABLE_LOG_SOURCES:
-                    raise InvalidLogProcessingRuleFile(file=rule_file,message="Invalid log source on rule file.")
+                    raise InvalidLogProcessingRuleFile(file=rule_file.name,message="Invalid log source on rule file.")
 
                 log_processing_rules[source][processing_rule_dict['name']] = create_log_processing_rule(processing_rule_dict)
 
@@ -119,6 +123,9 @@ class InvalidLogProcessingRuleFile(Exception):
     def __init__(self, file=None, message='Processing rule file is invalid.'):
         self.file = file
         self.message = message
+
+    def __str__(self):
+        return f"{self.message} --> {self.file}"
 
     
 def load_built_in_rules():

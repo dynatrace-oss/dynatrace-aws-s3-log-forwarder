@@ -254,3 +254,5 @@ samconfig.toml
 
 config
 .dev
+
+tests/test_data/*
