@@ -194,13 +194,11 @@ def lookup_processing_rule(source: str , source_name: str, processing_rules: dic
     
     if not source in AVAILABLE_LOG_SOURCES or source is None:
         return None
-    elif source == 'generic':
-        return processing_rules['generic']['generic']
-    # is it a custom rule? (e.g. custom.nginx)
-    elif source == 'custom':
+    # is it a generic or custom rule? 
+    elif source == 'custom' or source == 'generic':
         try:
             logger.debug(f'Matched log processing rule {source}.{source_name}')
-            return processing_rules['custom'][source_name]
+            return processing_rules[source][source_name]
         except KeyError:
             logger.warning(f"No matching log processing rule for {source}.{source_name}."
                             "Defaulting to 'generic' log ingestion.")

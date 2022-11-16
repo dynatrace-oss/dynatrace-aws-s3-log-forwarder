@@ -12,32 +12,20 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-name: cwl_to_fh
+name: vpcdnsquerylogs
 known_key_path_pattern: '^.*'
 source: custom
 
 log_format: json_stream
 
-# from the stream of JSON objects, just select the ones with messageType: DATA_MESSAGE
-# (CWL sends CONTROL_MESSAGE messages to check deliverability to Firehose)
-filter_json_objects_key: messageType
-filter_json_objects_value: DATA_MESSAGE
-
-# Within each JSON object in the stream, iterate through logEvents
-log_entries_key: logEvents
-
 annotations:
-  log.source: aws.cloudwatch_logs
+  log.source: aws.vpcdnsquerylogs
   cloud.provider: aws
 
-# From each JSON object within the stream, inherit the below attributes
-attribute_extraction_from_top_level_json:
-  owner: aws.account.id
-  logGroup: aws.cwl.log_group
-  logStream: aws.cwl.log_stream
 
 # map message keys to DT LogsV2 API format  
 attribute_extraction_jmespath_expression:
-  timestamp: timestamp
-  content: message
-  aws.cwl.event_id: id
+  timestamp: query_timestamp
+  aws.account.id: account_id
+  aws.region: region
+  aws.vpc_id: vpc_id
