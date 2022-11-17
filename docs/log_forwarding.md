@@ -230,13 +230,15 @@ On multi-account scenarios, you may want to centralize log forwarding to Dynatra
     ```yaml
     aws cloudformation deploy \
           --template-file eventbridge-cross-account-forward-rules.yaml \
-          --stack-name dynatrace-aws-s3-log-forwarder-cross-account-notifications-mybucketname \
+          --stack-name dynatrace-aws-s3-log-forwarder-cross-account-notifications-<s3_bucket_name> \
           --parameter-overrides DynatraceAwsS3LogForwarderAwsRegion={aws-region} \
               DynatraceAwsS3LogForwarderAwsAccountId={aws_account_id} \
-              LogsBucketName=mybucketname \
-              LogsBucketPrefix1=dev/ \
-              LogsBucketPrefix2=test/ \
-              LogsBucketPrefix3=pro/  \
+              LogsBucketName=<s3_bucket_name> \
+              LogsBucketPrefix1=<your_s3_prefix1>/ \
+              LogsBucketPrefix2=<your_s3_prefix2>/ \
+              LogsBucketPrefix3=<your_s3_prefix3>/  \
+              (...)
+              LogsBucketPrefix10=<your_s3_prefix10>/ \
           --capabilities CAPABILITY_IAM \
           --region {region_of_your_s3-bucket}
     ```
