@@ -150,8 +150,110 @@ For each S3 bucket located in a different AWS region, follow the below steps:
         --region <region-where-your-s3-log-forwarder-instance-is-deployed>
       ```
 
+1. Create a log forwarding rules configuration file for your bucket and deploy it.
+
 **NOTE:** In this case you'll incurr cross-region data transfer costs between the region where AWS Lambda forwarder function runs and the region where the S3 bucket is located, on top of data transfer between AWS Lambda and the Dynatrace tenant. For more detailed information, check the [AWS Pricing website](https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer).
 
 ## Forward logs from S3 buckets on different AWS accounts
 
-At the moment, the `dynatrace-aws-s3-log-forwarder` doesn't support cross-account S3 bucket access. If you need this feature, please file an issue and describe your use case in detail.
+On multi-account scenarios, you may want to centralize log forwarding to Dynatrace on a specific AWS account. In order to have the `dynatrace-aws-s3-log-forwarder` forwarding logs from a bucket in a different AWS, you need to configure the following (**IMPORTANT NOTE**: this example configuration and the CloudFormation templates provided use the default event bus of Amazon EventBridge. On a complex and large multi-account setup, you may want to create a dedicated Event bus for S3 log forwarding cross-account and cross-region):
+
+1. The S3 bucket on the source AWS account must be configured with [ACLs disabled](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-ownership-existing-bucket.html), so you can use an S3 bucket policy to grant permissions to the log forwarder function IAM role on the central account. Your bucket policy will look like this:
+
+    ```yaml
+    {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowDTS3LogFwderAccess",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::<aws_account_id_where_the_log_forwarder_is>:role/<your_s3_log_forwarder_iam_role_name>"
+            },
+            "Action": [
+                "s3:GetObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::<bucket_name>/*"
+            ]
+        }
+      ]
+    }
+    ```
+
+    **NOTE:** If your S3 bucket has ACLs enabled, the above policy only takes effect for objects owned by the bucket owner. As AWS logs are delivered by AWS-owned accounts, who are the owners of the log objects, the permissions granted by the bucket policy don´t apply. Disabling ACLs should meet the wide majority of use cases. If you have ACLs enabled, read the [AWS documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-ownership-existing-bucket.html) carefully before disabling them. The `dynatrace-aws-s3-log-forwarder` doesn't support accessing buckets assuming an IAM role on the destination account.
+
+1. You need to create a policy on the default event bus for Amazon EventBridge on the AWS account and region where the `dynatrace-aws-s3-log-forwarder` runs to grant permissions to the account where the bucket with the logs is to forward events. Follow the instructions [here](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cross-account.html#eb-receiving-events-from-another-account). Your policy should look like the one below:
+
+    ```json
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+      
+          "Sid": "allow_account_to_put_events",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": "<aws_account_id_where_the_s3_bucket_is>"
+          },
+          "Action": "events:PutEvents",
+          "Resource": "arn:aws:events:<aws_region_where_the_forwarder_runs>:<aws_account_id_where_the_forwarder_runs>:event-bus/default"
+        }
+      ]
+    }
+    ```
+
+    **NOTE:** If you have a large number of AWS accounts, you can permissions to all the AWS accounts in your AWS Organization with the aws:PrincipalOrgID condition:
+
+    ```yaml
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "allow_all_accounts_from_organization_to_put_events",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "events:PutEvents",
+          "Resource": "arn:aws:events:<aws_region_where_your_log_forwarder_is>:<aws_account_id_where_your_log_forwarder_is>:event-bus/default",
+          "Condition": {
+            "StringEquals": {
+              "aws:PrincipalOrgID": "<ORGANIZATION_ID>"
+              }
+          }
+        }  
+      ]
+    }  
+    ````
+
+1. On the AWS account where the S3 bucket is, [enable S3 notifications](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html) to Amazon EventBridge on the bucket. Then create an EventBridge rule that forwards S3 Object Created notifications to the default event bus in the AWS account and region where the log forwarder is deployed. You can do so deploying the following CloudFormation template:
+
+    ```yaml
+    aws cloudformation deploy \
+          --template-file eventbridge-cross-account-forward-rules.yaml \
+          --stack-name dynatrace-aws-s3-log-forwarder-cross-account-notifications-mybucketname \
+          --parameter-overrides DynatraceAwsS3LogForwarderAwsRegion={aws-region} \
+              DynatraceAwsS3LogForwarderAwsAccountId={aws_account_id} \
+              LogsBucketName=mybucketname \
+              LogsBucketPrefix1=dev/ \
+              LogsBucketPrefix2=test/ \
+              LogsBucketPrefix3=pro/  \
+          --capabilities CAPABILITY_IAM \
+          --region {region_of_your_s3-bucket}
+    ```
+
+1. Now, on the AWS account and region where the `dynatrace-aws-s3-log-forwarder` is running, deploy the `s3-log-forwarder-bucket-config-template.yaml` CloudFormation template to configure the local EventBridge rule to forward notifications to SQS for the log forwarder to pick them up.
+
+    ```bash
+    aws cloudformation deploy \
+        --template-file s3-log-forwarder-bucket-config-template.yaml \
+        --stack-name dynatrace-aws-s3-log-forwarder-s3-bucket-configuration-<your_bucket_name> \
+        --parameter-overrides DynatraceAwsS3LogForwarderStackName=<name_of_your_log_forwarder_stack> \
+            LogsBucketName=<s3_bucket_name> \
+            LogsBucketPrefix1=<your_s3_prefix1>/ \
+            LogsBucketPrefix2=<your_s3_prefix2>/ \
+            (...)
+            LogsBucketPrefix10=<your_s3_prefix10>/ \
+        --capabilities CAPABILITY_IAM
+    ```
+
+1. Create a forwarding rules file on your log forwarder configuration with the required rules, and deploy it.
