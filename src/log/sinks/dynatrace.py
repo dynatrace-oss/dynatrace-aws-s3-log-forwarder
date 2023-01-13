@@ -116,8 +116,6 @@ class DynatraceSink():
             json.dumps(message).encode(ENCODING))
 
     def flush(self):
-        metrics.add_metric(name='ReceivedUncompressedLogFileSize',
-                           unit=MetricUnit.Bytes, value=self._approx_buffered_messages_size)
         if not self.is_empty():
             self.ingest_logs(self._messages, batch_num=self._batch_num,session=self.session)
         self._messages = []

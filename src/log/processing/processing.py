@@ -15,6 +15,7 @@
 
 import logging
 from os import environ
+import sys
 import time
 import json
 import gzip
@@ -126,9 +127,11 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
 
     # Count log entries (can't len() a stream)
     num_log_entries = 0
+    decompressed_log_object_size = 0
 
     for log_entry in log_entries:
-    
+
+        decompressed_log_object_size += sys.getsizeof(log_entry)
         dt_log_message = {}
         
         # start with the json_list within json_stream case as it requires a
@@ -168,7 +171,7 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
 
                     num_log_entries += 1
             else:
-                logger.warning(f'Log entry was expected to be dict, but is {type(log_entry)}')
+                logger.error(f'Log entry was expected to be dict, but is {type(log_entry)}')
                 metrics.add_metric(name='FilesWithInvalidLogEntries',
                     unit=MetricUnit.Count, value=1)
                 raise ValueError("Json Stream message didn't return a dict")
@@ -230,6 +233,9 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
     end_time = time.time()
     metrics.add_metric(name='LogProcessingTime',
                        unit=MetricUnit.Seconds, value=(end_time - start_time))
+    metrics.add_metric(name='ReceivedUncompressedLogFileSize',
+                        unit=MetricUnit.Bytes, value=decompressed_log_object_size)
+                        
     # return number of log entries processed
     return(num_log_entries)
 
