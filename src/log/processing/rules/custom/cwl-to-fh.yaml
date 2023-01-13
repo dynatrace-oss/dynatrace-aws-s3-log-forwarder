@@ -33,8 +33,8 @@ annotations:
 # From each JSON object within the stream, inherit the below attributes
 attribute_extraction_from_top_level_json:
   owner: aws.account.id
-  logGroup: aws.cwl.log_group
-  logStream: aws.cwl.log_stream
+  logGroup: aws.log_group
+  logStream: aws.log_stream
 
 # map message keys to DT LogsV2 API format  
 attribute_extraction_jmespath_expression:
