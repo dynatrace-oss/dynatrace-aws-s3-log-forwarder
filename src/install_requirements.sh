@@ -41,7 +41,10 @@ function install_lambda_insights() {
 }
 
 pip install --no-cache-dir --upgrade pip
-pip install --no-cache-dir -r requirements.txt --target "${LAMBDA_TASK_ROOT}"
+
+# jsonslicer and pygrok have no wheel, add --use-pep517 https://github.com/pypa/pip/issues/8559
+# https://github.com/AMDmi3/jsonslicer/issues/56
+pip install --no-cache-dir -r requirements.txt --target "${LAMBDA_TASK_ROOT}" --use-pep517
 
 if [[ $ENV == "DEV" ]]; then
   pip install --no-cache-dir -r requirements-dev.txt --target "${LAMBDA_TASK_ROOT}"
