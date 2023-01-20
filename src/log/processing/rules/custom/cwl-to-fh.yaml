@@ -40,4 +40,4 @@ attribute_extraction_from_top_level_json:
 attribute_extraction_jmespath_expression:
   timestamp: timestamp
   content: message
-  aws.cwl.event_id: id
+  aws.log_event_id: id
