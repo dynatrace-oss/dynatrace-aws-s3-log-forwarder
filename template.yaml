@@ -71,6 +71,10 @@ Parameters:
       - "true"
       - "false"
     Default: "false"
+  MaximumLambdaConcurrency:
+    Description: Maximum number of Lambda functions running concurrently. The concurrency is reserved for the queue processing function, so it's guaranteed. 
+    Type: Number
+    Default: "30"
 
 Conditions:
   SecondDTEnvironmentSpecified: !Not [!Equals [!Ref DynatraceEnvironment2URL, "" ]]
@@ -123,6 +127,7 @@ Resources:
         - SSMParameterReadPolicy:
             ParameterName: !Sub dynatrace/s3-log-forwarder/${AWS::StackName}/*
         - !If [ LambdaInsightsEnabled, "arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy" , !Ref "AWS::NoValue"] 
+      ReservedConcurrentExecutions: !Ref MaximumLambdaConcurrency
 
   S3NotificationsQueue:
     Type: AWS::SQS::Queue
