@@ -228,14 +228,14 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
             if lambda_context.get_remaining_time_in_millis() <= EXECUTION_REMAINING_TIME_LIMIT :
                 raise NotEnoughExecutionTimeRemaining
 
-    logger.debug(f"Total log entries processed in batch: {num_log_entries}")
+    logger.info(f"Total log entries processed: {num_log_entries}")
 
     end_time = time.time()
     metrics.add_metric(name='LogProcessingTime',
                        unit=MetricUnit.Seconds, value=(end_time - start_time))
     metrics.add_metric(name='ReceivedUncompressedLogFileSize',
                         unit=MetricUnit.Bytes, value=decompressed_log_object_size)
-                        
+
     # return number of log entries processed
     return(num_log_entries)
 

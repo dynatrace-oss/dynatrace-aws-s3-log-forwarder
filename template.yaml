@@ -85,6 +85,10 @@ Parameters:
     Description: Maximum execution time in seconds for the Lambda processing function (configure a value that allows enough time to process the number of messages configured on LambdaSQSMessageBatchSize)
     Default: "300"
     MaxValue: "900"
+  SQSVisibilityTimeout:
+    Type: Number
+    Description: "Visibility timeout. This value must be greater than the Lambda Execution timeout: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html"
+    Default: "420"
   SQSLongPollingMaxSeconds:
     Type: Number
     Description: Maximum seconds to wait for messages during ReceiveMessage long polling requests to receive up to SQSMessageBatchSize number of messages.
@@ -93,11 +97,19 @@ Parameters:
   MaximumSQSMessageRetries:
     Type: Number
     Description: Maximum number of retries for failed processing of S3 Object Created notification messages
-    Default: "3"
+    Default: "2"
+  EnableCrossRegionCrossAccountForwarding:
+    Type: String
+    Description: Create a dedicated event bus to receive and manage cross-region and cross-account S3 Object Created notifications
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
   
 Conditions:
   SecondDTEnvironmentSpecified: !Not [!Equals [!Ref DynatraceEnvironment2URL, "" ]]
   LambdaInsightsEnabled: !Equals [ !Ref EnableLambdaInsights, "true" ]
+  CrossRegionCrossAccountForwardingIsEnabled: !Equals [ !Ref EnableCrossRegionCrossAccountForwarding, "true" ]
 
 Globals:
   Function:
@@ -154,7 +166,7 @@ Resources:
       # Use crafted queue name to avoid circular dependency with RedriveAllowPolicy
       QueueName: !Sub ${AWS::StackName}-S3NotificationsQueue
       ReceiveMessageWaitTimeSeconds: !Ref SQSLongPollingMaxSeconds
-      VisibilityTimeout: !Ref LambdaMaximumExecutionTime
+      VisibilityTimeout: !Ref SQSVisibilityTimeout
       MessageRetentionPeriod: 43200
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt SQSDeadLetterQueue.Arn
@@ -268,6 +280,16 @@ Resources:
       AlarmActions:
         - !Ref AlarmsSNSTopic
 
+  CrossRegionCrossAccountEventBus:
+    Condition: CrossRegionCrossAccountForwardingIsEnabled
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: 
+        !Join
+          - "-"
+          - - !Sub ${AWS::StackName}
+            - cross-region-cross-account-s3-events
+
 Outputs:
   QueueProcessingFunction:
     Description: "Queue Processing Lambda Function ARN"
@@ -285,3 +307,8 @@ Outputs:
   SQSDeadLetterQueue:
     Description: "Dead letter queue for failed messages."
     Value: !GetAtt SQSDeadLetterQueue.Arn
+  CrossRegionCrossAccountEventBus:
+    Condition: CrossRegionCrossAccountForwardingIsEnabled
+    Value: !GetAtt CrossRegionCrossAccountEventBus.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}:CrossRegionCrossAccountEventBusArn
