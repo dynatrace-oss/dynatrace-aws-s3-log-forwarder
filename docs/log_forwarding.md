@@ -9,7 +9,7 @@ Log Forwarding rules allow you to define custom annotations you may want to add 
 * Network Load Balancer
 * Classic Load Balancer
 
-For any other logs you may want to ingest from S3, you can just ingest any text-based logs as `generic` logs (source: generic) and stream of JSON entries logs as `generic_json_stream` (source: generic, source_name: generic_json_stream). Then, you can [configure Dynatrace to process the logs at ingestion time](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing) to enrich them or parse them at query time with [DQL](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing/log-processing-commands). If you need extra-processing done on the Lambda function (e.g. extract log entries from a list in a JSON key), you can also extend the log processing functionality of this solution defining your own log processing rules. For more information, visit the [log_processing](log_processing.md).
+For any other logs you may want to ingest from S3, you can just ingest any text-based logs as `generic` logs (source: generic) and stream of JSON entries logs as `generic_json_stream` (source: generic, source_name: generic_json_stream). Then, you can [configure Dynatrace to process the logs at ingestion time](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing) to enrich them or parse them at query time with [DQL](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing/log-processing-commands). If you need extra-processing done on the Lambda function (e.g. extract log entries from a list in a JSON key), you can also extend the log processing functionality of this solution defining your own log processing rules. For more information, visit the [log_processing](log_processing.md) documentation.
 
 ## Configuring log forwarding rules
 
@@ -40,7 +40,7 @@ With the above configuration, logs will be shipped to Dynatrace performing attri
 
 You can still ingest non-supported AWS-vended logs. When you specify `aws` as source, S3 keys are matched against the known S3 key format for the supported service logs. If the S3 keys don't match the known formats, the solution will still forward the logs as generic logs (i.e. without parsing the log to extract attributes).
 
-If you're ingesting non-supported AWS-vended logs, we recommend you to configure the log source as `generic` so you can add a log.source annotation and use [Dynatrace log processing](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing) for attribute extraction.  Sample rule below:
+If you're ingesting non-supported AWS-vended logs, we recommend you to configure the log source as `generic` so you can add a log.source annotation and use [Dynatrace log processing](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing) for attribute extraction. Sample rule below:
 
 ```yaml
 - rule_name: fwd_vpc_flow_logs
