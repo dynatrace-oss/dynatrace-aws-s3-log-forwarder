@@ -1,9 +1,10 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >
-  dynatrace-aws-s3-log-forwarder-eventbridge-cross-region-notification-forward
+  dynatrace-aws-s3-log-forwarder-eventbridge-cross-region-notification-forward-rules
 
   This template deploys an Amazon EventBridge rule to forward S3 Object Created notifications
-  to the default event bus in the AWS region where the dynatrace-aws-s3-log-forwader is deployed
+  to the CrossRegionCrossAccount Event Bus in the AWS region where the dynatrace-aws-s3-log-forwader 
+  is deployed.
   
   For more information: https://github.com/dynatrace-oss/dynatrace-aws-s3-log-forwarder
 
@@ -26,16 +27,23 @@ Metadata:
 
   Instructions:
     Description: >
-      Deploy this template once per every Amazon S3 bucket on the AWS region you want to configure to forward logs to Dynatrace. Example AWS CLI command:
+      Deploy this template on the AWS region where your S3 bucket is (different than 
+      where the dynatrace-aws-s3-log-forwarder is deployed). LogBucketPrefix# parameters
+      are optional, only use them if you want to narrow down the ingestion to specific prefixes in your bucket.
+
+      You can find the CrossRegionCrossAccountEventBusArn on the Cloudformation outputs of your 
+      dynatrace-aws-s3-log-forwarder stack.
+      
+      Example AWS CLI command:
 
       aws cloudformation deploy \
           --template-file eventbridge-cross-region-forward-rules.yaml \
-          --stack-name dynatrace-aws-s3-log-forwarder-cross-region-notifications-mybucketname \
-          --parameter-overrides DynatraceAwsS3LogForwarderAwsRegione={aws-region} \
-              LogsBucketName=mybucketname \
-              LogsBucketPrefix1=dev/ \
-              LogsBucketPrefix2=test/ \
-              LogsBucketPrefix3=pro/  \
+          --stack-name dynatrace-aws-s3-log-forwarder-cross-region-notifications-{your-bucket-name} \
+          --parameter-overrides CrossRegionCrossAccountEventBusArn={event-bus-arn} \
+              LogsBucketName={your-bucket-name} \
+              LogsBucketPrefix1={optional-bucket-prefix-1}/ \
+              LogsBucketPrefix2={optional-bucket-prefix-2}/ \
+              LogsBucketPrefix3={optional-bucket-prefix-3}/  \
           --capabilities CAPABILITY_IAM \
           --region {region_of_your_s3-bucket}
 
@@ -43,9 +51,9 @@ Metadata:
       https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html
 
 Parameters:
-  DynatraceAwsS3LogForwarderAwsRegion:
+  CrossRegionCrossAccountEventBusArn:
     Type: String
-    Description: AWS Region code where the dynatrace-aws-s3-log-forwarder is deployed. e.g. us-east-1 
+    Description: "ARN of the dynatrace-aws-s3-log-forwarder Event Bus for cross-account and cross-region events, e.g. arn:aws:events:us-east-1:0123456789:event-bus/{your_dynatrace_aws_s3_log_forwarder_stack_name}-cross-region-cross-account-s3-events"
   LogsBucketName:
     Type: String
     Description: Name of the S3 bucket to send "New Object Created" notifications to the dynatrace-aws-s3-log-forwarder
@@ -110,8 +118,9 @@ Resources:
       Name: 
         !Join
           - "-"
-          - - "fwd-s3-object-created-to"
-            - !Ref DynatraceAwsS3LogForwarderAwsRegion
+          - - "dt-fwd-s3-object-created-events-to"
+            # Get AWS region from ARN
+            - !Select [3, !Split [':', !Ref CrossRegionCrossAccountEventBusArn]]
             # Get "random" string from AWS::StackId
             -  !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]
       EventBusName: default
@@ -164,16 +173,8 @@ Resources:
                   - prefix: !Ref LogsBucketPrefix10
                   - !Ref AWS::NoValue  
       Targets:
-        - Id: "DefaultEventBusInRegion"
-          Arn: 
-            !Join
-              - ":"
-              - - arn
-                - !Ref AWS::Partition
-                - events
-                - !Ref DynatraceAwsS3LogForwarderAwsRegion
-                - !Ref AWS::AccountId
-                - event-bus/default
+        - Id: "CrossRegionCrossAccountEventBus"
+          Arn: !Ref CrossRegionCrossAccountEventBusArn
           RoleArn: !GetAtt EventBridgeCrossRegionIamRole.Arn
 
   EventBridgeCrossRegionIamRole:
@@ -197,11 +198,4 @@ Resources:
                 Action:
                   - "events:PutEvents"
                 Resource:
-                  - !Join
-                      - ":"
-                      - - arn
-                        - !Ref AWS::Partition
-                        - events
-                        - !Ref DynatraceAwsS3LogForwarderAwsRegion
-                        - !Ref AWS::AccountId
-                        - event-bus/default
+                  - !Ref CrossRegionCrossAccountEventBusArn

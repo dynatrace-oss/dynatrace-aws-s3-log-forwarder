@@ -83,7 +83,7 @@ def lambda_handler(event, context):
         bucket_name = s3_notification['detail']['bucket']['name']
         key_name = s3_notification['detail']['object']['key']
 
-        logger.debug(
+        logger.info(
             'Processing object s3://%s/%s; posted by %s',
              bucket_name, key_name, s3_notification['detail']['requester'])
 
@@ -146,7 +146,7 @@ def lambda_handler(event, context):
                                    unit=MetricUnit.Count,value=1)
 
             else:
-                logger.debug('Could not find a matching log processing rule for source %s and key %s.',
+                logger.warning('Could not find a matching log processing rule for source %s and key %s. Skipping...',
                              matched_log_forwarding_rule.source, key_name)
                 metrics.add_metric(name="LogFilesSkipped",
                                    unit=MetricUnit.Count, value=1)

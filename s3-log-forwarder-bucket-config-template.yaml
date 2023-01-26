@@ -28,18 +28,24 @@ Metadata:
 
   Instructions:
     Description: >
-      Deploy this template once per every Amazon S3 bucket you want to configure to forward logs to Dynatrace. Example AWS CLI command:
+      Deploy this template once per every Amazon S3 bucket you want to configure to forward logs to Dynatrace. LogBucketPrefix# parameters
+      are optional, only use them if you want to narrow down the ingestion to specific prefixes in your bucket.
+      
+      Example AWS CLI command:
 
       aws cloudformation deploy \
           --template-file s3-log-forwarder-bucket-config-template.yaml \
-          --stack-name dynatrace-aws-s3-log-forwarder-s3-bucket-configuration-mybucketname \
-          --parameter-overrides DynatraceAwsS3LogForwarderStackName=dynatrace-aws-s3-log-forwarder \
-              LogsBucketName=mybucketname \
-              LogsBucketPrefix1=dev/ \
-              LogsBucketPrefix2=test/ \
-              LogsBucketPrefix3=pro/  \
+          --stack-name dynatrace-aws-s3-log-forwarder-s3-bucket-configuration-{your-bucket-name} \
+          --parameter-overrides DynatraceAwsS3LogForwarderStackName={your-dynatrace-aws-s3-log-forwarder-stack-name} \
+              LogsBucketName={your-bucket-name} \
+              LogsBucketPrefix1={optional-bucket-prefix-1}/ \
+              LogsBucketPrefix2={optional-bucket-prefix-2}/ \
+              LogsBucketPrefix3={optional-bucket-prefix-3}/  \
           --capabilities CAPABILITY_IAM
 
+      NOTE: If your S3 bucket is on a different AWS Region or AWS account, add the S3BucketIsCrossRegionOrCrossAccount=true parameter
+      don't forget to deploy the eventbridge-cross-{region|account}-forward-rules stack on AWS Region / Account where your S3 bucket issam d.
+      
       Once deployed, configure your S3 Bucket to send notifications to Amazon EventBridge following instructions here:
       https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html
 
@@ -47,6 +53,13 @@ Parameters:
   DynatraceAwsS3LogForwarderStackName:
     Type: String
     Description: Name of the CloudFormation stack where you have deployed the dynatrace-aws-s3-log-forwarder
+  S3BucketIsCrossRegionOrCrossAccount:
+    Type: String
+    Description: If the bucket is on a different AWS account or region, set this value to true
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
   LogsBucketName:
     Type: String
     Description: Name of the S3 bucket to send "New Object Created" notifications to the dynatrace-aws-s3-log-forwarder
@@ -103,6 +116,7 @@ Conditions:
   EighthS3PrefixSpecified: !Not [!Equals [!Ref LogsBucketPrefix8, ""]]
   NinethS3PrefixSpecified: !Not [!Equals [!Ref LogsBucketPrefix9, ""]]
   TenthS3PrefixSpecified: !Not [!Equals [!Ref LogsBucketPrefix10, ""]]
+  ConditionS3BucketIsCrossRegionOrCrossAccount: !Equals [ !Ref S3BucketIsCrossRegionOrCrossAccount, "true" ]
 
 Resources:
   LambdaS3Bucket1AccessIAMPolicy:
@@ -251,7 +265,14 @@ Resources:
           - - !Sub ${DynatraceAwsS3LogForwarderStackName}
             # Get "random" string from AWS::StackId
             -  !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]
-      EventBusName: default
+      # If this rule is for a cross-region or cross-account bucket, create the rule on the dedicated bus
+      EventBusName:  
+        !If 
+          - ConditionS3BucketIsCrossRegionOrCrossAccount
+          - Fn::ImportValue:
+              Fn::Sub:
+                ${DynatraceAwsS3LogForwarderStackName}:CrossRegionCrossAccountEventBusArn 
+          - default 
       State: ENABLED
       EventPattern:
         source:

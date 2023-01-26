@@ -116,8 +116,6 @@ class DynatraceSink():
             json.dumps(message).encode(ENCODING))
 
     def flush(self):
-        metrics.add_metric(name='ReceivedUncompressedLogFileSize',
-                           unit=MetricUnit.Bytes, value=self._approx_buffered_messages_size)
         if not self.is_empty():
             self.ingest_logs(self._messages, batch_num=self._batch_num,session=self.session)
         self._messages = []
@@ -185,8 +183,11 @@ class DynatraceSink():
         # Pull API Key from SSM / Cache for 2 mins
         dt_api_key = parameters.get_parameter(
             self._api_key_parameter, max_age=120, decrypt=True)
+        
+        # Find tenant ID in URL
+        tenant_id = self._environment_url[ self._environment_url.find("//") + 2: self._environment_url.find(".") ]
 
-        logger.debug('Preparing log batches to post to Dynatrace...')
+        logger.debug('Preparing log batches to post to Dynatrace: %s',tenant_id)
 
         # Create a session to re-use connections
         if session is None:
@@ -203,31 +204,31 @@ class DynatraceSink():
 
         success = False
         if resp.status_code == 204:
-            logger.debug('Successfully posted batch %d. Ingested %.2f KB of log data to Dynatrace',
-                         batch_num, (len(data) / 1024))
+            logger.debug('%s: Successfully posted batch %d. Ingested %.2f KB of log data to Dynatrace',
+                         tenant_id, batch_num, (len(data) / 1024))
             success = True
             metrics.add_metric(name='DynatraceHTTP204Success',
                                unit=MetricUnit.Count, value=1)
         elif resp.status_code == 200:
             logger.warning(
-                'Parts of batch %s were not successfully posted. %s', batch_num, resp.text)
+                '%s: Parts of batch %s were not successfully posted: %s',tenant_id, batch_num, resp.text)
             success = True
             metrics.add_metric(
                 name='DynatraceHTTP200PartialSuccess', unit=MetricUnit.Count, value=1)
         elif resp.status_code == 429:
-            logger.error("Throttled by Dynatrace. Exhausted retry attempts...")
+            logger.error("%s: Throttled by Dynatrace. Exhausted retry attempts...", tenant_id)
             metrics.add_metric(name='DynatraceHTTP429Throttled',unit=MetricUnit.Count, value=1)
             metrics.add_metric(name='DynatraceHTTPErrors', unit=MetricUnit.Count, value=1)
             raise DynatraceThrottlingException
         elif resp.status_code == 503:
-            logger.error("Usable space limit reached. Exhausted retry attempts...")
+            logger.error("%s: Usable space limit reached. Exhausted retry attempts...",tenant_id)
             metrics.add_metric(name='DynatraceHTTP503SpaceLimitReached',unit=MetricUnit.Count, value=1)
             metrics.add_metric(name='DynatraceHTTPErrors', unit=MetricUnit.Count, value=1)
             raise DynatraceThrottlingException
         else:
             logger.error(
-                "There was a HTTP %d error posting batch %d to Dynatrace. %s",
-                resp.status_code, batch_num, resp.text)
+                "%s: There was a HTTP %d error posting batch %d to Dynatrace. %s",
+                tenant_id,resp.status_code, batch_num, resp.text)
             metrics.add_metric(name='DynatraceHTTPErrors',
                                unit=MetricUnit.Count, value=1)
             raise DynatraceIngestionException
