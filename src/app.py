@@ -63,8 +63,7 @@ def generate_execution_timeout_batch_item_failures(index: int, batch_item_failur
 
     return batch_item_failures
 
-@metrics.log_metrics
-def lambda_handler(event, context):
+def reload_log_forwarding_rules():
 
     if os.environ['LOG_FORWARDER_CONFIGURATION_LOCATION'] == "aws-appconfig":
         global defined_log_forwarding_rules
@@ -73,11 +72,20 @@ def lambda_handler(event, context):
             # Check if we need to reload log forwarding rules
             log_forwarding_rules_configuration_profile = aws_appconfig_helpers.get_configuration_from_aws_appconfig('log-forwarding-rules')
             if log_forwarding_rules_configuration_profile['Configuration-Version'] != current_log_forwarding_rules_version:
-                logger.info("New log-forwarding-rules configuration version found. Loading version %s ...", 
+                logger.info("New log-forwarding-rules configuration version found. Loading version %s ...",
                             str(log_forwarding_rules_configuration_profile['Configuration-Version']))
-                defined_log_forwarding_rules, current_log_forwarding_rules_version = log_forwarding_rules.load()
+                defined_log_forwarding_rules, current_log_forwarding_rules_version, _ = log_forwarding_rules.load()
+                return True
+
         except aws_appconfig_helpers.ErrorAccessingAppConfig:
             logger.exception("Unable to reload log-forwarder-rules from AWS AppConfig")
+
+    return False
+
+@metrics.log_metrics
+def lambda_handler(event, context):
+
+    reload_log_forwarding_rules()
 
     logger.debug(json.dumps(event, indent=2))
 
