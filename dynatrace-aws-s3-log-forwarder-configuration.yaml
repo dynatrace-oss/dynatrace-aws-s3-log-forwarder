@@ -37,7 +37,7 @@ Metadata:
       aws cloudformation deploy \
           --template-file dynatrace-aws-s3-log-forwarder-configuration.yaml \
           --stack-name dynatrace-aws-s3-log-forwarder-configuration-{your-log-forwarder-stack-name-here} \
-          --parameter-overrides DynatraceAwsS3LogForwarderStackName={your-log-forwarder-stack-name-here} \
+          --parameter-overrides DynatraceAwsS3LogForwarderStackName={your-log-forwarder-stack-name-here} 
 
 Parameters:
   DynatraceAwsS3LogForwarderStackName:
@@ -58,11 +58,12 @@ Resources:
       ContentType: application/x-yaml
       Content: |
         ---
-        default:
-          - rule_name: default_forward_all
+        bucket_name: default
+        log_forwarding_rules:
+          - name: default_forward_all
             # Match any file in your buckets
             prefix: ".*"
-            # Process as AWS-vended log (automatic fallback to generic text log ingestion if log is not recognized)
+            # Process as AWS-vended log (automatic fallback to generic text log ingestion if log is not recognized).
             source: aws
 
   LogProcessingRulesHostedConfiguration:

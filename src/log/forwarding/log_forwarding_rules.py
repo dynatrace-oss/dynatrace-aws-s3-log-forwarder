@@ -20,6 +20,7 @@ import yaml
 
 from . import LogForwardingRule
 from utils.helpers import is_yaml_file
+from utils import aws_appconfig_extension_helpers as aws_appconfig_helpers
 from log.processing.log_processing_rules import AVAILABLE_LOG_SOURCES
 from utils.helpers import ENCODING
 
@@ -30,10 +31,55 @@ logger = logging.getLogger()
 
 def load():
     '''
+    Loads log forwarding rules from AWS Config or from local file. Only use this method for 
+    lambda startup.
+    '''
+    if os.environ.get('LOG_FORWARDER_CONFIGURATION_LOCATION') == 'aws-appconfig':
+        return (*load_forwarding_rules_from_aws_appconfig(), 'aws-appconfig')
+    elif os.environ.get('LOG_FORWARDER_CONFIGURATION_LOCATION') == 'local':
+        return (*load_forwading_rules_from_local_folder(), 'local')
+
+def load_forwarding_rules_from_aws_appconfig():
+    '''
+    Loads log forwarding rules from AWS AppConfig using its AWS Lambda extension
+    '''
+
+    logger.info("Loading log-forwarding-rules from AWS AppConfig...")
+
+    raw_forwarding_rules = aws_appconfig_helpers.get_configuration_from_aws_appconfig('log-forwarding-rules')
+
+    log_forwarding_rules = {}
+
+    try:
+        yaml_iterator = yaml.load_all(raw_forwarding_rules['Body'],Loader=yaml.SafeLoader)
+        for y in yaml_iterator:
+            if isinstance(y,dict):
+                try:
+                    log_forwarding_rules[y['bucket_name']] = {}
+                    logger.info("Loading log-forwarding-rules for S3 bucket: %s", y['bucket_name'])
+                    if isinstance(y['log_forwarding_rules'],list):
+                        for rule in y['log_forwarding_rules']:
+                            log_forwarding_rules[y['bucket_name']][rule['name']] = _create_log_forwarding_rule_object(rule)
+                            logger.info("Loaded log-forwarding-rule: %s", rule['name'])
+                except KeyError:
+                    logger.exception("Skipping incorrect log forwarding rules")
+                except IncorrectLogForwardingRuleFormat:
+                    logger.exception("Skipping incorrect log forwarding rule")
+
+    except yaml.YAMLError:
+        logger.exception("Encountered an error while parsing load-forarding-rules. Aborting...")
+
+    return log_forwarding_rules , raw_forwarding_rules['Configuration-Version']
+
+def load_forwading_rules_from_local_folder():
+
+    '''
     Loads log forwarding rules from config/log_forwarding_rules directory.
     Returns a dictionary with bucket_names as keys and the rules as value:
     { bucket_a: { rule_name: LogForwardingRule }, bucket_b: {...}}
     '''
+
+    logger.info("Loading log-forwarding-rules from local folder...")
 
     if 'LOG_FORWARDING_RULES_PATH' in os.environ:
         log_forwarding_rules_directory = os.environ['LOG_FORWARDING_RULES_PATH']
@@ -89,30 +135,33 @@ def load():
                             'Loading rule: %s from file: %s',
                             rule, rule_config_file_path)
                         rule_obj = _create_log_forwarding_rule_object(rule)
+                        # temporary assignment while legacy and new schema of log forwarding rules co-live
+                        rule_obj['name'] = rule_obj['rule_name']
                         log_forwarding_rules[bucket_name][rule['rule_name']] = rule_obj
-                    except IncorrectLogForwardingRuleFormat as e:
+                    except IncorrectLogForwardingRuleFormat as ex:
                         logger.warning(
                             'Skipping incorrect log forwarding rule: %s in %s', rule, rule_file.name)
-                        logger.error(e)
+                        logger.error(ex)
                         continue
 
-        except InvalidLogForwardingRuleFile as e:
+        except InvalidLogForwardingRuleFile as ex:
             logger.exception(
                 'Invalid forwarding rules file: %s',
-                e.file)
+                ex.file)
             continue
 
-        except Exception as e:
+        except Exception as ex:
             logger.exception(
                 'Failed to load configuration file: %s. %s',
-                rule_config_file_path, e)
+                rule_config_file_path, ex)
             continue
-
-    return log_forwarding_rules
+    
+    return log_forwarding_rules, None
 
 def get_matching_log_forwarding_rule(bucket_name, key_name, log_forwarding_rules):
     '''
     Checks against existing log forwarding rules for bucket name. If there's a match, returns the LogForwardingRule object.
+    If there's no explicit rules for the bucket, but there's a default definition, try to match against default rules.
     It only checks the first rule that matches (if key matches multiple rules).
     If there's no match, returns None.
     '''
@@ -121,9 +170,15 @@ def get_matching_log_forwarding_rule(bucket_name, key_name, log_forwarding_rules
             if rule.match(key_name):
                 return rule
     except KeyError:
+        # if there's no explicit rules for this bucket, but there's a default bucket defined, try to match with rules
+        if log_forwarding_rules.get('default',False):
+            for rule_name, rule in log_forwarding_rules['default'].items():
+                if rule.match(key_name):
+                    return rule
         return None
 
     return None
+
 class IncorrectLogForwardingRuleFormat(Exception):
     '''
     Exception raised for formatting errors with Log Forwarding rules.
@@ -164,18 +219,18 @@ def _create_log_forwarding_rule_object(rule: dict) -> LogForwardingRule:
             if not rule.get(i):
                 rule[i] = None
 
-        log_forwarding_rule = LogForwardingRule(name=rule['rule_name'],
+        log_forwarding_rule = LogForwardingRule(name=rule['name'],
                                                 s3_prefix_expression=compiled_regex,
                                                 source=rule['source'],
                                                 source_name=rule['source_name'], 
                                                 annotations=rule['annotations'], 
                                                 sinks=rule['sinks'])
-    except KeyError as e:
-        raise IncorrectLogForwardingRuleFormat(message=f"Missing attributes on log forwarding rule {rule}:", part=e)
-    except ValueError:
-        raise IncorrectLogForwardingRuleFormat(message="LogForwardingRule contains invalid attributes.")
-    except Exception:
-        raise IncorrectLogForwardingRuleFormat("Unable to create LogForwarding rule.")
+    except KeyError as ex:
+        raise IncorrectLogForwardingRuleFormat(message=f"Missing attributes on log forwarding rule {rule}") from ex
+    except ValueError as ex:
+        raise IncorrectLogForwardingRuleFormat(message="LogForwardingRule contains invalid attributes.") from ex
+    except Exception as ex:
+        raise IncorrectLogForwardingRuleFormat("Unable to create LogForwarding rule.") from ex
 
     return log_forwarding_rule
 

@@ -64,6 +64,13 @@ Parameters:
       - "WARNING"
       - "ERROR"
       - "CRITICAL"
+  LogForwarderConfigurationLocation:
+    Description: Location from which to pull log forwarding and log processing rules (aws-appconfig or local)
+    Type: String
+    Default: aws-appconfig
+    AllowedValues:
+      - aws-appconfig
+      - local
   DeployCloudWatchMonitoringDashboard:
     Description: Deploy a CloudWatch monitoring dashboard
     Type: String
@@ -149,6 +156,7 @@ Resources:
           QueueName: !GetAtt S3NotificationsQueue.QueueName
           LOGGING_LEVEL: !Ref LambdaLoggingLevel
           AWS_APPCONFIG_EXTENSION_PREFETCH_LIST: !Sub "/applications/${AWS::StackName}-app-config/environments/${AWS::StackName}/configurations/log-forwarding-rules,/applications/${AWS::StackName}-app-config/environments/${AWS::StackName}/configurations/log-processing-rules"
+          LOG_FORWARDER_CONFIGURATION_LOCATION: !Ref LogForwarderConfigurationLocation
       Architectures:
         - !Ref ProcessorArchitecture
       Events:
