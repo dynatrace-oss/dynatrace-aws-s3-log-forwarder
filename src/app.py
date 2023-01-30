@@ -42,12 +42,14 @@ metrics.set_default_dimensions(deployment=os.environ['DEPLOYMENT_NAME'])
 
 
 # Load log-forwarding-rules 
-defined_log_forwarding_rules, current_log_forwarding_rules_version, log_forwarding_rules_location = log_forwarding_rules.load()
+defined_log_forwarding_rules, current_log_forwarding_rules_version = log_forwarding_rules.load()
 logger.info("Loaded log-forwarding-rules version %s from %s",
-            current_log_forwarding_rules_version, log_forwarding_rules_location)
+            current_log_forwarding_rules_version, os.environ.get('LOG_FORWARDER_CONFIGURATION_LOCATION'))
 
 # Load log-processing-rules
-defined_log_processing_rules = log_processing_rules.load()
+defined_log_processing_rules, current_log_processing_rules_version = log_processing_rules.load()
+logger.info("Loaded log-processing-rules version %s from %s",
+            current_log_forwarding_rules_version, os.environ.get('LOG_FORWARDER_CONFIGURATION_LOCATION'))
 
 # load sinks
 dynatrace_sinks = dynatrace.load_sinks()
@@ -63,29 +65,34 @@ def generate_execution_timeout_batch_item_failures(index: int, batch_item_failur
 
     return batch_item_failures
 
-def reload_log_forwarding_rules():
+
+def reload_rules(rules_type: str):
 
     if os.environ['LOG_FORWARDER_CONFIGURATION_LOCATION'] == "aws-appconfig":
-        global defined_log_forwarding_rules
-        global current_log_forwarding_rules_version
+        #load globals
+        glob = globals()
+
         try:
             # Check if we need to reload log forwarding rules
-            log_forwarding_rules_configuration_profile = aws_appconfig_helpers.get_configuration_from_aws_appconfig('log-forwarding-rules')
-            if log_forwarding_rules_configuration_profile['Configuration-Version'] != current_log_forwarding_rules_version:
-                logger.info("New log-forwarding-rules configuration version found. Loading version %s ...",
-                            str(log_forwarding_rules_configuration_profile['Configuration-Version']))
-                defined_log_forwarding_rules, current_log_forwarding_rules_version, _ = log_forwarding_rules.load()
+            rules_configuration_profile = aws_appconfig_helpers.get_configuration_from_aws_appconfig(f"log-{rules_type}-rules")
+            
+            if rules_configuration_profile['Configuration-Version'] != glob[f"current_log_{rules_type}_rules_version"]:
+                logger.info("New log-%s-rules configuration version found. Loading version %s ...",
+                            str(rules_configuration_profile['Configuration-Version']),rules_type)
+                glob[f"defined_log_{rules_type}_rules"], glob[f"current_log_{rules_type}_rules_version"] = glob[f"log_{rules_type}_rules"].load()
                 return True
 
         except aws_appconfig_helpers.ErrorAccessingAppConfig:
-            logger.exception("Unable to reload log-forwarder-rules from AWS AppConfig")
+            logger.exception(f"Unable to reload log-{rules_type}-rules from AWS AppConfig")
 
     return False
 
 @metrics.log_metrics
 def lambda_handler(event, context):
 
-    reload_log_forwarding_rules()
+    # If we're using AWS AppConfig and there's a new config version available, reload
+    reload_rules('forwarding')
+    reload_rules('processing')
 
     logger.debug(json.dumps(event, indent=2))
 
