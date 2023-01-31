@@ -25,33 +25,37 @@ from log.processing.log_processing_rules import AVAILABLE_LOG_SOURCES
 from utils.helpers import ENCODING
 
 
+# Old log forwarding rules format to be deprecated
 DEFAULT_FORWARING_RULES_PATH =  "./config/log_forwarding_rules"
+
+# Local log-forwarding-rules format, same as AppConfig but loading from local
+DEFAULT_FORWARDING_RULES_FILE = './config/log-forwarding-rules.yaml'
 
 logger = logging.getLogger()
 
 def load():
     '''
-    Loads log forwarding rules from AWS Config or from local file. Only use this method for 
+    Loads log forwarding rules from AWS Config or from local file. Only use this method for
     lambda startup.
     '''
     if os.environ.get('LOG_FORWARDER_CONFIGURATION_LOCATION') == 'aws-appconfig':
         return load_forwarding_rules_from_aws_appconfig()
     elif os.environ.get('LOG_FORWARDER_CONFIGURATION_LOCATION') == 'local':
+        if os.path.isfile(DEFAULT_FORWARDING_RULES_FILE):
+            return load_forwarding_rules_from_local_file()
+
         return load_forwading_rules_from_local_folder()
 
-def load_forwarding_rules_from_aws_appconfig():
+def load_forwarding_rules_yaml(body: str) -> dict:
     '''
-    Loads log forwarding rules from AWS AppConfig using its AWS Lambda extension
+    Gets a str yaml body containing log-forwarding rules, reads it and returns a dictionary with the log forwarding rules loaded
+    { bucket_a: { rule_name: LogForwardingRule }, bucket_b: {...}}
     '''
-
-    logger.info("Loading log-forwarding-rules from AWS AppConfig...")
-
-    raw_forwarding_rules = aws_appconfig_helpers.get_configuration_from_aws_appconfig('log-forwarding-rules')
 
     log_forwarding_rules = {}
 
     try:
-        yaml_iterator = yaml.load_all(raw_forwarding_rules['Body'],Loader=yaml.SafeLoader)
+        yaml_iterator = yaml.load_all(body,Loader=yaml.SafeLoader)
         for i, forwarding_rule_dict in enumerate(yaml_iterator):
             try:
                 if isinstance(forwarding_rule_dict,dict):
@@ -73,13 +77,46 @@ def load_forwarding_rules_from_aws_appconfig():
                 else:
                     raise InvalidLogForwardingRuleFile(file=str(i))
             except InvalidLogForwardingRuleFile:
-                logger.exception("Encountered an error while parsing log forwarding rule %s from AWS AppConfig",str(i))
-
+                logger.exception("Encountered an error while parsing log forwarding rule %s",str(i))
     except yaml.YAMLError:
         logger.exception("Encountered an error while parsing load-forarding-rules. Aborting...")
+    
+    return log_forwarding_rules
+
+def load_forwarding_rules_from_aws_appconfig():
+    '''
+    Loads log forwarding rules from AWS AppConfig using its AWS Lambda extension.
+     Returns a dictionary with bucket_names as keys and the rules as value:
+    { bucket_a: { rule_name: LogForwardingRule }, bucket_b: {...}}
+    '''
+
+    logger.info("Loading log-forwarding-rules from AWS AppConfig...")
+
+    raw_forwarding_rules = aws_appconfig_helpers.get_configuration_from_aws_appconfig('log-forwarding-rules')
+
+    log_forwarding_rules = load_forwarding_rules_yaml(raw_forwarding_rules['Body'])
 
     return log_forwarding_rules , raw_forwarding_rules['Configuration-Version']
 
+def load_forwarding_rules_from_local_file():
+    '''
+    Loads log forwarding rules from config/log-forwarding-rules.yaml directory.
+    Returns a tuple with a dictionary with bucket_names as keys and the rules as value and 0 as Configuration Version:
+    { bucket_a: { rule_name: LogForwardingRule }, bucket_b: {...}}
+    '''
+
+    logger.info("Loading log-forwarding-rules from local file config/log-forwarding-rules.yaml ...")
+    try:
+        file = open(file=DEFAULT_FORWARDING_RULES_FILE,mode="r",encoding=ENCODING)
+    except OSError as ex:
+        logger.exception("Unable to open %s",DEFAULT_FORWARDING_RULES_FILE)
+        raise InvalidLogForwardingRuleFile from ex
+
+    log_forwarding_rules = load_forwarding_rules_yaml(file.read())
+
+    return log_forwarding_rules , 0
+
+# legacy fowarding rules format to be deprecated
 def load_forwading_rules_from_local_folder():
 
     '''
@@ -94,6 +131,7 @@ def load_forwading_rules_from_local_folder():
         log_forwarding_rules_directory = os.environ['LOG_FORWARDING_RULES_PATH']
     else:
         log_forwarding_rules_directory = DEFAULT_FORWARING_RULES_PATH
+
 
     # list yaml files on the forwarding rules directory
     log_forwarding_rule_files = [
@@ -196,11 +234,10 @@ class IncorrectLogForwardingRuleFormat(Exception):
     def __init__(self, message='Invalid log forwarding rule format: ', part=None):
         self.message = message
         self.part = part
-    
+
     def __str__(self):
         return f"{self.message} {self.part}"
 
-    
 class InvalidLogForwardingRuleFile(Exception):
     '''
     Exception raised when
@@ -242,4 +279,3 @@ def _create_log_forwarding_rule_object(rule: dict) -> LogForwardingRule:
         raise IncorrectLogForwardingRuleFormat("Unable to create LogForwarding rule.") from ex
 
     return log_forwarding_rule
-

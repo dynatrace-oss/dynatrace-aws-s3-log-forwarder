@@ -24,6 +24,7 @@ BUILT_IN_PROCESSING_RULES_PATH = os.path.join(
     "rules"
 )
 DEFAULT_CUSTOM_LOG_PROCESSING_RULES_PATH = "./config/log_processing_rules"
+DEFAULT_CUSTOM_LOG_PROCESSING_RULES_FILE = './config/log-processing-rules.yaml'
 
 AVAILABLE_LOG_SOURCES = ['aws', 'generic', 'custom']
 
@@ -118,22 +119,25 @@ def load_rules_from_dir(directory: str) -> dict:
     
     return log_processing_rules
 
-def load_custom_rules_from_aws_appconfig():
+def load_processing_rules_from_yaml(body: str):
     '''
-    Loads custom log processing rules from AWS AppConfig. Returns a dict with the rules and the Configuration-Version number.
+    Gets a raw str with log processing rules in yaml format to return a dictionary of LogProcessingRule(s)
+    {
+        "aws": {},
+        "generic": {},
+        "custom": {
+            "example_rule1": LogProcessingRule,
+            "example_rule2": LogProcessingRule
+        }
+    }
     '''
-
-    logger.info("Loading custom log-processing-rules from AWS AppConfig...")
-
-    raw_processing_rules = aws_appconfig_helpers.get_configuration_from_aws_appconfig('log-processing-rules')
-
     # initialize log_processing_rules
     log_processing_rules = {}
     for log_source in AVAILABLE_LOG_SOURCES:
         log_processing_rules[log_source] = {}
 
     try:
-        yaml_iterator = yaml.load_all(raw_processing_rules['Body'], Loader=yaml.SafeLoader)
+        yaml_iterator = yaml.load_all(body, Loader=yaml.SafeLoader)
         for i, processing_rule_dict in enumerate(yaml_iterator):
             try:
                 if isinstance(processing_rule_dict,dict):
@@ -141,14 +145,45 @@ def load_custom_rules_from_aws_appconfig():
                 elif processing_rule_dict is None:
                     logger.warning("Skipping empty log processing rule")
                 else:
-                    raise InvalidLogProcessingRuleFile(file=str(i), message="Invalid log forwarding rule file from AWS AppConfig")
+                    raise InvalidLogProcessingRuleFile(file=str(i), message="Invalid log forwarding rule file")
             except (KeyError, InvalidLogProcessingRuleFile):
-                logger.exception("There was an error creating the log processing rule. Log processing rule %s is invalid.", str(i))
+                logger.exception("There was an error creating the log processing rule. Log processing rule %s is invalid", str(i))
         
     except yaml.YAMLError:
-        logger.exception("Encountered an error while parsing log-processing-rules from AWS AppConfig. Aborting...")
+        logger.exception("Encountered an error while parsing log-processing-rules. Aborting...")
     
+    return log_processing_rules
+
+def load_custom_rules_from_aws_appconfig():
+    '''
+    Loads custom log processing rules from AWS AppConfig. Returns a tuple containing a dict with the rules
+    and the Configuration-Version number.
+    '''
+
+    logger.info("Loading custom log-processing-rules from AWS AppConfig...")
+
+    raw_processing_rules = aws_appconfig_helpers.get_configuration_from_aws_appconfig('log-processing-rules')
+
+    log_processing_rules = load_processing_rules_from_yaml(raw_processing_rules['Body'])
+
     return log_processing_rules, raw_processing_rules['Configuration-Version']
+
+def load_custom_rules_from_local_file():
+    '''
+    Loads custom log processing rules from a local file config/log-processing-rules.yaml. Returns a tuple 
+    containing a dict with the rules and the Configuration-Version number.
+    '''
+
+    logger.info("Loading custom log-processing-rules from local file config/log-processing-rules.yaml ...")
+
+    try:
+        file = open(file=DEFAULT_CUSTOM_LOG_PROCESSING_RULES_FILE,mode='r',encoding=ENCODING) 
+    except OSError:
+        logger.exception("Unable to open local file %s", DEFAULT_CUSTOM_LOG_PROCESSING_RULES_FILE)
+
+    log_processing_rules = load_processing_rules_from_yaml(file.read())
+
+    return log_processing_rules
      
 class InvalidLogProcessingRuleFile(Exception):
 
@@ -182,8 +217,10 @@ def load_custom_rules():
             log_processing_rules_directory = os.environ['LOG_PROCESSING_RULES_PATH']
         else:
             log_processing_rules_directory = DEFAULT_CUSTOM_LOG_PROCESSING_RULES_PATH
-
-        if os.path.isdir(log_processing_rules_directory):
+        
+        if os.path.isfile(DEFAULT_CUSTOM_LOG_PROCESSING_RULES_FILE):
+            log_processing_rules = load_custom_rules_from_local_file()
+        elif os.path.isdir(log_processing_rules_directory):
             loaded_log_processing_rules = load_rules_from_dir(log_processing_rules_directory)
             # if not an empty dict
             if loaded_log_processing_rules:
@@ -230,7 +267,7 @@ def lookup_processing_rule(source: str , source_name: str, processing_rules: dic
     if source is invalid or None, returns None.
     source_name is only used for 'custom' rules.
     '''
-    
+
     if not source in AVAILABLE_LOG_SOURCES or source is None:
         return None
     # is it a generic or custom rule? 
