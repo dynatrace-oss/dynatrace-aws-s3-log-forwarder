@@ -12,45 +12,57 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
 ARG ARCH
-
-FROM public.ecr.aws/lambda/python:3.9-${ARCH}
-
-ARG ENV 
 ARG ENABLE_LAMBDA_INSIGHTS
 
-RUN yum update -y
-RUN yum install -y yajl-devel gcc gcc-c++ unzip
+FROM public.ecr.aws/lambda/python:3.9-${ARCH} AS base
 
-# Copy function code
-ADD src ${LAMBDA_TASK_ROOT}
-WORKDIR ${LAMBDA_TASK_ROOT} 
+ARG ARCH
+ARG ENV 
+
+# Update and install OS dependencies
+RUN yum update -y \
+    && yum install -y yajl-devel gcc gcc-c++ unzip \
+    && yum clean all \
+    && rm -rf /var/cache/yum
+
+# Install the AWS AppConfig extension (needs to be downloaded beforehand with get-required-lambda-layers.sh)
+COPY .tmp/${ARCH}/aws_appconfig_extension.zip /tmp/
+RUN unzip /tmp/aws_appconfig_extension.zip -d /opt \
+    && rm -f /tmp/aws_appconfig_extension.zip
+
+#WORKDIR ${LAMBDA_TASK_ROOT} 
 
 # Install the function's dependencies using file requirements.txt
 # from your project folder. If enabled, install Lambda Insights
-RUN ./install_requirements.sh
+COPY src/requirements.txt src/requirements-dev.txt ${LAMBDA_TASK_ROOT}/
+RUN pip install --no-cache-dir --upgrade pip \
+    # jsonslicer and pygrok have no wheel, add --use-pep517 https://github.com/pypa/pip/issues/8559
+    # https://github.com/AMDmi3/jsonslicer/issues/56
+    pip install --no-cache-dir -r requirements.txt --target "${LAMBDA_TASK_ROOT}" --use-pep517 \
+    # if dev, install development dependencies
+    && if [[ ${ENV} == "DEV" ]]; then pip install --no-cache-dir -r requirements-dev.txt --target "${LAMBDA_TASK_ROOT}"; fi \
+    && yum remove -y gcc gcc-c++ 
 
-# Install the AppConfig extension (needs to be downloaded beforehand)
-# arm64:
-#   aws lambda get-layer-version-by-arn \
-#      --arn arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension-Arm64:15 \
-#      | jq -r '.Content.Location' \
-#      | xargs curl -o .tmp/appconfig-extension.zip  
-# x86_64:
-#   aws lambda get-layer-version-by-arn \
-#      --arn arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension:82 \
-#      | jq -r '.Content.Location' \
-#      | xargs curl -o .tmp/appconfig-extension.zip  
+# Copy function code
+COPY src ${LAMBDA_TASK_ROOT}
 
-COPY .tmp/appconfig-extension.zip extension.zip
-RUN unzip extension.zip -d /opt \
-    && rm -f extension.zip
-
-RUN yum remove -y gcc gcc-c++ unzip
-
-# Copy configuration
+# Copy local configuration
 ADD config ${LAMBDA_TASK_ROOT}/config
 
 # Set the CMD to your handler (could also be done as a parameter override outside of the Dockerfile)
 CMD [ "app.lambda_handler" ]
+
+# Bundle Lambda Insights extensions if enabled
+FROM base AS deploy_lambda_insights_true
+ARG ARCH
+COPY .tmp/${ARCH}/aws_lambda_insights_extension.zip /tmp/
+RUN unzip /tmp/aws_lambda_insights_extension.zip -d /opt \
+    && rm -f /tmp/aws_lambda_insights_extension.zip
+
+FROM base AS deploy_lambda_insights_false
+# do nothing
+
+# Generate final image based on whether Lambda Insights is enabled or not
+ARG ENABLE_LAMBDA_INSIGHTS
+FROM deploy_lambda_insights_${ENABLE_LAMBDA_INSIGHTS}
