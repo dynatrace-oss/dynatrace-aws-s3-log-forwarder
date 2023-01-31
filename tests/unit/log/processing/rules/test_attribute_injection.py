@@ -2,7 +2,7 @@ import unittest
 from log.processing import log_processing_rules
 from log.processing import processing
 
-processing_rules = log_processing_rules.load()
+processing_rules, _ = log_processing_rules.load()
 
 cloudtrail_key_name = 'AWSLogs/012345678910/CloudTrail/us-east-1/2022/09/23/012345678910_CloudTrail_us-east-1_20220923T2350Z_noxkMtWv70h0LEES.json.gz'
 alb_key_name = 'AWSLogs/012345678910/elasticloadbalancing/us-east-1/2022/09/23/012345678910_elasticloadbalancing_us-east-1_app.k8s-podinfo-podinfoi-ffbc3dc280.82a34fae168ba1aa_20220721T1440Z_192.168.122.18_3okvlwdx.log.gz'

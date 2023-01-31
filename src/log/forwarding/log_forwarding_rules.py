@@ -143,10 +143,10 @@ def load_forwading_rules_from_local_folder():
                         logger.debug(
                             'Loading rule: %s from file: %s',
                             rule, rule_config_file_path)
-                        rule_obj = _create_log_forwarding_rule_object(rule)
                         # temporary assignment while legacy and new schema of log forwarding rules co-live
-                        rule_obj['name'] = rule_obj['rule_name']
-                        log_forwarding_rules[bucket_name][rule['rule_name']] = rule_obj
+                        rule['name'] = rule['rule_name']
+                        rule_obj = _create_log_forwarding_rule_object(rule)
+                        log_forwarding_rules[bucket_name][rule['name']] = rule_obj
                     except IncorrectLogForwardingRuleFormat as ex:
                         logger.warning(
                             'Skipping incorrect log forwarding rule: %s in %s', rule, rule_file.name)

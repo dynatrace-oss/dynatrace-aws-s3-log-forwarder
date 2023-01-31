@@ -1,7 +1,7 @@
 import unittest
 from log.processing import log_processing_rules
 
-processing_rules = log_processing_rules.load()
+processing_rules, _ = log_processing_rules.load()
 class TestCloudTrailAttributeExtraction(unittest.TestCase):
     cloudtrail_test_entry = {
                                "eventVersion": "1.08",

@@ -38,7 +38,8 @@ class TestLoadLogForwardingRules(unittest.TestCase):
             }
         
         os.environ['LOG_FORWARDING_RULES_PATH'] = TEST_FORWARDING_RULES_PATH
-        forwarding_rules = log_forwarding_rules.load()
+        forwarding_rules, _ = log_forwarding_rules.load()
+        print(forwarding_rules)
         self.assertTrue((len(forwarding_rules)==number_of_s3_buckets))
 
         for k,v in forwarding_rules.items():

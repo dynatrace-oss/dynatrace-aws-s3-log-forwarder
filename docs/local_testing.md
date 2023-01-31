@@ -18,6 +18,7 @@ As we're using Docker to build a Lambda container image, you can use the followi
    DYNATRACE_2_API_KEY_PARAM=/dynatrace/s3-log-forwarder/my-test/api-key2 
    DYNATRACE_2_API_KEY=dt0c01.YYY
    PYTHONPATH=/var/task
+   LOG_FORWARDER_CONFIGURATION_LOCATION=local
    ```
 
 2. Create a development Docker image with the development and testing dependencies running the following command:
