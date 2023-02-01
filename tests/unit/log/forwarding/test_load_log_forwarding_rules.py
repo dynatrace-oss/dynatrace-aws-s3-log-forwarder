@@ -23,9 +23,10 @@ TEST_FORWARDING_RULES_PATH = os.path.join(
 
 class TestLoadLogForwardingRules(unittest.TestCase):
 
-    def test_load_local_test_rules(self):
+    def test_load_local_test_rules_folder(self):
         '''
         Test we can load a set of forwarding rules files from disk, including handling invalid files and invalid rules.
+        (Legacy format)
         '''
 
         number_of_s3_buckets = 2
@@ -38,8 +39,33 @@ class TestLoadLogForwardingRules(unittest.TestCase):
             }
         
         os.environ['LOG_FORWARDING_RULES_PATH'] = TEST_FORWARDING_RULES_PATH
-        forwarding_rules, _ = log_forwarding_rules.load()
-        print(forwarding_rules)
+        forwarding_rules, _ = log_forwarding_rules.load_forwarding_rules_from_local_folder()
+        
+        self.assertTrue((len(forwarding_rules)==number_of_s3_buckets))
+
+        for k,v in forwarding_rules.items():
+            if k in rules_per_bucket:
+                for i in rules_per_bucket[k]:
+                    self.assertTrue(i in v.keys())
+    
+    def test_load_local_test_rules_file(self):
+        '''
+        Test we can load a set of forwarding rules files from disk, including handling invalid files and invalid rules.
+        (single file format)
+        '''
+
+        os.environ["LOG_FORWARDING_RULES_FILE"] = TEST_FORWARDING_RULES_PATH + "/log-forwarding-rules.yaml"
+
+        number_of_s3_buckets = 2
+        rules_per_bucket = {
+            "my_test_bucket1": [ "Send CloudTrail and Elastic Load Balancing logs to Dynatrace",
+                                 "Send My App logs",
+                                 "Test_logs"],
+            "my_test_bucket2": [ "Send Elastic Load Balancing logs to Dynatrace Prod instance",
+                                 "Send CloudTrail logs to Security Dynatrace instance"]
+            }
+
+        forwarding_rules, _ = log_forwarding_rules.load_forwarding_rules_from_local_file()
         self.assertTrue((len(forwarding_rules)==number_of_s3_buckets))
 
         for k,v in forwarding_rules.items():

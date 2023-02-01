@@ -44,7 +44,7 @@ def load():
         if os.path.isfile(DEFAULT_FORWARDING_RULES_FILE):
             return load_forwarding_rules_from_local_file()
 
-        return load_forwading_rules_from_local_folder()
+        return load_forwarding_rules_from_local_folder()
 
 def load_forwarding_rules_yaml(body: str) -> dict:
     '''
@@ -75,7 +75,7 @@ def load_forwarding_rules_yaml(body: str) -> dict:
                 elif forwarding_rule_dict is None:
                     logger.warning("Skipping empty log forwarding rule %s", str(i))
                 else:
-                    raise InvalidLogForwardingRuleFile(file=str(i))
+                    raise InvalidLogForwardingRuleFile(message="Invalid rule found in log-forwarding-rules.yaml. Rule:",file=str(i))
             except InvalidLogForwardingRuleFile:
                 logger.exception("Encountered an error while parsing log forwarding rule %s",str(i))
     except yaml.YAMLError:
@@ -106,18 +106,20 @@ def load_forwarding_rules_from_local_file():
     '''
 
     logger.info("Loading log-forwarding-rules from local file config/log-forwarding-rules.yaml ...")
+
+    log_forwarding_rules_file = os.environ.get("LOG_FORWARDING_RULES_FILE",DEFAULT_FORWARDING_RULES_FILE)
+
     try:
-        file = open(file=DEFAULT_FORWARDING_RULES_FILE,mode="r",encoding=ENCODING)
+        with open(file=log_forwarding_rules_file,mode="r",encoding=ENCODING) as file:
+            log_forwarding_rules = load_forwarding_rules_yaml(file.read())
     except OSError as ex:
-        logger.exception("Unable to open %s",DEFAULT_FORWARDING_RULES_FILE)
+        logger.exception("Unable to open %s",log_forwarding_rules_file)
         raise InvalidLogForwardingRuleFile from ex
 
-    log_forwarding_rules = load_forwarding_rules_yaml(file.read())
-
-    return log_forwarding_rules , 0
+    return log_forwarding_rules , None
 
 # legacy fowarding rules format to be deprecated
-def load_forwading_rules_from_local_folder():
+def load_forwarding_rules_from_local_folder():
 
     '''
     Loads log forwarding rules from config/log_forwarding_rules directory.

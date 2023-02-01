@@ -177,11 +177,11 @@ def load_custom_rules_from_local_file():
     logger.info("Loading custom log-processing-rules from local file config/log-processing-rules.yaml ...")
 
     try:
-        file = open(file=DEFAULT_CUSTOM_LOG_PROCESSING_RULES_FILE,mode='r',encoding=ENCODING) 
+        with open(file=DEFAULT_CUSTOM_LOG_PROCESSING_RULES_FILE,mode='r',encoding=ENCODING) as file:
+            log_processing_rules = load_processing_rules_from_yaml(file.read())
     except OSError:
         logger.exception("Unable to open local file %s", DEFAULT_CUSTOM_LOG_PROCESSING_RULES_FILE)
-
-    log_processing_rules = load_processing_rules_from_yaml(file.read())
+        raise
 
     return log_processing_rules
      

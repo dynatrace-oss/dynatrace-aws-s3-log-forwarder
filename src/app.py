@@ -40,7 +40,6 @@ boto3_session = boto3.Session()
 metrics = Metrics()
 metrics.set_default_dimensions(deployment=os.environ['DEPLOYMENT_NAME'])
 
-
 # Load log-forwarding-rules 
 defined_log_forwarding_rules, current_log_forwarding_rules_version = log_forwarding_rules.load()
 logger.info("Loaded log-forwarding-rules version %s from %s",

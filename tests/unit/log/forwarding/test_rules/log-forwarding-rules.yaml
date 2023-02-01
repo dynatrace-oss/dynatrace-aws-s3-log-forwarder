@@ -1,0 +1,39 @@
+bucket_name: my_test_bucket_1
+log_forwarding_rules:
+  - name: Send CloudTrail and Elastic Load Balancing logs to Dynatrace
+    prefix: "^AWSLogs/.*/(CloudTrail|elasticloadbalancing)/.*"
+    source: aws
+    annotations: 
+      environment: dev
+      team: cloud_ops
+  - name: Send My App logs
+    prefix: "^myapp/.*(\\.log)$"
+    sinks: 
+      - '2'
+    source: custom
+    source_name: my_app
+  - name: Test_logs
+    prefix: "^test/.*"
+    source: generic
+  - name: this is an invalid rule
+    random_attribute: blablabla
+---
+bucket_name: my_test_bucket_2
+log_forwarding_rules:  
+  - name: Send Elastic Load Balancing logs to Dynatrace Prod instance
+    prefix: "^AWSLogs/.*/(elasticloadbalancing)/.*"
+    source: aws
+    sinks:
+      - '1'
+    annotations: 
+      environment: prod
+  - name: Send CloudTrail logs to Security Dynatrace instance
+    prefix: "^AWSLogs/.*/(CloudTrail)/.*"
+    source: aws
+    sinks: 
+      - '2'
+    annotations:
+      environment: prod
+      aws_account_name: internal_resources_pro
+---
+this is an invalid rule
