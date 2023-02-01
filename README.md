@@ -27,14 +27,21 @@ You'll also need:
 ### Deploy the dynatrace-aws-s3-log-forwarder
 
 The deployment of the log forwarder is split into multiple SAM/CloudFormation templates. To get a high level view of what's deployed by which template, look at the diagram below:
+
 ![single-region-deployment](docs/images/single-region-deployment.jpg)
 
 To deploy the solution, follow the instructions below:
 
+1. Download required dependencies (AWS Lambda Extensions) to build the log forwarder container image:
+
+    ```bash
+    bash get-required-lambda-layers.sh
+    ```
+
 1. Clone the `dynatrace-aws-s3-log-forwarder` repository and checkout the latest version tag:
 
     ```bash
-    VERSION_TAG=$(curl -s https://api.github.com/repos/dynatrace-oss/dynatrace-aws-s3-log-forwarder/releases/latest | grep tag_name | cut -d'"' -f4)
+    export VERSION_TAG=$(curl -s https://api.github.com/repos/dynatrace-oss/dynatrace-aws-s3-log-forwarder/releases/latest | grep tag_name | cut -d'"' -f4)
     git clone https://github.com/dynatrace-oss/dynatrace-aws-s3-log-forwarder.git
     cd dynatrace-aws-s3-log-forwarder
     git checkout $VERSION_TAG
