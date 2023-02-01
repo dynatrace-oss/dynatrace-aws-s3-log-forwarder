@@ -19,6 +19,8 @@ The processing rules are grouped into 3 main blocks (aka sources):
 
 If `aws` or `custom` is defined as source on the log_forwarding_rule and there're no matches against the processed log object, the dynatrace-aws-s3-log-forwarder falls back to the `generic` processing rule.
 
+It's possible to define your own log-processing-rules by adding them to the log-processing-rules AWS AppConfig configuration profile. You can update the `dynatrace-aws-s3-log-forwarder` CloudFormation [template](../dynatrace-aws-s3-log-forwarder-configuration.yaml#L81) with your own log processing rules.
+
 ## Built-in log processing rules
 
 ### AWS-vended logs to Amazon S3
@@ -45,17 +47,20 @@ You can ingest any text and JSON-array logs into Dynatrace as generic logs and u
 
 1. Configure an AWS VPC to publish flow logs to S3 following the instructions [here](https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-s3.html).
 
-1. Create a generic forwarding rule for the S3 bucket where VPC Flow Logs are published on the appropriate configuration file (i.e. config/log_forwarding_rules/your_bucket_name.yaml). Add an annotation "log.source" with value "aws.vpcflowlogs" so we can use this field in Dynatrace to filtern and process these logs.
+1. Create a generic log forwarding rule for the S3 bucket where VPC Flow Logs are pushed in the log-forwarding-rules AWS AppConfig configuration profile. Add an annotation "log.source" with value "aws.vpcflowlogs" so we can use this field in Dynatrace to filtern and process these logs.
 
     ```yaml
-    - rule_name: fwd_vpcflowlogs
-      prefix: "^AWSLogs/.*/vpcflowlogs/.*"
-      source: generic
-      annotations: 
-        log.source: aws.vpcflowlogs
+    ---
+    bucket_name: my_vpc_flow_logs-bucket
+    log_forwarding_rules:
+        - name: fwd_vpcflowlogs
+          prefix: "^AWSLogs/.*/vpcflowlogs/.*"
+          source: generic
+          annotations: 
+            log.source: aws.vpcflowlogs
     ```
 
-1. If S3 Object created notifications are not yet configured for the bucket / prefix where VPC Flow Logs are delivered, deploy the `s3-log-forwarder-bucket-config-template.yaml` CloudFormation template with the details of your S3 bucket.
+1. If S3 Object created notifications are not yet configured for the bucket / prefix where VPC Flow Logs are delivered, deploy the `s3-log-forwarder-bucket-config-template.yaml` CloudFormation template with the details of your S3 bucket. Also, enable S3 Event Bridge notifications as per description [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html).
 
 1. On your Dynatrace tenant, go to Manage -> Settings -> Log Monitoring -> Log Processing and click on "Add processing rule". Fill your processing rule with the following data:
 
@@ -77,11 +82,12 @@ Note that you can also parse log entries directly on your queries without the ne
 
 ## Adding your own log processing rules
 
-If you really need to do custom log processing on the AWS Lambda function, you can add your own log processing rules under `config/log_processing_rules` (or on a different location defined in the `LOG_PROCESSING_RULES_PATH` environment variable).
+If you really need to do custom log processing on the AWS Lambda function, you can add your own log processing rules on the log-processing-rules AWS AppConfig configuration profile. You can update the rules modifying the `dynatrace-aws-s3-log-forwarder-configuration.yaml` CloudFormation [template](../dynatrace-aws-s3-log-forwarder-configuration.yaml#L81).
 
 A log processing rule has the following format:
 
 ```yaml
+---
 name: Required[str]                       # --> name that uniquely identifies your processing rule
 source: Required[str]                     # --> you'll normally use custom here, but valid values are 'custom', 'aws' and 'generic'
 known_key_path_pattern: Required[str]     # --> regular expression matching the file name pattern of your logs. To match anything, use "^.*$"
@@ -109,4 +115,4 @@ ttribute_extraction_from_top_level_json: Optional[dict]  # --> valid only for js
                                                          #     all the log entries
 ```
 
-You can find an example custom processing rule under `config/log_processing_rules/vpcdnsquerylogs.yaml` used to process [VPC DNS Query logs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-query-logs.html) from AWS.
+You can find an example custom processing rule under `config/log-processing-rules.yaml` used to process [VPC DNS Query logs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-query-logs.html) from AWS.
