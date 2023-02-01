@@ -41,13 +41,14 @@ Parameters:
   NotificationsEmail:
     Description: E-mail address to send alarm notifications to.
     Type: String
+    Default: ""
   ProcessorArchitecture:
     Description: Processor architecture for the Lambda function
     Type: String
     AllowedValues:
       - arm64
       - x86_64
-    Default: arm64
+    Default: x86_64
   LambdaFunctionMemorySize:
     Description: Memory size of the queue processing Lambda function
     Type: Number
@@ -125,6 +126,7 @@ Conditions:
   LambdaInsightsEnabled: !Equals [ !Ref EnableLambdaInsights, "true" ]
   CrossRegionCrossAccountForwardingIsEnabled: !Equals [ !Ref EnableCrossRegionCrossAccountForwarding, "true" ]
   DeployMonitoringDashboard: !Equals [ !Ref DeployCloudWatchMonitoringDashboard, "true" ]
+  IsEmailConfigured: !Not [!Equals [ !Ref NotificationsEmail, "" ]]
 
 Globals:
   Function:
@@ -240,9 +242,14 @@ Resources:
     Type: AWS::SNS::Topic
     Properties:
       TopicName: !Sub ${AWS::StackName}-Alarms
-      Subscription:
-        - Endpoint: !Ref NotificationsEmail
-          Protocol: "email"
+  
+  AlarmsEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: IsEmailConfigured
+    Properties:
+      TopicArn: !Ref AlarmsSNSTopic
+      Endpoint: !Ref NotificationsEmail
+      Protocol: "email"
 
   AlarmsSNSTopicPolicy:
     Type: AWS::SNS::TopicPolicy
@@ -856,6 +863,9 @@ Outputs:
   SQSDeadLetterQueue:
     Description: "Dead letter queue for failed messages."
     Value: !GetAtt SQSDeadLetterQueue.Arn
+  SNSAlertsTopic:
+    Description: "SNS Topic receiving monitoring alerts"
+    Value: !Ref AlarmsSNSTopic
   CrossRegionCrossAccountEventBus:
     Condition: CrossRegionCrossAccountForwardingIsEnabled
     Description: "Amazon EventBridge event bus to receive cross-region and cross-account S3 object created notifications"
