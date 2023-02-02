@@ -28,8 +28,9 @@ Metadata:
 
   Instructions:
     Description: >
-      Deploy this template once per every Amazon S3 bucket you want to configure to forward logs to Dynatrace. LogBucketPrefix# parameters
-      are optional, only use them if you want to narrow down the ingestion to specific prefixes in your bucket.
+      Deploy this template once per every Amazon S3 bucket you want to configure to forward logs to Dynatrace on the same AWS Account and region
+      where the dynatrace-aws-s3-log-forwarder is depployed. LogBucketPrefix# parameters are optional, only use them if you want to narrow down 
+      the ingestion to specific prefixes in your bucket.
       
       Example AWS CLI command:
 
@@ -44,7 +45,7 @@ Metadata:
           --capabilities CAPABILITY_IAM
 
       NOTE: If your S3 bucket is on a different AWS Region or AWS account, add the S3BucketIsCrossRegionOrCrossAccount=true parameter
-      don't forget to deploy the eventbridge-cross-{region|account}-forward-rules stack on AWS Region / Account where your S3 bucket issam d.
+      don't forget to deploy the eventbridge-cross-{region|account}-forward-rules stack on AWS Region / Account where your S3 bucket is.
       
       Once deployed, configure your S3 Bucket to send notifications to Amazon EventBridge following instructions here:
       https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html
@@ -126,19 +127,6 @@ Resources:
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Sid: "AllowGetBucketLocation"
-            Effect: Allow
-            Action:
-              - s3:GetBucketLocation
-            Resource:
-              - !Join
-                - ":"
-                - - arn
-                  - !Ref AWS::Partition
-                  - s3
-                  - ""
-                  - ""
-                  - !Ref LogsBucketName
           - Sid: "AllowGetObjectPermissions"
             Effect: Allow
             Action:
