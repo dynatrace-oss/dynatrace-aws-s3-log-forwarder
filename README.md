@@ -47,7 +47,7 @@ To deploy the solution, follow the instructions below:
     git checkout $VERSION_TAG
     ```
 
-1. Define a name for your `dynatrace-aws-s3-log-forwarder` deployment (e.g. mycompany-dynatrace-s3-log-forwarder) and your dynatrace tenant UUID (e.g. `abc12345` if your Dynatrace environment url is `https://abc12345.live.dynatrace.com`) in environment variables that will be used along the deployment process.
+1. Define a name for your `dynatrace-aws-s3-log-forwarder` deployment name (e.g. mycompany-dynatrace-s3-log-forwarder) and your dynatrace tenant UUID (e.g. `abc12345` if your Dynatrace environment url is `https://abc12345.live.dynatrace.com`) in environment variables that will be used along the deployment process.
 
     ```bash
     export STACK_NAME=replace_with_your_log_forwarder_stack_name
@@ -65,7 +65,7 @@ To deploy the solution, follow the instructions below:
     ```
 
     **NOTES:**
-    * It's important that your parameter name follows the structure above, as the solution grants access to AWS Lambda permissions to the hierarchy `/dynatrace/s3-log-forwarder/your_stack_name/*`
+    * It's important that your parameter name follows the structure above, as the solution grants permissions to AWS Lambda to the hierarchy `/dynatrace/s3-log-forwarder/your_stack_name/*`
     * Your API Key is stored encyrpted with the default AWS-managed key alias: `aws/ssm`. If you want to use a Customer-managed Key, you'll need to grant Decrypt permissions to the AWS Lambda IAM Role that's deployed within the SAM template.
 
 1. From the project root directory, execute the following command to build the Serverless application:
@@ -81,13 +81,69 @@ To deploy the solution, follow the instructions below:
             ProcessorArchitecture=arm64
     ```
 
-1. Execute the following command to deploy the `dynatrace-aws-s3-log-forwarder` with default settings.
+1. Execute the following command to deploy the `dynatrace-aws-s3-log-forwarder`:
 
     ```bash
-    sam deploy --parameter-overrides \
-            DynatraceEnvironment1URL="https://$DYNATRACE_TENANT_UUID.live.dynatrace.com" \
-            DynatraceEnvironment1ApiKeyParameter=$PARAMETER_NAME \
-            NotificationsEmail="your_email@example.com" 
+    sam deploy --stack-name $STACK_NAME --guided \
+               --parameter-overrides \
+                    DynatraceEnvironment1URL="https://$DYNATRACE_TENANT_UUID.live.dynatrace.com" \
+                    DynatraceEnvironment1ApiKeyParameter=$PARAMETER_NAME 
+    ```
+
+    The command will prompt you for parameter values as well as will create a set of required resources for AWS SAM to deploy the application during the initial deploymemnt.
+    All parameters will have default values predefined, those will work well for general use cases, just hit enter on the prompt to leave it as it is. If you want to customize values, you can find the parameter descriptions on the [template.yaml](template.yaml#L27-L122) file.
+
+    The output will be similar to the one below:
+
+    ```bash
+    Configuring SAM deploy
+    ======================
+
+    Looking for config file [samconfig.toml] :  Not found
+
+    Setting default arguments for 'sam deploy'
+    =========================================
+    Stack Name [your_log_forwarder_stack_name]: 
+    AWS Region [us-east-1]: 
+    Parameter DynatraceEnvironment1URL [https://abc12345.live.dynatrace.com]: 
+    Parameter DynatraceEnvironment1ApiKeyParameter [/dynatrace/s3-log-forwarder/your_log_forwarder_stack_name/abcd1234/api-key]: 
+    Parameter DynatraceEnvironment2URL []: 
+    Parameter DynatraceEnvironment2ApiKeyParameter []: 
+    Parameter NotificationsEmail []: 
+    Parameter ProcessorArchitecture [x86_64]: 
+    Parameter LambdaFunctionMemorySize [256]: 
+    Parameter LambdaLoggingLevel [INFO]: 
+    Parameter LogForwarderConfigurationLocation [aws-appconfig]: 
+    Parameter DeployCloudWatchMonitoringDashboard [true]: 
+    Parameter EnableLambdaInsights [false]: 
+    Parameter MaximumLambdaConcurrency [30]: 
+    Parameter LambdaSQSMessageBatchSize [4]: 
+    Parameter LambdaMaximumExecutionTime [300]: 
+    Parameter SQSVisibilityTimeout [420]: 
+    Parameter SQSLongPollingMaxSeconds [20]: 
+    Parameter MaximumSQSMessageRetries [2]: 
+    Parameter EnableCrossRegionCrossAccountForwarding [false]: 
+    #Shows you resources changes to be deployed and require a 'Y' to initiate deploy
+    Confirm changes before deploy [y/N]: 
+    #SAM needs permission to be able to create roles to connect to the resources in your template
+    Allow SAM CLI IAM role creation [Y/n]: 
+    #Preserves the state of previously provisioned resources when an operation fails
+    Disable rollback [y/N]: 
+    Save arguments to configuration file [Y/n]: 
+    SAM configuration file [samconfig.toml]: 
+    SAM configuration environment [default]: 
+
+    Looking for resources needed for deployment:
+     Managed S3 bucket: aws-sam-cli-managed-default-samclisourcebucket-pnxn6blqbr3e
+     A different default S3 bucket can be set in samconfig.toml
+     Image repositories: Not found.
+     #Managed repositories will be deleted when their functions are removed from the template and deployed
+     Create managed ECR repositories for all functions? [Y/n]: 
+
+    Saved arguments to config file
+    Running 'sam deploy' for future deployments will use the parameters saved above.
+
+    (...)
     ```
 
     If successfull, you'll see the a message similar to the below at the end of the execution:
@@ -97,11 +153,10 @@ To deploy the solution, follow the instructions below:
     ```
 
     **NOTES:**
-    * The e-mail address is set to receive alerts when log files can't be processed and messages are arriving to the Dead Letter Queue. If you don't want to receive those, just remove the parameter.
+    * The e-mail address is set to receive alerts when log files can't be processed and messages are arriving to the Dead Letter Queue. If you don't want to receive those, just leave the parameter empty.
     * An Amazon SNS topic is created to receive monitoring alerts where you can subscribe HTTP endpoints to send the notification to your tools (e.g. PagerDuty, Service Now...).
-    * If you want to configure advanced settings you can execute the commmand `sam deploy --guided` and you'll be prompted for all the possible configuration parameters.
 
-1. The log forwarding Lambda function pulls configuration data from AWS AppConfig that contains the rules that defines how to forward and process log files. The `dynatrace-aws-s3-log-forwarder-configuration.yaml` is designed to help get you started. It deploys a default "catch all" log forwarding rule that makes the log forwarding Lambda function process any S3 Object it receives an S3 Object Created notification for, and attempts to identify the source of the log, matching the object against supported AWS log sources. The rule falls back to generic text log ingestion if it's unable to identify the log source:
+1. The log forwarding Lambda function pulls configuration data from AWS AppConfig that contains the rules that defines how to forward and process log files. The `dynatrace-aws-s3-log-forwarder-configuration.yaml` is designed to help get you started deploying the log forwarding configuration. It deploys a default "catch all" log forwarding rule that makes the log forwarding Lambda function process any S3 Object it receives an S3 Object Created notification for, and attempts to identify the source of the log, matching the object against supported AWS log sources. The rule falls back to generic text log ingestion if it's unable to identify the log source:
 
     ```yaml
     ---
@@ -114,7 +169,7 @@ To deploy the solution, follow the instructions below:
         source: aws
     ```
 
-    You'll find this rule defined in-line on the CloudFormation template [here](dynatrace-aws-s3-log-forwarder-configuration.yaml#L60-L67), which you can modify to tailor it to your needs. To configure explicit log forwarding rules, look at the [docs/log_forwarding.md](docs/log_forwarding.md) documentation.
+    You'll find this rule defined in-line on the CloudFormation template [here](dynatrace-aws-s3-log-forwarder-configuration.yaml#L60-L67), which you can modify and tailor it to your needs. To configure explicit log forwarding rules, visit  the [docs/log_forwarding.md](docs/log_forwarding.md) documentation.
 
     To deploy the configuration, execute the following command:
 
@@ -139,9 +194,9 @@ To deploy the solution, follow the instructions below:
 
         aws cloudformation deploy \
             --template-file s3-log-forwarder-bucket-config-template.yaml \
-            --stack-name    dynatrace-aws-s3-log-forwarder-s3-bucket-configuration-$BUCKET_NAME     \
-            --parameter-overrides       DynatraceAwsS3LogForwarderStackName=$STACK_NAME \
-                LogsBucketName=$BUCKET_NAME \
+            --stack-name dynatrace-aws-s3-log-forwarder-s3-bucket-configuration-$BUCKET_NAME \
+            --parameter-overrides DynatraceAwsS3LogForwarderStackName=$STACK_NAME \
+                                  LogsBucketName=$BUCKET_NAME \
             --capabilities CAPABILITY_IAM
         ```
 

@@ -114,11 +114,7 @@ It's possible to centralize log forwarding from S3 buckets on different AWS regi
 In this case, you will need to configure Amazon EventBridge rules on the AWS region where your S3 bucket is to forward S3 Object Created notifications fto a dedicated event bus on the AWS region where you have deployed the `dynatrace-aws-s3-log-forwarder`. Before proceeding, make sure you have deployed the `dynatrace-aws-s3-log-forwarder` setting the `EnableCrossRegionCrossAccountForwarding` parameter to "true", so a dedicated Event Bus is created to receive cross-region notifications. If you didn't set this parameter when you deployed the forwarder, you can simply re-deploy the SAM template enabling it.
 
 ```bash
-sam deploy --parameter-overrides \
-        DynatraceEnvironment1URL="https://$DYNATRACE_TENANT_UUID.live.dynatrace.com" \
-        DynatraceEnvironment1ApiKeyParameter=$PARAMETER_NAME \
-        NotificationsEmail="your_email@example.com" \
-        EnableCrossRegionCrossAccountForwarding=true
+sam deploy --parameter-overrides EnableCrossRegionCrossAccountForwarding=true
 ```
 
 The diagram below showcases what needs to be deployed to enable cross-region log forwarding:
@@ -184,11 +180,7 @@ For each S3 bucket located in a different AWS region than where the log forwarde
 You can centralize log forwarding for logs in multiple AWS accounts and AWS regions on a single `dynatrace-aws-s3-log-forwarder` deployment to avoid the overhead of deploying and managing multiple log forwarding instances. Before proceeding, make sure you have deployed the `dynatrace-aws-s3-log-forwarder` setting the `EnableCrossRegionCrossAccountForwarding` parameter set to "true", so a dedicated Event Bus is created to receive cross-region notifications. If you didn't set this parameter, you can simply re-deploy the SAM template enabling it.
 
 ```bash
-sam deploy --parameter-overrides \
-        DynatraceEnvironment1URL="https://$DYNATRACE_TENANT_UUID.live.dynatrace.com" \
-        DynatraceEnvironment1ApiKeyParameter=$PARAMETER_NAME \
-        NotificationsEmail="your_email@example.com" \
-        EnableCrossRegionCrossAccountForwarding=true
+sam deploy --parameter-overrides EnableCrossRegionCrossAccountForwarding=true
 ```
 
 The diagram below showcases what you need to deploy in order to have the `dynatrace-aws-s3-log-forwarder` forwarding logs from an S3 bucket in a different AWS:
