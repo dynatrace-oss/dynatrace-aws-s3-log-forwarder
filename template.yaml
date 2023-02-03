@@ -120,11 +120,18 @@ Parameters:
     AllowedValues:
       - "true"
       - "false"
-  
+  AwsAccountsToReceiveLogsFrom:
+    Type: CommaDelimitedList
+    Description: List of AWS Accounts to allow to send cross-account S3 Object created Notifications
+    Default: ""
+    AllowedPattern: "($^|\\d{12})"
+
 Conditions:
   SecondDTEnvironmentSpecified: !Not [!Equals [!Ref DynatraceEnvironment2URL, "" ]]
   LambdaInsightsEnabled: !Equals [ !Ref EnableLambdaInsights, "true" ]
   CrossRegionCrossAccountForwardingIsEnabled: !Equals [ !Ref EnableCrossRegionCrossAccountForwarding, "true" ]
+  AwsAccountListIsNotEmpty: !Not [ !Equals [!Join ["", !Ref AwsAccountsToReceiveLogsFrom ], ""] ]
+  CreateEventBridgePolicy: !And [ !Condition AwsAccountListIsNotEmpty , !Condition CrossRegionCrossAccountForwardingIsEnabled ]
   DeployMonitoringDashboard: !Equals [ !Ref DeployCloudWatchMonitoringDashboard, "true" ]
   IsEmailConfigured: !Not [!Equals [ !Ref NotificationsEmail, "" ]]
 
@@ -322,6 +329,26 @@ Resources:
           - - !Sub ${AWS::StackName}
             - cross-region-cross-account-s3-events
   
+  CrossAccountEventBusPolicy:
+    Condition: CreateEventBridgePolicy
+    Type: AWS::Events::EventBusPolicy
+    Properties:
+      EventBusName: !Ref CrossRegionCrossAccountEventBus
+      StatementId: AddCrossAccountAccess
+      Statement:
+        Effect: Allow
+        Principal: 
+          AWS: [ !Join [",", !Ref AwsAccountsToReceiveLogsFrom] ]
+        Action: "events:PutEvents"
+        Resource: !GetAtt CrossRegionCrossAccountEventBus.Arn
+        Condition:
+          StringEquals:
+            "events:detail-type": "Object Created"
+            "events:source": "aws.s3"
+          ArnEquals:
+            "aws:SourceArn":
+              - arn:aws:events:*:*:rule/default/dt-fwd-s3-object-created-to-*
+
   AppConfigApplication:
     Type: AWS::AppConfig::Application
     Properties:

@@ -1,13 +1,13 @@
 # Log Forwarding rules
 
-The `dynatrace-aws-s3-log-forwarder` uses log forwarding rules to determine how to process log files. Log forwarding rules are stored in [AWS AppConfig](https://docs.aws.amazon.com/appconfig/latest/userguide/what-is-appconfig.html), a configuration manager system, from where the log processing AWS Lambda function pulls the configuration. This allows you to update your configuration at any point in time without requiring you to re-deploy the AWS Lambda function. Once a new configuration version is available, the log processing function will load it within ~1 minute.
+The `dynatrace-aws-s3-log-forwarder` uses log forwarding rules to determine how to process log files. Log forwarding rules are stored in [AWS AppConfig](https://docs.aws.amazon.com/appconfig/latest/userguide/what-is-appconfig.html), a configuration management service, from where the log processing AWS Lambda function pulls the configuration. This allows you to update your configuration at any point in time without requiring you to re-deploy the AWS Lambda function. Once a new configuration version is available, the log processing function will load it within ~1 minute.
 
-The `dynatrace-aws-s3-log-forwarder-configuration.yaml` CloudFormation template, once deployed, defines an initial catch-all default rule. If you go to the AWS AppConfig [console](https://console.aws.amazon.com/systems-manager/appconfig/) you will find an `Application` named `<your_stack_name>-app-config` with two configuration profiles within it:
+The `dynatrace-aws-s3-log-forwarder-configuration.yaml` CloudFormation template, once deployed, defines an initial catch-all default log forwarding rule. If you go to the AWS AppConfig [console](https://console.aws.amazon.com/systems-manager/appconfig/) you will find an `Application` named `<your_stack_name>-app-config` with two configuration profiles within it:
 
 * log-forwarding-rules: stores log forwarding rules.
 * log-processing-rules: stores custom log processing rules that you can optionally define. For more information, check the [log_processing.md](log_processing.md) documentation.
 
-While the initial configuration helps you get started, you may want to configure more explicit and complex log processing rules.
+While the initial configuration helps you get started, you may want to configure more explicit and complex log processing rules. The section below outlines how to configure custom log forwarding rules.
 
 ## Configuring log forwarding rules
 
@@ -55,7 +55,7 @@ Log forwarding rules allow you to add custom annotations to your logs (e.g team:
 
 * log.source.s3_bucket_name: name of the S3 bucket the log was forwarded from
 * log.source.s3_key_name: key name of the S3 object that the log entry belongs to
-* log.source.forwarder: the ARN of the AWS Lambda function that forwarded the log entry (this helps if you have multiple log forwarding instances running)
+* cloud.log_forwarder: the ARN of the AWS Lambda function that forwarded the log entry (this helps if you have multiple log forwarding instances running)
 
 The `dynatrace-aws-s3-log-forwarder` automatically annotates logs and extracts relevant attributes for supported AWS services with fields like `aws.account.id`, `aws.region`... The following AWS-vended logs are supported:
 
@@ -99,13 +99,13 @@ The `dynatrace-aws-s3-log-forwarder` solution is able to handle large log files 
 
 The SAM template deploys the forwarder with the following default parameters that you can modify to suit your needs:
 
-* LambdaFunctionMemorySize: 256 MB  --> At 1,769 MB, a function has the equivalent of one vCPU (one vCPU-second of credits per second).
-* MaximumLambdaConcurrency: 30  --> Maximum number of Lambda functions executing concurrently
-* LambdaSQSMessageBatchSize: 4  --> Number of log messages processed per Lambda execution (for smaller files you can increase it, for very large files you can decrease it)
-* LambdaMaximumExecutionTime: 300  --> Maximum execution time in seconds of the AWS Lambda function, you can increase this up to 900
-* SQSVisibilityTimeout: 420  --> SQS message invisibility time once received. This value should be larger than the LambdaMaximumExecutionTime to avoid more than one Lambda function processing the same log file (note however that SQS provides at-least-once delivery)
-* SQSLongPollingMaxSeconds: 20  --> Time to wait while polling the SQS queue for messages
-* MaximumSQSMessageRetries: 2  --> Maximum number of times the forwarder retries processing a log file if it fails before sending the S3 Object created notification to the DLQ
+* `LambdaFunctionMemorySize`: 256 MB  --> At 1,769 MB, a function has the equivalent of one vCPU (one vCPU-second of credits per second).
+* `MaximumLambdaConcurrency`: 30  --> Maximum number of Lambda functions executing concurrently
+* `LambdaSQSMessageBatchSize`: 4  --> Number of log messages processed per Lambda execution (for smaller files you can increase it, for very large files you can decrease it)
+* `LambdaMaximumExecutionTime`: 300  --> Maximum execution time in seconds of the AWS Lambda function, you can increase this up to 900
+* `SQSVisibilityTimeout`: 420  --> SQS message invisibility time once received. This value should be larger than the LambdaMaximumExecutionTime to avoid more than one Lambda function processing the same log file (note however that SQS provides at-least-once delivery)
+* `SQSLongPollingMaxSeconds`: 20  --> Time to wait while polling the SQS queue for messages
+* `MaximumSQSMessageRetries`: 2  --> Maximum number of times the forwarder retries processing a log file if it fails before sending the S3 Object created notification to the DLQ
 
 ## Forward logs from S3 buckets on different AWS regions
 
@@ -125,51 +125,51 @@ For each S3 bucket located in a different AWS region than where the log forwarde
 
 1. Deploy the `eventbridge-cross-region-forward-rules.yaml` CloudFormation template on the region where your S3 bucket is. This template will deploy an Amazon EventBridge rule to forward S3 Object Created notifications for the bucket and optional prefixes defined, as well as a required IAM role for EventBridge to forward the notifications to the destination region.
 
-  To deploy the template replace the placeholder values:
+    To deploy the template replace the placeholder values:
 
-  ```bash
-  export STACK_NAME=your_log_forwarder_stack_name
-  export BUCKET_NAME=your_bucket_name_here
-  export REGION=region_of_your_bucket
-  ```
+    ```bash
+    export STACK_NAME=your_log_forwarder_stack_name
+    export BUCKET_NAME=your_bucket_name_here
+    export REGION=region_of_your_bucket
+    ```
 
-  Then, execute the following commands:
+    Then, execute the following commands:
 
-  ```bash
-  export EVENT_BUS_ARN=$(aws cloudformation describe-stacks \
-                                                --stack-name $STACK_NAME \
-                                                --query 'Stacks[].Outputs[?OutputKey==`CrossRegionCrossAccountEventBus`].OutputValue' \
-                                                --output text)
-  if [ ! -z $EVENT_BUS_ARN ]
-  then
-    aws cloudformation deploy \
-      --template-file eventbridge-cross-region-forward-rules.yaml \
-      --stack-name dynatrace-aws-s3-log-forwarder-cross-region-notifications-$BUCKET_NAME \
-      --parameter-overrides CrossRegionCrossAccountEventBusArn=$EVENT_BUS_ARN \
-          LogsBucketName=$BUCKET_NAME \
-      --capabilities CAPABILITY_IAM \
-      --region $REGION
-  else
-    echo "ERROR, Event bus ARN not found in CloudFromation stack: $STACK_NAME. Confirm parameter CrossRegionCrossAccountEventBus is set to true"
-  fi
-  ```
+    ```bash
+    export EVENT_BUS_ARN=$(aws cloudformation describe-stacks \
+                                                  --stack-name $STACK_NAME \
+                                                  --query 'Stacks[].Outputs[?OutputKey==`CrossRegionCrossAccountEventBus`].OutputValue' \
+                                                  --output text)
+    if [ ! -z $EVENT_BUS_ARN ]
+    then
+      aws cloudformation deploy \
+        --template-file eventbridge-cross-region-forward-rules.yaml \
+        --stack-name dynatrace-aws-s3-log-forwarder-cross-region-notifications-$BUCKET_NAME \
+        --parameter-overrides CrossRegionCrossAccountEventBusArn=$EVENT_BUS_ARN \
+            LogsBucketName=$BUCKET_NAME \
+        --capabilities CAPABILITY_IAM \
+        --region $REGION
+    else
+      echo "ERROR, Event bus ARN not found in CloudFromation stack: $STACK_NAME. Confirm parameter CrossRegionCrossAccountEventBus is set to true"
+    fi
+    ```
 
-  **NOTE:** You can limit log forwarding for specific S3 bucket prefixes (e.g. dev/) adding up to 10 LogBucketPrefix# optional parameters to the above command.
+    **NOTE:** You can limit log forwarding for specific S3 bucket prefixes (e.g. dev/) adding up to 10 LogBucketPrefix# optional parameters to the above command.
 
 1. Once the above stack is deployed, go to your S3 bucket(s) and enable notifications via EventBridge following instructions [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html).
 
 1. Last, deploy the `s3-log-forwarder-bucket-config-template.yaml` CloudFormation template on the AWS region where the `dynatrace-aws-s3-log-forwarder` is deployed. This template will deploy the required regional Amazon EventBridge rules to send the cross-region forwarded notifications to the S3 forwarder Amazon SQS queue, as well as grant IAM permissions to the AWS Lambda function to access your S3 bucket. Make sure the `S3BucketIsCrossRegionOrCrossAccount` parameter is set to "true".
 
-      ```bash
-      aws cloudformation deploy \
-        --template-file s3-log-forwarder-bucket-config-template.yaml \
-        --stack-name dynatrace-aws-s3-log-forwarder-s3-bucket-configuration-$BUCKET_NAME \
-        --parameter-overrides DynatraceAwsS3LogForwarderStackName=$STACK_NAME \
-            LogsBucketName=$BUCKET_NAME \
-            S3BucketIsCrossRegionOrCrossAccount=true \
-        --capabilities CAPABILITY_IAM \
-        --region <region-where-your-s3-log-forwarder-instance-is-deployed>
-      ```
+    ```bash
+    aws cloudformation deploy \
+      --template-file s3-log-forwarder-bucket-config-template.yaml \
+      --stack-name dynatrace-aws-s3-log-forwarder-s3-bucket-configuration-$BUCKET_NAME \
+      --parameter-overrides DynatraceAwsS3LogForwarderStackName=$STACK_NAME \
+          LogsBucketName=$BUCKET_NAME \
+          S3BucketIsCrossRegionOrCrossAccount=true \
+      --capabilities CAPABILITY_IAM \
+      --region <region-where-your-s3-log-forwarder-instance-is-deployed>
+    ```
 
 1. Define an explicit log-forwarding-rule for this S3 bucket on the log-forwarding-rules AWS AppConfig configuration profile and deploy it. Unless you have a default rule defined, logs from this bucket won't be forwarded until you deploy an explicit rule updating and deploying the `dynatrace-aws-s3-log-forwarder-configuration.yaml` CloudFormation stack.
 
@@ -177,11 +177,13 @@ For each S3 bucket located in a different AWS region than where the log forwarde
 
 ## Forward logs from S3 buckets on different AWS accounts
 
-You can centralize log forwarding for logs in multiple AWS accounts and AWS regions on a single `dynatrace-aws-s3-log-forwarder` deployment to avoid the overhead of deploying and managing multiple log forwarding instances. Before proceeding, make sure you have deployed the `dynatrace-aws-s3-log-forwarder` setting the `EnableCrossRegionCrossAccountForwarding` parameter set to "true", so a dedicated Event Bus is created to receive cross-region notifications. If you didn't set this parameter, you can simply re-deploy the SAM template enabling it.
+You can centralize log forwarding for logs in multiple AWS accounts and AWS regions on a single `dynatrace-aws-s3-log-forwarder` deployment to avoid the overhead of deploying and managing multiple log forwarding instances. Before proceeding, make sure you have deployed the `dynatrace-aws-s3-log-forwarder` setting the `EnableCrossRegionCrossAccountForwarding` parameter set to "true", so a dedicated Event Bus is created to receive cross-region notifications. You also need to grant permissions to the AWS account using the `AwsAccountsToReceiveLogsFrom` parameter, which takes a comma separated list of AWS account ids to grant permission to. To do so, re-deploy the SAM template:
 
 ```bash
-sam deploy --parameter-overrides EnableCrossRegionCrossAccountForwarding=true
+sam deploy --parameter-overrides EnableCrossRegionCrossAccountForwarding=true AwsAccountsToReceiveLogsFrom="aws_account_1,aws_account_2..."
 ```
+
+**IMPORTANT NOTE:** If you had already some AWS accounts configured on the AwsAccountsToReceiveLogsFrom parameter, make sure to add them to the list on the above command, as it overwrites the previous content of the parameter. If you run `sam deploy --guided` you can see the current value and copy-paste from there adding new accounts.
 
 The diagram below showcases what you need to deploy in order to have the `dynatrace-aws-s3-log-forwarder` forwarding logs from an S3 bucket in a different AWS:
 
@@ -217,79 +219,40 @@ For each S3 bucket located in a different AWS account that you want to forward l
     ```bash
     export STACK_NAME=your_log_forwarder_stack_name_here
 
-    aws cloudformation describe-stacks --stack-name $STACK_NAME \ 
-                                                  --query 'Stacks[].Outputs[?OutputKey==`QueueProcessingFunctionIamRole`].OutputValue' \
-                                                  --output text
+    aws cloudformation describe-stacks \
+    --stack-name $STACK_NAME --query 'Stacks[].Outputs[?OutputKey==`QueueProcessingFunctionIamRole`].OutputValue' \
+    --output text
     ```
 
     **IMPORTANT NOTE:** The S3 bucket on the source AWS account must be configured with [ACLs disabled](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-ownership-existing-bucket.html). If your S3 bucket has ACLs enabled, the above policy only takes effect for objects owned by the bucket owner. As AWS logs are delivered by AWS-owned accounts, who are the owners of the log objects, the permissions granted by the bucket policy don´t apply. Disabling ACLs should meet the wide majority of use cases (it's the default setting for S3 buckets created on the AWS console, and [will become default setting](https://aws.amazon.com/blogs/aws/heads-up-amazon-s3-security-changes-are-coming-in-april-of-2023/) starting on Apr 2023 for new buckets). If you have ACLs enabled on your bucket, read the [AWS documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-ownership-existing-bucket.html) carefully before disabling them. The `dynatrace-aws-s3-log-forwarder` doesn't support accessing buckets assuming an IAM role on the destination account.
-
-1. On the `{your-log-forwader-stack-name}-cross-region-cross-account-s3-events` Event Bus policy (on the AWS account and region where your log forwarder is deployed), grant permissions to the AWS account where your S3 bucket is to forward S3 Object created notifications. Follow the instructions [here](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cross-account.html#eb-receiving-events-from-another-account). Your policy should look like the one below:
-
-    ```json
-    {
-      "Version": "2012-10-17",
-      "Statement": [
-        {
-      
-          "Sid": "allow_account_to_put_events",
-          "Effect": "Allow",
-          "Principal": {
-            "AWS": "<aws_account_id_where_the_s3_bucket_is>"
-          },
-          "Action": "events:PutEvents",
-          "Resource": "arn:aws:events:<aws_region_where_the_forwarder_runs>:<aws_account_id_where_the_forwarder_runs>:event-bus/{your-log-forwader-stack-name}-cross-region-cross-account-s3-events"
-        }
-      ]
-    }
-    ```
-
-    **NOTE:** If you have a large number of AWS accounts, you can permissions to all the AWS accounts in your AWS Organization with the aws:PrincipalOrgID condition:
-
-    ```yaml
-    {
-      "Version": "2012-10-17",
-      "Statement": [
-        {
-          "Sid": "allow_all_accounts_from_organization_to_put_events",
-          "Effect": "Allow",
-          "Principal": "*",
-          "Action": "events:PutEvents",
-          "Resource": "arn:aws:events:<aws_region_where_your_log_forwarder_is>:<aws_account_id_where_your_log_forwarder_is>:event-bus/{your-log-forwader-stack-name}-cross-region-cross-account-s3-events",
-          "Condition": {
-            "StringEquals": {
-              "aws:PrincipalOrgID": "<ORGANIZATION_ID>"
-              }
-          }
-        }  
-      ]
-    }  
-    ````
 
 1. On the AWS account where the S3 bucket is, [enable S3 notifications](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html) to Amazon EventBridge on the bucket.
 
 1. Then create an EventBridge rule that forwards S3 Object Created notifications to the `{your-log-forwader-stack-name}-cross-region-cross-account-s3-events` event bus in the AWS account and region where the log forwarder is deployed.
 
-  Replace the placeholder values below and execute the commands (the below commands assume you have configured [credential profiles](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) on your AWS CLI configuration for the different AWS accounts):
+    Replace the placeholder values below and execute the commands (the below commands assume you have configured [credential profiles](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) on your AWS CLI configuration for the different AWS accounts):
 
-  ```bash
-  export STACK_NAME=name_of_your_log_forwarder_stack
-  export BUCKET_NAME=your_bucket_name
-  export EVENT_BUS_ARN=$(aws cloudformation describe-stacks \
-                                        --stack-name $STACK_NAME \
-                                        --query 'Stacks[].Outputs[?OutputKey==`CrossRegionCrossAccountEventBus`].OutputValue' \
-                                        --output text \
-                                        --profile {aws_cli_credentials_profile_of_log_forwarder_aws_account})
+    ```bash
+    export STACK_NAME=name_of_your_log_forwarder_stack
+    export BUCKET_NAME=your_bucket_name
+    ```
 
-  aws cloudformation deploy \
-  --template-file eventbridge-cross-account-forward-rules.yaml \
-  --stack-name dynatrace-aws-s3-log-forwarder-cross-account-notifications-$BUCKET_NAME \
-  --parameter-overrides CrossRegionCrossAccountEventBusArn=$EVENT_BUS_ARN \
-      LogsBucketName=$BUCKET_NAME \
-  --capabilities CAPABILITY_IAM \
-  --region {region_of_your_s3-bucket}
-  --profile {aws_cli_credentials_profile_for_s3_bucket_aws_account}
-  ```
+    ```bash
+    export EVENT_BUS_ARN=$(aws cloudformation describe-stacks \
+                                          --stack-name $STACK_NAME \
+                                          --query 'Stacks[].Outputs[?OutputKey==`CrossRegionCrossAccountEventBus`].OutputValue' \
+                                          --output text \
+                                          --profile {aws_cli_credentials_profile_of_log_forwarder_aws_account})
+
+    aws cloudformation deploy \
+    --template-file eventbridge-cross-account-forward-rules.yaml \
+    --stack-name dynatrace-aws-s3-log-forwarder-cross-account-notifications-$BUCKET_NAME \
+    --parameter-overrides CrossRegionCrossAccountEventBusArn=$EVENT_BUS_ARN \
+        LogsBucketName=$BUCKET_NAME \
+    --capabilities CAPABILITY_IAM \
+    --region {region_of_your_s3-bucket}
+    --profile {aws_cli_credentials_profile_for_s3_bucket_aws_account}
+    ```
 
 1. Now, on the AWS account and region where the `dynatrace-aws-s3-log-forwarder` is running, deploy the `s3-log-forwarder-bucket-config-template.yaml` CloudFormation template to configure the local EventBridge rule to forward notifications to SQS for the log forwarder to pick them up. Make sure the `S3BucketIsCrossRegionOrCrossAccount` parameter is set to true.
 
