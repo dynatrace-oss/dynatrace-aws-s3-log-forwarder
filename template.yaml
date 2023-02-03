@@ -334,11 +334,17 @@ Resources:
     Type: AWS::Events::EventBusPolicy
     Properties:
       EventBusName: !Ref CrossRegionCrossAccountEventBus
-      StatementId: AllowCrossAccountAccess
+      StatementId: AllowCrossAccountS3Notifications
       Statement:
         Effect: Allow
         Principal: 
-          AWS: [ !Join [",", !Ref AwsAccountsToReceiveLogsFrom] ]
+          AWS: !Split 
+            - ","
+            - !Sub 
+              - arn:aws:iam::${ACCOUNTS}:root
+              - ACCOUNTS: !Join
+                - ':root,arn:aws:iam::'
+                - !Ref AwsAccountsToReceiveLogsFrom
         Action: "events:PutEvents"
         Resource: !GetAtt CrossRegionCrossAccountEventBus.Arn
         Condition:
@@ -346,8 +352,8 @@ Resources:
             "events:detail-type": "Object Created"
             "events:source": "aws.s3"
           ArnEquals:
-            "aws:SourceArn":
-              - arn:aws:events:*:*:rule/default/dt-fwd-s3-object-created-to-*
+            "aws:SourceArn": 
+              - !Sub arn:aws:events:*:*:rule/default/dt-fwd-s3-object-created-to-${AWS::AccountId}-*
 
   AppConfigApplication:
     Type: AWS::AppConfig::Application
