@@ -1,13 +1,13 @@
 # Log Forwarding rules
 
-The `dynatrace-aws-s3-log-forwarder` uses log forwarding rules to determine how to process log files. Log forwarding rules are stored in [AWS AppConfig](https://docs.aws.amazon.com/appconfig/latest/userguide/what-is-appconfig.html), a configuration management service, from where the log processing AWS Lambda function pulls the configuration. This allows you to update your configuration at any point in time without requiring you to re-deploy the AWS Lambda function. Once a new configuration version is available, the log processing function will load it within ~1 minute.
+The `dynatrace-aws-s3-log-forwarder` uses log forwarding rules to determine how to process log files. Log forwarding rules are stored in [AWS AppConfig](https://docs.aws.amazon.com/appconfig/latest/userguide/what-is-appconfig.html), a configuration management service from where the log processing AWS Lambda function pulls the configuration. This allows you to update your configuration at any point in time without requiring you to re-deploy the AWS Lambda function. Once a new configuration version is available, the log processing function will load it within ~1 minute.
 
-The `dynatrace-aws-s3-log-forwarder-configuration.yaml` CloudFormation template, once deployed, defines an initial catch-all default log forwarding rule. If you go to the AWS AppConfig [console](https://console.aws.amazon.com/systems-manager/appconfig/) you will find an `Application` named `<your_stack_name>-app-config` with two configuration profiles within it:
+You can use the `dynatrace-aws-s3-log-forwarder-configuration.yaml` CloudFormation template,to deploy and manage your configuration. The provided template defines an initial catch-all default log forwarding rule. If you go to the AWS AppConfig [console](https://console.aws.amazon.com/systems-manager/appconfig/) you will find an `Application` named `<your_stack_name>-app-config` with two configuration profiles within it:
 
 * log-forwarding-rules: stores log forwarding rules.
 * log-processing-rules: stores custom log processing rules that you can optionally define. For more information, check the [log_processing.md](log_processing.md) documentation.
 
-While the initial configuration helps you get started, you may want to configure more explicit and complex log processing rules. The section below outlines how to configure custom log forwarding rules.
+While this initial configuration helps you get started, you may want to configure more explicit and complex log processing rules for greater control of what logs and how are processed to be sent to Dynatrace. The section below outlines how to configure custom log forwarding rules.
 
 ## Configuring log forwarding rules
 
@@ -45,7 +45,7 @@ The anatomy of the `log-forwarding-rules` configuration profile is the following
 
 If you define a rule set using `default` as bucket name, that rule set will be used for log objects from any S3 bucket that doesn't have explicit log forwarding rules set up.
 
-Without a `default` rule, each Amazon S3 bucket from which you want to forward logs from to Dynatrace requires explicit log forwarding rules. If the Lambda function receives an S3 Object created notification and there are no explicit rules for the S3 bucket, or the object S3 Key doesn't match any of the prefix regular expressions defined on the rules for the bucket, the object is not forwarded to Dynatrace.
+Without a `default` rule, each Amazon S3 bucket from which you want to forward logs from to Dynatrace requires explicit log forwarding rules. If the Lambda function receives an S3 Object created notification and there are no explicit rules for the S3 bucket, or the object S3 Key doesn't match any of the prefix regular expressions defined on the rules for the bucket, the object is not forwarded to Dynatrace and just discarded.
 
 You can use explicit log forwarding rule sets for some buckets, and fallback to a default rule for other buckets; or simply delete the default rule, so only explicit rules are applied.
 
@@ -53,8 +53,8 @@ The prefix field allows you to define a regular expression to match against the 
 
 Log forwarding rules allow you to add custom annotations to your logs (e.g team: x, environment: dev) as well as tell the log forwarding function how to process your AWS, application/3rd party logs: AWS-vended logs (source:aws), generic text logs (source: generic) or other logs that you've defined log processing rules for (source: custom). All forwarded logs are automatically annotated with the following context attributes:
 
-* log.source.s3_bucket_name: name of the S3 bucket the log was forwarded from
-* log.source.s3_key_name: key name of the S3 object that the log entry belongs to
+* log.source.aws.s3.bucket.name: name of the S3 bucket the log was forwarded from
+* log.source.aws.s3.key.name: key name of the S3 object that the log entry belongs to
 * cloud.log_forwarder: the ARN of the AWS Lambda function that forwarded the log entry (this helps if you have multiple log forwarding instances running)
 
 The `dynatrace-aws-s3-log-forwarder` automatically annotates logs and extracts relevant attributes for supported AWS services with fields like `aws.account.id`, `aws.region`... The following AWS-vended logs are supported:
@@ -95,7 +95,7 @@ With the above configuration, any Cloudtrail and ELB logs will be shipped to Dyn
 
 ## Forwarding large log files to Dynatrace
 
-The `dynatrace-aws-s3-log-forwarder` solution is able to handle large log files as data is streamed in chunks from Amazon S3 as it's processed and forwarded to Dynatrace. Even if the solution is able to do this with very low memory footprint, allocating low memory to the function means also low CPU and bandwidth resources and your Lambda function execution may timeout while processing logs (the default configured Lambda execution timeout configuration is 300 seconds). For more information, refer to the AWS Lambda [documentation](https://docs.aws.amazon.com/lambda/latest/operatorguide/computing-power.html).
+The `dynatrace-aws-s3-log-forwarder` solution is able to handle large log files as data is streamed in chunks from Amazon S3 and then processed and forwarded to Dynatrace. Even if the solution is able to do this with very low memory footprint, allocating low memory to the function means also low CPU and bandwidth resources and your Lambda function. Depending on the size and volume of logs you're forwarding, Lambda execution may timeout while processing (the default configured Lambda execution timeout configuration is 300 seconds). For more information on how AWS Lambda allocates compute power, refer to the AWS Lambda [documentation](https://docs.aws.amazon.com/lambda/latest/operatorguide/computing-power.html).
 
 The SAM template deploys the forwarder with the following default parameters that you can modify to suit your needs:
 
@@ -109,7 +109,7 @@ The SAM template deploys the forwarder with the following default parameters tha
 
 ## Forward logs from S3 buckets on different AWS regions
 
-It's possible to centralize log forwarding from S3 buckets on different AWS regions on a `dynatrace-aws-s3-log-forwarder` deployment on a specific AWS region to avoid the overhead of deploying and managing multiple S3 log forwarders.
+It's possible to centralize log forwarding from S3 buckets on different AWS regions on a single `dynatrace-aws-s3-log-forwarder` deployment on a specific AWS region to avoid the overhead of deploying and managing multiple S3 log forwarders.
 
 In this case, you will need to configure Amazon EventBridge rules on the AWS region where your S3 bucket is to forward S3 Object Created notifications fto a dedicated event bus on the AWS region where you have deployed the `dynatrace-aws-s3-log-forwarder`. Before proceeding, make sure you have deployed the `dynatrace-aws-s3-log-forwarder` setting the `EnableCrossRegionCrossAccountForwarding` parameter to "true", so a dedicated Event Bus is created to receive cross-region notifications. If you didn't set this parameter when you deployed the forwarder, you can simply re-deploy the SAM template enabling it.
 
@@ -137,9 +137,9 @@ For each S3 bucket located in a different AWS region than where the log forwarde
 
     ```bash
     export EVENT_BUS_ARN=$(aws cloudformation describe-stacks \
-                                                  --stack-name $STACK_NAME \
-                                                  --query 'Stacks[].Outputs[?OutputKey==`CrossRegionCrossAccountEventBus`].OutputValue' \
-                                                  --output text)
+                                --stack-name $STACK_NAME \
+                                --query 'Stacks[].Outputs[?OutputKey==`CrossRegionCrossAccountEventBus`].OutputValue' \
+                                --output text)
     if [ ! -z $EVENT_BUS_ARN ]
     then
       aws cloudformation deploy \
