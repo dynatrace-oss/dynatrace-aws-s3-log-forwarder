@@ -1,6 +1,9 @@
 import unittest
+import os
 from log.processing import log_processing_rules
-from log.processing import processing
+
+os.environ['LOG_FORWARDER_CONFIGURATION_LOCATION'] = 'local'
+os.environ['DEPLOYMENT_NAME'] = 'test'
 
 processing_rules, _ = log_processing_rules.load()
 

@@ -40,7 +40,7 @@ def _get_context_log_attributes(bucket: str, key: str):
     return {
         'log.source.s3_bucket_name': bucket,
         'log.source.s3_key_name': key,
-        'cloud.log.forwarder': environ['FORWARDER_FUNCTION_ARN']
+        'cloud.log_forwarder': environ['FORWARDER_FUNCTION_ARN']
     }
 
 def get_jsonslicer_path_prefix_from_jmespath_path(jmespath:str):

@@ -1,5 +1,9 @@
 import unittest
+import os
 from log.processing import log_processing_rules
+
+os.environ['LOG_FORWARDER_CONFIGURATION_LOCATION'] = 'local'
+os.environ['DEPLOYMENT_NAME'] = 'test'
 
 processing_rules, _ = log_processing_rules.load()
 class TestCloudTrailAttributeExtraction(unittest.TestCase):
