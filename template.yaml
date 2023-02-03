@@ -79,6 +79,18 @@ Parameters:
       - "true"
       - "false"
     Default: "true"
+  EnableCrossRegionCrossAccountForwarding:
+    Type: String
+    Description: Create a dedicated event bus to receive and manage cross-region and cross-account S3 Object Created notifications
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+  AwsAccountsToReceiveLogsFrom:
+    Type: CommaDelimitedList
+    Description: List of AWS Accounts to allow to send cross-account S3 Object created Notifications
+    Default: ""
+    AllowedPattern: "($^|\\d{12})"
   EnableLambdaInsights:
     Description: Enable Amazon CloudWatch Lambda Insights
     Type: String
@@ -113,18 +125,6 @@ Parameters:
     Type: Number
     Description: Maximum number of retries for failed processing of S3 Object Created notification messages
     Default: "2"
-  EnableCrossRegionCrossAccountForwarding:
-    Type: String
-    Description: Create a dedicated event bus to receive and manage cross-region and cross-account S3 Object Created notifications
-    Default: "false"
-    AllowedValues:
-      - "true"
-      - "false"
-  AwsAccountsToReceiveLogsFrom:
-    Type: CommaDelimitedList
-    Description: List of AWS Accounts to allow to send cross-account S3 Object created Notifications
-    Default: ""
-    AllowedPattern: "($^|\\d{12})"
 
 Conditions:
   SecondDTEnvironmentSpecified: !Not [!Equals [!Ref DynatraceEnvironment2URL, "" ]]
@@ -334,7 +334,7 @@ Resources:
     Type: AWS::Events::EventBusPolicy
     Properties:
       EventBusName: !Ref CrossRegionCrossAccountEventBus
-      StatementId: AddCrossAccountAccess
+      StatementId: AllowCrossAccountAccess
       Statement:
         Effect: Allow
         Principal: 
