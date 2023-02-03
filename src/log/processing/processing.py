@@ -38,8 +38,8 @@ def _get_context_log_attributes(bucket: str, key: str):
     Returns context attributes to the log entry for troubleshooting purposes.
     '''
     return {
-        'log.source.s3_bucket_name': bucket,
-        'log.source.s3_key_name': key,
+        'log.source.aws.s3.bucket.name': bucket,
+        'log.source.aws.s3.key.name': key,
         'cloud.log_forwarder': environ['FORWARDER_FUNCTION_ARN']
     }
 
