@@ -60,7 +60,7 @@ You can ingest any text and JSON-array logs into Dynatrace as generic logs and u
             log.source: aws.vpcflowlogs
     ```
 
-1. If S3 Object created notifications are not yet configured for the bucket / prefix where VPC Flow Logs are delivered, deploy the `s3-log-forwarder-bucket-config-template.yaml` CloudFormation template with the details of your S3 bucket. Also, enable S3 Event Bridge notifications as per description [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html).
+1. If S3 Object created notifications are not yet configured for the bucket / prefix where VPC Flow Logs are delivered, deploy the `dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml` CloudFormation template with the details of your S3 bucket. Also, enable S3 Event Bridge notifications as per description [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html).
 
 1. On your Dynatrace tenant, go to Manage -> Settings -> Log Monitoring -> Log Processing and click on "Add processing rule". Fill your processing rule with the following data:
 

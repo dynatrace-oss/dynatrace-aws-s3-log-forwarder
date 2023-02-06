@@ -187,13 +187,13 @@ To deploy the solution, follow the instructions below:
 1. At this point, you have successfully deployed the `dynatrace-aws-s3-log-forwarder` with your desired configuration. Now, you need to configure specific Amazon S3 buckets to send "S3 Object created" notifications to the log forwarder; as well as grant permissions to the log forwarder to read files from your bucket. For each bucket that you want to send logs from to Dynatrace, perform the below steps:
 
     * Go to your S3 bucket(s) configuration and enable S3 notifications via EventBridge following instructions [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html).
-    * Create Amazon EventBridge rules to send Object created notifications to the log forwarder. To do so, deploy the `s3-log-forwarder-bucket-config-template.yaml` CloudFormation template:
+    * Create Amazon EventBridge rules to send Object created notifications to the log forwarder. To do so, deploy the `dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml` CloudFormation template:
 
         ```bash
         export BUCKET_NAME=your-bucket-name-here
 
         aws cloudformation deploy \
-            --template-file s3-log-forwarder-bucket-config-template.yaml \
+            --template-file dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml \
             --stack-name dynatrace-aws-s3-log-forwarder-s3-bucket-configuration-$BUCKET_NAME \
             --parameter-overrides DynatraceAwsS3LogForwarderStackName=$STACK_NAME \
                                   LogsBucketName=$BUCKET_NAME \

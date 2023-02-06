@@ -158,11 +158,11 @@ For each S3 bucket located in a different AWS region than where the log forwarde
 
 1. Once the above stack is deployed, go to your S3 bucket(s) and enable notifications via EventBridge following instructions [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html).
 
-1. Last, deploy the `s3-log-forwarder-bucket-config-template.yaml` CloudFormation template on the AWS region where the `dynatrace-aws-s3-log-forwarder` is deployed. This template will deploy the required regional Amazon EventBridge rules to send the cross-region forwarded notifications to the S3 forwarder Amazon SQS queue, as well as grant IAM permissions to the AWS Lambda function to access your S3 bucket. Make sure the `S3BucketIsCrossRegionOrCrossAccount` parameter is set to "true".
+1. Last, deploy the `dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml` CloudFormation template on the AWS region where the `dynatrace-aws-s3-log-forwarder` is deployed. This template will deploy the required regional Amazon EventBridge rules to send the cross-region forwarded notifications to the S3 forwarder Amazon SQS queue, as well as grant IAM permissions to the AWS Lambda function to access your S3 bucket. Make sure the `S3BucketIsCrossRegionOrCrossAccount` parameter is set to "true".
 
     ```bash
     aws cloudformation deploy \
-      --template-file s3-log-forwarder-bucket-config-template.yaml \
+      --template-file dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml \
       --stack-name dynatrace-aws-s3-log-forwarder-s3-bucket-configuration-$BUCKET_NAME \
       --parameter-overrides DynatraceAwsS3LogForwarderStackName=$STACK_NAME \
           LogsBucketName=$BUCKET_NAME \
@@ -254,11 +254,11 @@ For each S3 bucket located in a different AWS account that you want to forward l
     --profile {aws_cli_credentials_profile_for_s3_bucket_aws_account}
     ```
 
-1. Now, on the AWS account and region where the `dynatrace-aws-s3-log-forwarder` is running, deploy the `s3-log-forwarder-bucket-config-template.yaml` CloudFormation template to configure the local EventBridge rule to forward notifications to SQS for the log forwarder to pick them up. Make sure the `S3BucketIsCrossRegionOrCrossAccount` parameter is set to true.
+1. Now, on the AWS account and region where the `dynatrace-aws-s3-log-forwarder` is running, deploy the `dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml` CloudFormation template to configure the local EventBridge rule to forward notifications to SQS for the log forwarder to pick them up. Make sure the `S3BucketIsCrossRegionOrCrossAccount` parameter is set to true.
 
     ```bash
     aws cloudformation deploy \
-        --template-file s3-log-forwarder-bucket-config-template.yaml \
+        --template-file dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml \
         --stack-name dynatrace-aws-s3-log-forwarder-s3-bucket-configuration-$BUCKET_NAME \
         --parameter-overrides DynatraceAwsS3LogForwarderStackName=$STACK_NAME \
             LogsBucketName=$BUCKET_NAME \

@@ -29,7 +29,7 @@ Metadata:
   Instructions:
     Description: >
       Deploy this template once per every Amazon S3 bucket you want to configure to forward logs to Dynatrace on the same AWS Account and region
-      where the dynatrace-aws-s3-log-forwarder is depployed. LogBucketPrefix# parameters are optional, only use them if you want to narrow down 
+      where the dynatrace-aws-s3-log-forwarder is deployed. LogBucketPrefix# parameters are optional, only use them if you want to narrow down 
       the ingestion to specific prefixes in your bucket.
       
       Example AWS CLI command:
