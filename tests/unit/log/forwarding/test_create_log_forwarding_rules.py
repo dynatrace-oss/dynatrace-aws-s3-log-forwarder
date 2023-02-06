@@ -24,14 +24,14 @@ class TestForwardingRules(unittest.TestCase):
 
         valid_rules = [ 
             {   
-                'rule_name': 'Send CloudTrail and ELB logs',
+                'name': 'Send CloudTrail and ELB logs',
                 'prefix': '^AWSLogs/.*/(CloudTrail|elasticloadbalancing)/.*',
                 'source': 'aws',
                 'annotations': {'test':'true'},
                 'sinks': ['1']
             },
             {
-                'rule_name': 'Send Jenkins Logs',
+                'name': 'Send Jenkins Logs',
                 'prefix': '^jenkins/.*(\\.log)',
                 'source': 'generic',
                 'sinks': ['1','2']

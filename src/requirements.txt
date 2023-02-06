@@ -5,6 +5,6 @@ PyYAML==6.0
 regex==2022.6.2
 # aws-lambda-powertools 1.31.0 fixes a problem where metrics were lacking dimension
 # https://github.com/awslabs/aws-lambda-powertools-python/releases/tag/v1.31.0
-aws-lambda-powertools==1.31.1
+aws-lambda-powertools==2.6.0
 jsonslicer==0.1.7
 Jinja2==3.1.2

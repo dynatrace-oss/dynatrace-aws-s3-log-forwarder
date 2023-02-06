@@ -33,29 +33,31 @@ metrics = Metrics()
 
 EXECUTION_REMAINING_TIME_LIMIT = 10000
 
+
 def _get_context_log_attributes(bucket: str, key: str):
     '''
     Returns context attributes to the log entry for troubleshooting purposes.
     '''
     return {
-        'log.source.s3_bucket_name': bucket,
-        'log.source.s3_key_name': key,
-        'log.source.forwarder': environ['FORWARDER_FUNCTION_ARN']
+        'log.source.aws.s3.bucket.name': bucket,
+        'log.source.aws.s3.key.name': key,
+        'cloud.log_forwarder': environ['FORWARDER_FUNCTION_ARN']
     }
 
-def get_jsonslicer_path_prefix_from_jmespath_path(jmespath:str):
+
+def get_jsonslicer_path_prefix_from_jmespath_path(jmespath_expr: str):
     '''
     Given a jmespath entry (e.g. log.records), translates the expression into a tuple
     for processing with JsonSlicer. (this is a basic implementation, not jmespath spec compliant)
     '''
-    jsonslicer_tuple = tuple(jmespath.split('.'))
+    jsonslicer_tuple = tuple(jmespath_expr.split('.'))
     jsonslicer_tuple += (None,)
 
     return jsonslicer_tuple
 
 
-def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: str, log_sinks: list, lambda_context,
-    user_defined_annotations: dict = None, session: boto3.Session = None):
+def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key: str, log_sinks: list, lambda_context,
+                       user_defined_annotations: dict = None, session: boto3.Session = None):
     '''
     Downloads a log from S3, decompresses and reads log messages within it and transforms the messages to Dynatrace LogV2 API format.
     Can read JSON logs (list of dicts) or text line by line (both gzipped or plain).
@@ -79,7 +81,8 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
     log_obj_http_response_body = log_obj_http_response['Body']
 
     if key.endswith('.gz'):
-        log_stream = gzip.GzipFile(mode='rb', fileobj=log_obj_http_response_body)
+        log_stream = gzip.GzipFile(
+            mode='rb', fileobj=log_obj_http_response_body)
     else:
         log_stream = log_obj_http_response_body
 
@@ -88,21 +91,24 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
     # if JSON (we expect either a list[dict] or a JSON obj with a list of log entries in a key)
     if log_processing_rule.log_format == 'json':
         if log_processing_rule.log_entries_key is not None:
-            json_slicer_path_prefix = get_jsonslicer_path_prefix_from_jmespath_path(log_processing_rule.log_entries_key)
+            json_slicer_path_prefix = get_jsonslicer_path_prefix_from_jmespath_path(
+                log_processing_rule.log_entries_key)
         else:
             json_slicer_path_prefix = (None, )
-        log_entries = jsonslicer.JsonSlicer(log_stream, json_slicer_path_prefix)
-    
+        log_entries = jsonslicer.JsonSlicer(
+            log_stream, json_slicer_path_prefix)
+
     # if it's a stream of JSON objects, create an iterable list of dicts
     elif log_processing_rule.log_format == 'json_stream':
         # if the rule is cw_to_fh, need to decompress data
         if log_processing_rule.name == "cwl_to_fh":
-            json_stream = gzip.GzipFile(mode='rb',fileobj=log_stream)
+            json_stream = gzip.GzipFile(mode='rb', fileobj=log_stream)
         else:
             json_stream = log_stream
 
         json_slicer_path_prefix = []
-        log_entries = jsonslicer.JsonSlicer(json_stream,json_slicer_path_prefix,yajl_allow_multiple_values=True)
+        log_entries = jsonslicer.JsonSlicer(
+            json_stream, json_slicer_path_prefix, yajl_allow_multiple_values=True)
 
     # if it's text, either iterate the GzipFile if compressed or botocore response body iter_lines() if plain text
     elif log_processing_rule.log_format == 'text':
@@ -110,11 +116,11 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
             log_entries = log_stream
         else:
             log_entries = log_stream.iter_lines()
-    
+
     # catch-all? this should never happen
     else:
         log_entries = []
-        
+
     context_log_attributes = {}
 
     # Add custom log annotations from log forwarding rule
@@ -122,8 +128,10 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
 
     # Add context annotations
     context_log_attributes.update(_get_context_log_attributes(bucket, key))
-    context_log_attributes.update(log_processing_rule.get_attributes_from_s3_key_name(key))
-    context_log_attributes.update(log_processing_rule.get_processing_log_annotations())
+    context_log_attributes.update(
+        log_processing_rule.get_attributes_from_s3_key_name(key))
+    context_log_attributes.update(
+        log_processing_rule.get_processing_log_annotations())
 
     # Count log entries (can't len() a stream)
     num_log_entries = 0
@@ -133,28 +141,29 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
 
         decompressed_log_object_size += sys.getsizeof(log_entry)
         dt_log_message = {}
-        
+
         # start with the json_list within json_stream case as it requires a
         # second level of iteration
         if (log_processing_rule.log_format == 'json_stream' and
-            log_processing_rule.log_entries_key is not None):
-            if isinstance(log_entry,dict):
+                log_processing_rule.log_entries_key is not None):
+            if isinstance(log_entry, dict):
                 # check if we need to process this entry, or not
                 if log_processing_rule.filter_json_objects_key is not None:
                     if log_entry[log_processing_rule.filter_json_objects_key] != log_processing_rule.filter_json_objects_value:
                         continue
-                
+
                 # check if we need to inherit attributes from top level object
                 top_level_json_attributes = {}
 
                 if log_processing_rule.attribute_extraction_from_top_level_json:
-                    for k,v in log_processing_rule.attribute_extraction_from_top_level_json.items():
-                        attr_value = jmespath.search(k,log_entry)
+                    for k, v in log_processing_rule.attribute_extraction_from_top_level_json.items():
+                        attr_value = jmespath.search(k, log_entry)
                         if attr_value:
                             top_level_json_attributes[v] = attr_value
                         else:
-                            logger.warning(f'No matches found for {k} in top level json.')
-                
+                            logger.warning(
+                                'No matches found for %s in top level json.', k)
+
                 # iterate through list of log entries in json obj within json stream
                 for sub_entry in log_entry[log_processing_rule.log_entries_key]:
                     dt_log_message = {}
@@ -162,7 +171,8 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
 
                     # add log attributes
                     dt_log_message.update(top_level_json_attributes)
-                    dt_log_message.update(log_processing_rule.get_extracted_log_attributes(sub_entry))
+                    dt_log_message.update(
+                        log_processing_rule.get_extracted_log_attributes(sub_entry))
                     dt_log_message.update(context_log_attributes)
 
                     # Push to destination sink(s)
@@ -171,17 +181,18 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
 
                     num_log_entries += 1
             else:
-                logger.error(f'Log entry was expected to be dict, but is {type(log_entry)}')
+                logger.error(
+                    'Log entry was expected to be dict, but is %s', type(log_entry))
                 metrics.add_metric(name='FilesWithInvalidLogEntries',
-                    unit=MetricUnit.Count, value=1)
+                                   unit=MetricUnit.Count, value=1)
                 raise ValueError("Json Stream message didn't return a dict")
 
             # if we're processing a large log file, check remaining execution time
             # do this here, since we continue for json-stream + list
             if num_log_entries % 1000 == 0:
-                logger.debug(f"Processed {num_log_entries} entries")
+                logger.debug("Processed %s entries", str(num_log_entries))
                 # Check remaining execution time for Lambda function
-                if lambda_context.get_remaining_time_in_millis() <= EXECUTION_REMAINING_TIME_LIMIT :
+                if lambda_context.get_remaining_time_in_millis() <= EXECUTION_REMAINING_TIME_LIMIT:
                     raise NotEnoughExecutionTimeRemaining
             # continue to next JSON object in stream
             continue
@@ -196,24 +207,27 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
                 dt_log_message['content'] = log_entry
             else:
                 metrics.add_metric(name='FilesWithInvalidLogEntries',
-                    unit=MetricUnit.Count, value=1)
-                raise ValueError(f'Log entry was expected to be bytes, but is {type(log_entry)}')
+                                   unit=MetricUnit.Count, value=1)
+                raise ValueError(
+                    f'Log entry was expected to be bytes, but is {type(log_entry)}')
 
         # if JSON or Stream of JSONs (without subentries)
         elif (log_processing_rule.log_format == 'json' or
-            (log_processing_rule.log_format == 'json_stream' and not log_processing_rule.log_entries_key)):
-            if isinstance(log_entry,dict):
+              (log_processing_rule.log_format == 'json_stream' and not log_processing_rule.log_entries_key)):
+            if isinstance(log_entry, dict):
                 dt_log_message['content'] = json.dumps(log_entry)
             else:
                 metrics.add_metric(name='FilesWithInvalidLogEntries',
-                    unit=MetricUnit.Count, value=1)
-                raise ValueError(f'Log entry was expected to be dict, but is {type(log_entry)}')
-            
+                                   unit=MetricUnit.Count, value=1)
+                raise ValueError(
+                    f'Log entry was expected to be dict, but is {type(log_entry)}')
+
         # add context and custom annotations to log message
         dt_log_message.update(context_log_attributes)
 
         # Add extracted attributes and log annotations from log processing rule
-        dt_log_message.update(log_processing_rule.get_extracted_log_attributes(log_entry))
+        dt_log_message.update(
+            log_processing_rule.get_extracted_log_attributes(log_entry))
 
         # Push to destination sink(s)
         for log_sink in log_sinks:
@@ -223,21 +237,25 @@ def process_log_object(log_processing_rule: LogProcessingRule,bucket: str, key: 
 
         # if we're processing a large log file, check remaining execution time
         if num_log_entries % 1000 == 0:
-            logger.debug(f"Processed {num_log_entries} entries")
+            logger.debug("Processed %s entries", str(num_log_entries))
             # Check remaining execution time for Lambda function
-            if lambda_context.get_remaining_time_in_millis() <= EXECUTION_REMAINING_TIME_LIMIT :
+            if lambda_context.get_remaining_time_in_millis() <= EXECUTION_REMAINING_TIME_LIMIT:
                 raise NotEnoughExecutionTimeRemaining
 
-    logger.info(f"Total log entries processed: {num_log_entries}")
+    logger.info("Total log entries processed: %s", str(num_log_entries))
 
     end_time = time.time()
     metrics.add_metric(name='LogProcessingTime',
                        unit=MetricUnit.Seconds, value=(end_time - start_time))
     metrics.add_metric(name='ReceivedUncompressedLogFileSize',
-                        unit=MetricUnit.Bytes, value=decompressed_log_object_size)
+                       unit=MetricUnit.Bytes, value=decompressed_log_object_size)
 
     # return number of log entries processed
-    return(num_log_entries)
+    return (num_log_entries)
+
 
 class NotEnoughExecutionTimeRemaining(Exception):
+    '''
+    Exception for running out of Lambda execution time
+    '''
     pass

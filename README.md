@@ -11,45 +11,62 @@ This project deploys a Serverless architecture to forward logs from Amazon S3 to
 
 ### Prerequisites
 
+The deployment instructions are written for Linux/MacOS. If you are running on Windows, use the Linux Subsystem for Windows or use an [AWS Cloud9](https://aws.amazon.com/cloud9/) instance.
+
 You'll need the following software installed:
 
 * [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 * [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 * Docker Engine
+* Git
 
 You'll also need:
 
 * A [Dynatrace access token](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication) for your tenant with the `logs.ingest` APIv2 scope.
 
-### Deploy the solution
+### Deploy the dynatrace-aws-s3-log-forwarder
 
-1. Create an AWS SSM SecureString Parameter with your Dynatrace access token to ingest logs. The SAM template that you will deploy will grant AWS Lambda permissions to access SSM parameters on the hierarchy `/dynatrace/s3-log-forwarder/${AWS::StackName}/*`. This allows you to have multiple deployments of the forwarder, each using its own DT access token securely stored. You can also configure a single forwarder to route logs to multiple Dynatrace instances. Create a parameter within the hierarchy for each of the Dynatrace instances needed. Example:
+The deployment of the log forwarder is split into multiple SAM/CloudFormation templates. To get a high level view of what's deployed by which template, look at the diagram below:
+
+![single-region-deployment](docs/images/single-region-deployment.jpg)
+
+To deploy the solution, follow the instructions below:
+
+1. Download required dependencies (AWS Lambda Extensions) to build the log forwarder container image:
 
     ```bash
-    export PARAMETER_NAME="/dynatrace/s3-log-forwarder/<my-stack-name>/my-dynatrace-instance-id/api-key"
+    bash get-required-lambda-layers.sh
+    ```
+
+1. Clone the `dynatrace-aws-s3-log-forwarder` repository and checkout the latest version tag:
+
+    ```bash
+    export VERSION_TAG=$(curl -s https://api.github.com/repos/dynatrace-oss/dynatrace-aws-s3-log-forwarder/releases/latest | grep tag_name | cut -d'"' -f4)
+    git clone https://github.com/dynatrace-oss/dynatrace-aws-s3-log-forwarder.git
+    cd dynatrace-aws-s3-log-forwarder
+    git checkout $VERSION_TAG
+    ```
+
+1. Define a name for your `dynatrace-aws-s3-log-forwarder` deployment name (e.g. mycompany-dynatrace-s3-log-forwarder) and your dynatrace tenant UUID (e.g. `abc12345` if your Dynatrace environment url is `https://abc12345.live.dynatrace.com`) in environment variables that will be used along the deployment process.
+
+    ```bash
+    export STACK_NAME=replace_with_your_log_forwarder_stack_name
+    export DYNATRACE_TENANT_UUID=replace_with_your_dynatrace_tenant_uuid
+    ```
+
+1. Create an AWS SSM SecureString Parameter to store your Dynatrace access token to ingest logs.
+
+    ```bash
+    export PARAMETER_NAME="/dynatrace/s3-log-forwarder/$STACK_NAME/$DYNATRACE_TENANT_UUID/api-key"
     # Configure HISTCONTROL to avoid storing on the bash history the commands containing API keys
     export HISTCONTROL=ignorespace
      export PARAMETER_VALUE=your_dynatrace_api_key_here
      aws ssm put-parameter --name $PARAMETER_NAME --type SecureString --value $PARAMETER_VALUE
     ```
 
-    **NOTE:** Your API Key is stored encyrpted with the default AWS-managed key alias: `aws/ssm`. If you want to use a Customer-managed Key, you'll need to grant Decrypt permissions to AWS Lambda.
-
-1. Clone this repository.
-
-1. Under the `config/log_forwarding_rules` folder, create a `<bucket_name>.yaml` file for each Amazon S3 bucket you want this Lambda function to forward logs to Dynatrace. If your S3 bucket only contains supported AWS logs and you want to forward logs for all Objects created on your bucket you can create a simple forwarding rule like the following:
-
-    ```yaml
-    - rule_name: forward_all
-      # Match any file in your bucket
-      prefix: ".*"
-      # Process as AWS-vended log (automatic fallback to generic text log ingestion if log is not recognized)
-      source: aws
-    ```
-
-    **NOTE:** The log forwarder adds context attributes to all forwarded logs, including: `log.source.s3_bucket`, `log.source.s3_key_name` and `log.source.forwarder`. Additional attributes are extracted from log contents for supported AWS-vended logs.
-
-    If you have logs from multiple sources (e.g. AWS-vended, custom application logs...) on your S3 bucket and/or want to add custom attributes to logs stored on different S3 prefixes you can create more complex forwarding rules. For more details, go to the [forwarding rules docs](docs/log_forwarding.md)
+    **NOTES:**
+    * It's important that your parameter name follows the structure above, as the solution grants permissions to AWS Lambda to the hierarchy `/dynatrace/s3-log-forwarder/your_stack_name/*`
+    * Your API Key is stored encyrpted with the default AWS-managed key alias: `aws/ssm`. If you want to use a Customer-managed Key, you'll need to grant Decrypt permissions to the AWS Lambda IAM Role that's deployed within the SAM template.
 
 1. From the project root directory, execute the following command to build the Serverless application:
 
@@ -57,41 +74,136 @@ You'll also need:
     sam build 
     ```
 
-    **NOTE:** We are using a container image to build the AWS Lambda function. By default, we set the processor architecture to arm64 to build the container image for the dynatrace-aws-s3-log-forwarder. If you are building the function on an x86 machine and OS that doesn't support arm64 emulation, you can build an amd64 container image overriding the default value of the `ProcessorArchitecture` parameter.
+    **NOTE:** We are using a container image to build the AWS Lambda function. By default, we set the processor architecture to x86_64. If you want to build an arm64, you can use the `ProcessorArchitecture` parameter.
 
     ```bash
-    sam build --parameter-overrides ProcessorArchitecture=x86_64
+    sam build --parameter-overrides \
+            ProcessorArchitecture=arm64
     ```
 
-1. Execute the following command to deploy the log forwarding solution. You'll be prompted for the required configuration parameters, e.g. your Dynatrace tenant URL and the SSM Parameter Name storing your Dynatrace API key created on step 1 (you can optionally configure a second Dynatrace tenant to forward logs to [experimental feature])... **You'll be prompted for a stack name, make sure you use the same StackName you've used before to create the SSM Parameter (`my-stack-name` on the example of step 1)**. If you've built the container image for x86_64 architecture make sure you set the `ProcessorArchitecture` parameter to `x86_64` here too. For other parameters, just leave the default values unless you are an experienced user.
+1. Execute the following command to deploy the `dynatrace-aws-s3-log-forwarder`:
 
     ```bash
-    sam deploy --guided
+    sam deploy --stack-name $STACK_NAME --guided \
+               --parameter-overrides \
+                    DynatraceEnvironment1URL="https://$DYNATRACE_TENANT_UUID.live.dynatrace.com" \
+                    DynatraceEnvironment1ApiKeyParameter=$PARAMETER_NAME 
     ```
 
-    **Note:** You will also be prompted for your e-mail address, so you'll receive notifications when log files can't be processed and messages are arriving to the Dead Letter Queue.
+    The command will prompt you for parameter values as well as will create a set of required resources for AWS SAM to deploy the application during the initial deploymemnt.
+    All parameters will have default values predefined, those will work well for general use cases, just hit enter on the prompt to leave it as it is. If you want to customize values, you can find the parameter descriptions on the [template.yaml](template.yaml#L27-L122) file.
 
-1. At this stage, you have successfully deployed the `dynatrace-aws-s3-log-forwarder` solution with your desired configuration. Now, for each Amazon S3 bucket you want to forward logs to Dynatrace, deploy the `s3-log-forwarder-bucket-config-template.yaml` CloudFormation template with appropriate parameters. This template provides IAM permissions to the log forwarding Lambda Function to read objects from your S3 buckets and creates an Amazon EventBridge rule to send "Object Created" notifications for the S3 bucket to the log forwarding solution Amazon SQS queue.
+    The output will be similar to the one below:
 
-    The template takes as parameters the log forwarder stack name you have deployed before and the S3 bucket name as mandatory parameters. Optionally, you can specify between 1 and 10 Amazon S3 key prefixes to limit log ingestion to a subset of S3 prefixes. If S3 Key prefixes are defined, IAM permissions are narrowed down to only these prefixes, as well the EventBridge rule will only send notifications for objects created within the specified prefixes.
+    ```bash
+    Configuring SAM deploy
+    ======================
 
-    For each S3 bucket, execute the AWS CLI command below (substituting relevant parameters):
+    Looking for config file [samconfig.toml] :  Not found
+
+    Setting default arguments for 'sam deploy'
+    =========================================
+    Stack Name [your_log_forwarder_stack_name]: 
+    AWS Region [us-east-1]: 
+    Parameter DynatraceEnvironment1URL [https://abc12345.live.dynatrace.com]: 
+    Parameter DynatraceEnvironment1ApiKeyParameter [/dynatrace/s3-log-forwarder/your_log_forwarder_stack_name/abcd1234/api-key]: 
+    Parameter DynatraceEnvironment2URL []: 
+    Parameter DynatraceEnvironment2ApiKeyParameter []: 
+    Parameter NotificationsEmail []: 
+    Parameter ProcessorArchitecture [x86_64]: 
+    Parameter LambdaFunctionMemorySize [256]: 
+    Parameter LambdaLoggingLevel [INFO]: 
+    Parameter LogForwarderConfigurationLocation [aws-appconfig]: 
+    Parameter DeployCloudWatchMonitoringDashboard [true]: 
+    Parameter EnableLambdaInsights [false]: 
+    Parameter MaximumLambdaConcurrency [30]: 
+    Parameter LambdaSQSMessageBatchSize [4]: 
+    Parameter LambdaMaximumExecutionTime [300]: 
+    Parameter SQSVisibilityTimeout [420]: 
+    Parameter SQSLongPollingMaxSeconds [20]: 
+    Parameter MaximumSQSMessageRetries [2]: 
+    Parameter EnableCrossRegionCrossAccountForwarding [false]: 
+    #Shows you resources changes to be deployed and require a 'Y' to initiate deploy
+    Confirm changes before deploy [y/N]: 
+    #SAM needs permission to be able to create roles to connect to the resources in your template
+    Allow SAM CLI IAM role creation [Y/n]: 
+    #Preserves the state of previously provisioned resources when an operation fails
+    Disable rollback [y/N]: 
+    Save arguments to configuration file [Y/n]: 
+    SAM configuration file [samconfig.toml]: 
+    SAM configuration environment [default]: 
+
+    Looking for resources needed for deployment:
+     Managed S3 bucket: aws-sam-cli-managed-default-samclisourcebucket-pnxn6blqbr3e
+     A different default S3 bucket can be set in samconfig.toml
+     Image repositories: Not found.
+     #Managed repositories will be deleted when their functions are removed from the template and deployed
+     Create managed ECR repositories for all functions? [Y/n]: 
+
+    Saved arguments to config file
+    Running 'sam deploy' for future deployments will use the parameters saved above.
+
+    (...)
+    ```
+
+    If successfull, you'll see the a message similar to the below at the end of the execution:
+
+    ```bash
+    Successfully created/updated stack - dynatrace-s3-log-forwarder in us-east-1
+    ```
+
+    **NOTES:**
+    * The e-mail address is set to receive alerts when log files can't be processed and messages are arriving to the Dead Letter Queue. If you don't want to receive those, just leave the parameter empty.
+    * An Amazon SNS topic is created to receive monitoring alerts where you can subscribe HTTP endpoints to send the notification to your tools (e.g. PagerDuty, Service Now...).
+
+1. The log forwarding Lambda function pulls configuration data from AWS AppConfig that contains the rules that defines how to forward and process log files. The `dynatrace-aws-s3-log-forwarder-configuration.yaml` CloudFormation template is designed to help get you started deploying the log forwarding configuration. It deploys a default "catch all" log forwarding rule that makes the log forwarding Lambda function process any S3 Object it receives an S3 Object Created notification for, and attempts to identify the source of the log, matching the object against supported AWS log sources. The log forwarder logic falls back to generic text log ingestion if it's unable to identify the log source:
+
+    ```yaml
+    ---
+    bucket_name: default
+    log_forwarding_rules:
+      - name: default_forward_all
+        # Match any file in your buckets
+        prefix: ".*"
+        # Process as AWS-vended log (automatic fallback to generic text log    ingestion if log is not 
+        source: aws
+    ```
+
+    You'll find this rule defined in-line on the CloudFormation template [here](dynatrace-aws-s3-log-forwarder-configuration.yaml#L60-L67), which you can modify and tailor it to your needs. To configure explicit log forwarding rules, visit  the [docs/log_forwarding.md](docs/log_forwarding.md) documentation.
+
+    To deploy the configuration, execute the following command:
 
     ```bash
     aws cloudformation deploy \
-      --template-file s3-log-forwarder-bucket-config-template.yaml \
-      --stack-name dynatrace-aws-s3-log-forwarder-s3-bucket-configuration-<your_bucket_name> \
-      --parameter-overrides DynatraceAwsS3LogForwarderStackName=<name_of_your_log_forwarder_stack> \
-          LogsBucketName=<s3_bucket_name> \
-          LogsBucketPrefix1=<your_s3_prefix1>/ \
-          LogsBucketPrefix2=<your_s3_prefix2>/ \
-          (...)
-          LogsBucketPrefix10=<your_s3_prefix10>/ \
-      --capabilities CAPABILITY_IAM
+        --template-file dynatrace-aws-s3-log-forwarder-configuration.yaml \
+        --stack-name dynatrace-aws-s3-log-forwarder-configuration-$STACK_NAME \
+        --parameter-overrides DynatraceAwsS3LogForwarderStackName=$STACK_NAME
     ```
 
-    Once the above stack is deployed, go to your S3 bucket(s) configuration and enable notifications via EventBridge following instructions [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html).
+    **NOTES:**
+    * You can deploy updated configurations at any point in time, the log forwarding function will load them in ~1 minute after they've been deployed.
+    * The log forwarder adds context attributes to all forwarded logs, including: `log.source.aws.s3.bucket.name`, `log.source.aws.s3.key.name` and `cloud.forwarder`. Additional attributes are extracted from log contents for supported AWS-vended logs.
+
+1. At this point, you have successfully deployed the `dynatrace-aws-s3-log-forwarder` with your desired configuration. Now, you need to configure specific Amazon S3 buckets to send "S3 Object created" notifications to the log forwarder; as well as grant permissions to the log forwarder to read files from your bucket. For each bucket that you want to send logs from to Dynatrace, perform the below steps:
+
+    * Go to your S3 bucket(s) configuration and enable S3 notifications via EventBridge following instructions [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html).
+    * Create Amazon EventBridge rules to send Object created notifications to the log forwarder. To do so, deploy the `dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml` CloudFormation template:
+
+        ```bash
+        export BUCKET_NAME=your-bucket-name-here
+
+        aws cloudformation deploy \
+            --template-file dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml \
+            --stack-name dynatrace-aws-s3-log-forwarder-s3-bucket-configuration-$BUCKET_NAME \
+            --parameter-overrides DynatraceAwsS3LogForwarderStackName=$STACK_NAME \
+                                  LogsBucketName=$BUCKET_NAME \
+            --capabilities CAPABILITY_IAM
+        ```
+
+        **NOTES:**
+        * The S3 bucket must be on the same AWS account and region than where your log forwarder is deployed. For cross-region and cross-account deployments, check the [docs/log_forwarding.md](docs/log_forwarding.md) docs.
+        * If you want to forward logs only for specific S3 prefixes, you can add up to 10 LogsBucketPrefix# parameter overrides (e.g. LogsBucketPrefix1=dev/ LogsBucketPrefix2=prod/ ...)
 
 ### Next steps
 
-At this stage, your deployment should be already ingesting logs to your Dynatrace environment. For more detailed information and advanced configuration details, visit the documentation in the `docs` folder.
+At this stage, you should see logs being ingested in Dynatrace as they're written to Amazon S3. For more detailed information and advanced configuration details, visit the documentation in the `docs` folder.

@@ -41,13 +41,14 @@ Parameters:
   NotificationsEmail:
     Description: E-mail address to send alarm notifications to.
     Type: String
+    Default: ""
   ProcessorArchitecture:
     Description: Processor architecture for the Lambda function
     Type: String
     AllowedValues:
       - arm64
       - x86_64
-    Default: arm64
+    Default: x86_64
   LambdaFunctionMemorySize:
     Description: Memory size of the queue processing Lambda function
     Type: Number
@@ -64,6 +65,13 @@ Parameters:
       - "WARNING"
       - "ERROR"
       - "CRITICAL"
+  LogForwarderConfigurationLocation:
+    Description: Location from which to pull log forwarding and log processing rules (aws-appconfig or local)
+    Type: String
+    Default: aws-appconfig
+    AllowedValues:
+      - aws-appconfig
+      - local
   DeployCloudWatchMonitoringDashboard:
     Description: Deploy a CloudWatch monitoring dashboard
     Type: String
@@ -71,6 +79,18 @@ Parameters:
       - "true"
       - "false"
     Default: "true"
+  EnableCrossRegionCrossAccountForwarding:
+    Type: String
+    Description: Create a dedicated event bus to receive and manage cross-region and cross-account S3 Object Created notifications
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+  AwsAccountsToReceiveLogsFrom:
+    Type: CommaDelimitedList
+    Description: List of AWS Accounts to allow to send cross-account S3 Object created Notifications
+    Default: ""
+    AllowedPattern: "($^|\\d{12})"
   EnableLambdaInsights:
     Description: Enable Amazon CloudWatch Lambda Insights
     Type: String
@@ -105,19 +125,15 @@ Parameters:
     Type: Number
     Description: Maximum number of retries for failed processing of S3 Object Created notification messages
     Default: "2"
-  EnableCrossRegionCrossAccountForwarding:
-    Type: String
-    Description: Create a dedicated event bus to receive and manage cross-region and cross-account S3 Object Created notifications
-    Default: "false"
-    AllowedValues:
-      - "true"
-      - "false"
-  
+
 Conditions:
   SecondDTEnvironmentSpecified: !Not [!Equals [!Ref DynatraceEnvironment2URL, "" ]]
   LambdaInsightsEnabled: !Equals [ !Ref EnableLambdaInsights, "true" ]
   CrossRegionCrossAccountForwardingIsEnabled: !Equals [ !Ref EnableCrossRegionCrossAccountForwarding, "true" ]
+  AwsAccountListIsNotEmpty: !Not [ !Equals [!Join ["", !Ref AwsAccountsToReceiveLogsFrom ], ""] ]
+  CreateEventBridgePolicy: !And [ !Condition AwsAccountListIsNotEmpty , !Condition CrossRegionCrossAccountForwardingIsEnabled ]
   DeployMonitoringDashboard: !Equals [ !Ref DeployCloudWatchMonitoringDashboard, "true" ]
+  IsEmailConfigured: !Not [!Equals [ !Ref NotificationsEmail, "" ]]
 
 Globals:
   Function:
@@ -148,6 +164,8 @@ Resources:
           DYNATRACE_2_API_KEY_PARAM: !If [ SecondDTEnvironmentSpecified, !Ref DynatraceEnvironment2ApiKeyParameter, !Ref "AWS::NoValue"]
           QueueName: !GetAtt S3NotificationsQueue.QueueName
           LOGGING_LEVEL: !Ref LambdaLoggingLevel
+          AWS_APPCONFIG_EXTENSION_PREFETCH_LIST: !Sub "/applications/${AWS::StackName}-app-config/environments/${AWS::StackName}/configurations/log-forwarding-rules,/applications/${AWS::StackName}-app-config/environments/${AWS::StackName}/configurations/log-processing-rules"
+          LOG_FORWARDER_CONFIGURATION_LOCATION: !Ref LogForwarderConfigurationLocation
       Architectures:
         - !Ref ProcessorArchitecture
       Events:
@@ -166,6 +184,14 @@ Resources:
         - SSMParameterReadPolicy:
             ParameterName: !Sub dynatrace/s3-log-forwarder/${AWS::StackName}/*
         - !If [ LambdaInsightsEnabled, "arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy" , !Ref "AWS::NoValue"] 
+        - Statement:
+          - Effect: Allow
+            Resource:
+              - !Sub 'arn:aws:appconfig:${AWS::Region}:${AWS::AccountId}:application/${AppConfigApplication}'
+              - !Sub 'arn:aws:appconfig:${AWS::Region}:${AWS::AccountId}:application/${AppConfigApplication}/environment/${AppConfigEnvironment}/*'
+            Action:
+              - appconfig:StartConfigurationSession
+              - appconfig:GetLatestConfiguration    
       ReservedConcurrentExecutions: !Ref MaximumLambdaConcurrency
 
   S3NotificationsQueue:
@@ -223,9 +249,14 @@ Resources:
     Type: AWS::SNS::Topic
     Properties:
       TopicName: !Sub ${AWS::StackName}-Alarms
-      Subscription:
-        - Endpoint: !Ref NotificationsEmail
-          Protocol: "email"
+  
+  AlarmsEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: IsEmailConfigured
+    Properties:
+      TopicArn: !Ref AlarmsSNSTopic
+      Endpoint: !Ref NotificationsEmail
+      Protocol: "email"
 
   AlarmsSNSTopicPolicy:
     Type: AWS::SNS::TopicPolicy
@@ -297,6 +328,71 @@ Resources:
           - "-"
           - - !Sub ${AWS::StackName}
             - cross-region-cross-account-s3-events
+  
+  CrossAccountEventBusPolicy:
+    Condition: CreateEventBridgePolicy
+    Type: AWS::Events::EventBusPolicy
+    Properties:
+      EventBusName: !Ref CrossRegionCrossAccountEventBus
+      StatementId: AllowCrossAccountS3Notifications
+      Statement:
+        Effect: Allow
+        Principal: 
+          AWS: !Split 
+            - ","
+            - !Sub 
+              - arn:aws:iam::${ACCOUNTS}:root
+              - ACCOUNTS: !Join
+                - ':root,arn:aws:iam::'
+                - !Ref AwsAccountsToReceiveLogsFrom
+        Action: "events:PutEvents"
+        Resource: !GetAtt CrossRegionCrossAccountEventBus.Arn
+        Condition:
+          StringEquals:
+            "events:detail-type": "Object Created"
+            "events:source": "aws.s3"
+          ArnEquals:
+            "aws:SourceArn": 
+              - !Sub arn:aws:events:*:*:rule/default/dt-fwd-s3-object-created-to-${AWS::AccountId}-*
+
+  AppConfigApplication:
+    Type: AWS::AppConfig::Application
+    Properties:
+      Description: "dynatrace-aws-s3-log-forwarder application configuration"
+      Name: !Sub ${AWS::StackName}-app-config
+  
+  LogForwardingConfigurationProfile:
+    Type: AWS::AppConfig::ConfigurationProfile
+    Properties:
+      ApplicationId: !Ref AppConfigApplication
+      Description: "dynatrace-aws-s3-log-forwarding forwarding rules configuration profile"
+      LocationUri: hosted
+      Name: log-forwarding-rules
+      Type: AWS.Freeform
+  
+  LogProcessingConfigurationProfile:
+    Type: AWS::AppConfig::ConfigurationProfile
+    Properties:
+      ApplicationId: !Ref AppConfigApplication
+      Description: "dynatrace-aws-s3-log-forwarding processing rules configuration profile"
+      LocationUri: hosted
+      Name: log-processing-rules
+      Type: AWS.Freeform
+
+  AppConfigDeploymentStrategy:
+    Type: AWS::AppConfig::DeploymentStrategy
+    Properties:
+      Name: !Sub ${AWS::StackName}-AllAtOnce-Deployment-Strategy
+      DeploymentDurationInMinutes: 0
+      FinalBakeTimeInMinutes: 0
+      GrowthFactor: 100
+      ReplicateTo: NONE
+  
+  AppConfigEnvironment:
+    Type: AWS::AppConfig::Environment
+    Properties:
+      Name: !Sub ${AWS::StackName}
+      ApplicationId: !Ref AppConfigApplication
   
   CloudWatchDashboard:
     Condition: DeployMonitoringDashboard
@@ -800,6 +896,9 @@ Outputs:
   SQSDeadLetterQueue:
     Description: "Dead letter queue for failed messages."
     Value: !GetAtt SQSDeadLetterQueue.Arn
+  SNSAlertsTopic:
+    Description: "SNS Topic receiving monitoring alerts"
+    Value: !Ref AlarmsSNSTopic
   CrossRegionCrossAccountEventBus:
     Condition: CrossRegionCrossAccountForwardingIsEnabled
     Description: "Amazon EventBridge event bus to receive cross-region and cross-account S3 object created notifications"
@@ -811,3 +910,29 @@ Outputs:
     Description: "URL for the CloudWatch Dashboard to monitor the dynatrace-aws-s3-log-forwarder"
     Value: !Sub |
               https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home#dashboards:name=${CloudWatchDashboard}
+  AppConfigApplicationId:
+    Description: AppConfig configuration application id
+    Value: !Ref AppConfigApplication
+    Export:
+      Name: !Sub ${AWS::StackName}:AppConfigApplicationId
+  AppConfigEnvironmentId:
+    Description: AppConfig configuration environment id
+    Value: !Ref AppConfigEnvironment
+    Export:
+      Name: !Sub ${AWS::StackName}:AppConfigEnvironmentId
+  LogForwardingConfigurationProfile:
+    Description: AppConfig Configuration Profile for log forwarding rules
+    Value: !Ref LogForwardingConfigurationProfile
+    Export:
+      Name: !Sub ${AWS::StackName}:LogForwardingConfigurationProfileId
+  LogProcessingConfigurationProfile: 
+    Description: AppConfig Configuration Profile for log forwarding rules
+    Value: !Ref LogProcessingConfigurationProfile
+    Export:
+      Name: !Sub ${AWS::StackName}:LogProcessingConfigurationProfileId
+  AppConfigAllAtOnceDeploymentStrategy:
+    Description: Deployment strategy for AWS AppConfig to deploy the log forwarding and processing configuration
+    Value: !Ref AppConfigDeploymentStrategy
+    Export: 
+      Name: !Sub ${AWS::StackName}:AppConfigDeploymentStrategyId
+  
