@@ -2,9 +2,13 @@ os: linux
 dist: jammy
 if: fork = false
 
+languae: python
+python:
+  - '3.9'
+
 before_install:
   # Install AWS CLI v2
-  - if ! [ -x "$(command -v aws)" ]; then curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" ; unzip awscliv2.zip ; sudo ./aws/install ; fi
+  - if ! [ -x "$(command -v aws)" ]; then wget "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"; unzip awscli-exe-linux-x86_64.zip; sudo ./aws/install ; fi
 
 stages:
 - tests
@@ -12,9 +16,6 @@ jobs:
   include:
   - stage: tests
     name: Tests
-    language: python
-    python:
-    - '3.9'
     services:
     - docker
     before_install:
