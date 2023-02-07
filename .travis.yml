@@ -25,6 +25,8 @@ jobs:
       - aws --version
       # Download dependent AWS Lambda layers (AWS AppConfig and Lambda Insights) 
       - bash get-required-lambda-layers.sh
+      - if [[ $TRAVIS_CPU_ARCH == "amd64" ]]; then export ARCH=x86_64; elif [[ ${TRAVIS_CPU_ARCH:0:5} == "arm64" ]]; then export ARCH=arm64; fi
+      - echo $ARCH
       # Build dev image with dev requirements
       - docker build --progress=plain -t queueprocessingfunction:test --build-arg ARCH="x86_64" --build-arg
         ENABLE_LAMBDA_INSIGHTS="false" --build-arg ENV="DEV" .
@@ -41,8 +43,8 @@ jobs:
       - if ! [ -x "$(command -v aws)" ]; then wget -nv "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"; unzip -qq awscli-exe-linux-x86_64.zip; sudo ./aws/install ; fi
       - aws --version
       # Log in to ECR
-      - aws ecr get-login-password | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
     script:
-      - docker build -t dynatrace-aws-s3-log-forwarder:${TRAVIS_COMMIT} .
+      - docker build -t dynatrace-aws-s3-log-forwarder:${TRAVIS_COMMIT} . --build-arg ARCH="x86_64" --build-arg ENABLE_LAMBDA_INSIGHTS="false"
       - docker tag dynatrace-aws-s3-log-forwarder:${TRAVIS_COMMIT} ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${TRAVIS_COMMIT}
       - docker push ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${TRAVIS_COMMIT}
