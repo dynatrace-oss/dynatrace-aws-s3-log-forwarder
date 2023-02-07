@@ -2,13 +2,9 @@ os: linux
 dist: jammy
 if: fork = false
 
-languae: python
+language: python
 python:
   - '3.9'
-
-before_install:
-  # Install AWS CLI v2
-  - if ! [ -x "$(command -v aws)" ]; then wget "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"; unzip awscli-exe-linux-x86_64.zip; sudo ./aws/install ; fi
 
 stages:
 - tests
@@ -19,6 +15,8 @@ jobs:
     services:
     - docker
     before_install:
+    # Install AWS CLI v2
+    - if ! [ -x "$(command -v aws)" ]; then wget "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"; unzip awscli-exe-linux-x86_64.zip; sudo ./aws/install ; fi
     - bash get-required-lambda-layers.sh
     - docker build -t queueprocessingfunction --build-arg ARCH="x86_64" --build-arg
       ENABLE_LAMBDA_INSIGHTS="false" --build-arg ENV="DEV" .
