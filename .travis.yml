@@ -37,6 +37,9 @@ jobs:
     env:
       secure: "vSgdt2TqQ6uz3nOBqesacOCmgA8l7ixu4Wfx5LoDUJ02I+yynEvUy+zzVNSgFCCTTMaBZ8Tn1bKgUP16UMCO/3QSPp1c9Qb3Nf9E7/c7pKrj1L31u3xx30y+h2ziiUyaaa1OWzdZkpA+HH2Y86NSKOv9pTJrE39DHSNdftMW4RE6PYndfVMiHmOgDJ+tYhh720mFNlkFuDZhm6BPiGGSbfrDFf1ly0oUNsk9+v+5GPM+xMSuSFYJZSm1DCagxrLnEdWSx/s/mYuNTz4SuPn63H3r7mFiQWwEXw9tKz0cTQBYFaHJ3/Q/qDEvCpiC+QQaL5z5yZzV9M03mQzrMOZpYwBtLcepnUEhsO5xUJXzOpxL5OPPlewOI8xbGAG2bandCV9XlvSxdR+TkE5lgVsiT7abBH0ppVZs4z0jIPrLkH857nJhWHE3+5xutIs8c/nfV6zeASUQ/nIFS1CscOZbWRN1Doys2LEBb74ogJl8deW9kxcTcP0bxuuJGV56WkC0Zertsqbn7wMEHIUhnVjWItQBvyKbmuu2+WG+ol0U25UJjw7q9/BQ6qdlyBKlfBuF+wIHsfvk7j0hxvSQeqIbEbS7RtiYzwlV+QBF6+QArGGvC7khtgdT0h+7pQ+cdDt7hUk9dNLq1rdKejANFUWGUH1hsL56qEg1RzckV3YGv10="
     before_script:
+      # Install AWS CLI v2
+      - if ! [ -x "$(command -v aws)" ]; then wget -nv "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"; unzip -qq awscli-exe-linux-x86_64.zip; sudo ./aws/install ; fi
+      - aws --version
       # Log in to ECR
       - aws ecr get-login-password | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
     script:
