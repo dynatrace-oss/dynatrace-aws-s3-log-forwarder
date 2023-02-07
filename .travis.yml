@@ -7,31 +7,23 @@ python:
   - '3.9'
 
 stages:
-- tests
+- unit_tests
 jobs:
   include:
-  - stage: tests
-    name: Tests
+  - stage: unit_tests
+    name: Unit Tests
     services:
     - docker
     before_install:
     # Install AWS CLI v2
     - if ! [ -x "$(command -v aws)" ]; then wget -nv "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"; unzip -qq awscli-exe-linux-x86_64.zip; sudo ./aws/install ; fi
     - bash get-required-lambda-layers.sh
-    - docker build -t queueprocessingfunction --build-arg ARCH="x86_64" --build-arg
+    - docker build --progress=plain -t queueprocessingfunction:test --build-arg ARCH="x86_64" --build-arg
       ENABLE_LAMBDA_INSIGHTS="false" --build-arg ENV="DEV" .
-    env:
-    - PYTHONPATH="/var/task/src:/var/runtime"
-    - AWS_SAM_LOCAL="True"
-    - DEPLOYMENT_NAME="test"
-    - POWERTOOLS_METRICS_NAMESPACE="local"
-    - DYNATRACE_1_ENV_URL="https://abc1234.live.dynatrace.com"
-    - DYNATRACE_1_API_KEY_PARAM="/dynatrace/s3-log-forwarder/dynatrace-s3-log-forwarder/tenant/api-key"
-    - AWS_DEFAULT_REGION="us-east-1"
-    - LOG_FORWARDER_CONFIGURATION_LOCATION="local"
     script:
-    - docker run --entrypoint="" --mount type=bind,source="$TRAVIS_BUILD_DIR"/tests,target=/var/task/tests
-      queueprocessingfunction python -m unittest discover -s tests
+    - docker run --entrypoint="" --mount type=bind,source="$TRAVIS_BUILD_DIR"/tests,target=/var/task/tests --env-file=unit_test.env
+      queueprocessingfunction:test python -m unittest discover -s tests
+
 env:
   global:
   - secure: rQuBF5LJD/GVwaypyvO8YsGry6dLH9K66uKx4GnYsXcAe7AazPkAR70ICyDHSVZ4Ow0/06FF/6iMaKZBFcZxyhy1ikQkiy1O181LdVInWxERsnbd6Xk7/jCsXv+mYx4yR7wX6bpcGBj9rWM6eW0rIgUVy3p3gj8H/yQViZys/iigcdSfKoU1GxlplDRxILWY9G2GXoupwJPefa7OVP1XZr6jo1O12uX8DDtAe13DFep+alCdzAOTM4B4d795tzbZYM93Iba1jp20VBnVIGI0pFg/BzrX0G6/hDYwNdIx2OEJ6MZhkQX7fMp+o/9jDEQ0Iqp7v4EZLqtB/LMCsxf3hX84E7ze8iPRnkytdK/oz9lbTC0RuETQXkOinTDuoWTdyYY0HhqYIRbVOVEqr4OS1fYzFQf8ZgM0+sq+vgE4GuWuEGamzhCXTHac7+o0ylW9GNEWJfYa4QbB0LE2FFVVWCmgp0p7sxZZHTxYSuDot4KrTjjZRNXEXWaDW4HV1PpTTiI3iYA5EKB8maVbCWv3X6ozoSV+pyJBzPadry4rM/08I2XTEtNldIuct6L/HmPS4wQhadh5n6JUhgwo6E4ATkXjnedCdjCg31LVj8y7jOyC/cratmxz6J65VHOxonlPTzipcjJtrgeS8uB97lOLb37L7hhybkz9C4AfzqIPFgg=
