@@ -16,7 +16,7 @@ jobs:
     - docker
     before_install:
     # Install AWS CLI v2
-    - if ! [ -x "$(command -v aws)" ]; then wget "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"; unzip awscli-exe-linux-x86_64.zip; sudo ./aws/install ; fi
+    - if ! [ -x "$(command -v aws)" ]; then wget -nv "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"; unzip -qq awscli-exe-linux-x86_64.zip; sudo ./aws/install ; fi
     - bash get-required-lambda-layers.sh
     - docker build -t queueprocessingfunction --build-arg ARCH="x86_64" --build-arg
       ENABLE_LAMBDA_INSIGHTS="false" --build-arg ENV="DEV" .
@@ -30,7 +30,7 @@ jobs:
     - AWS_DEFAULT_REGION="us-east-1"
     - LOG_FORWARDER_CONFIGURATION_LOCATION="local"
     script:
-    - docker run --entrypoint="" --mount type=bind,source="$TRAVIS_BUILD_DIR"/src,target=/var/task/tests
+    - docker run --entrypoint="" --mount type=bind,source="$TRAVIS_BUILD_DIR"/tests,target=/var/task/tests
       queueprocessingfunction python -m unittest discover -s tests
 env:
   global:
