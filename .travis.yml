@@ -2,9 +2,7 @@ os: linux
 dist: jammy
 if: fork = false
 
-language: python
-python:
-  - '3.9'
+language: minimal
 
 env:
   global:
@@ -35,7 +33,7 @@ jobs:
         # Build dev image with dev requirements
         docker build --progress=plain -t queueprocessingfunction:test --build-arg ARCH=$LAMBDA_ARCH --build-arg \
           ENABLE_LAMBDA_INSIGHTS="false" --build-arg ENV="DEV" .
-        docker run --entrypoint="" --mount type=bind,source="$TRAVIS_BUILD_DIR"/tests,target=/var/task/tests --env-file=tests/unit/unit_test.env \
+        docker run --entrypoint="" --mount type=bind,source=${TRAVIS_BUILD_DIR}/tests,target=/var/task/tests --env-file=tests/unit/unit_test.env \
           queueprocessingfunction:test python -m unittest discover -s tests
 
   - stage: build
@@ -48,7 +46,8 @@ jobs:
         # Log in to ECR
         aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
         # Build container image
-        docker build -t dynatrace-aws-s3-log-forwarder:${TRAVIS_COMMIT} . --build-arg ARCH=$LAMBDA_ARCH --build-arg ENABLE_LAMBDA_INSIGHTS="false"
+        export COMMIT=${TRAVIS_COMMIT:0:7}
+        docker build -t dynatrace-aws-s3-log-forwarder:${COMMIT} . --build-arg ARCH=$LAMBDA_ARCH --build-arg ENABLE_LAMBDA_INSIGHTS="false"
         # Push image
-        docker tag dynatrace-aws-s3-log-forwarder:${TRAVIS_COMMIT} ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${TRAVIS_COMMIT}
-        docker push ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${TRAVIS_COMMIT}
+        docker tag dynatrace-aws-s3-log-forwarder:${COMMIT} ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${COMMIT}
+        docker push ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${COMMIT}
