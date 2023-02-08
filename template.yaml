@@ -52,9 +52,9 @@ Parameters:
   LambdaFunctionMemorySize:
     Description: Memory size of the queue processing Lambda function
     Type: Number
-    Default: "256"
-    MinValue: "128"
-    MaxValue: "10240"
+    Default: 256
+    MinValue: 128
+    MaxValue: 10240
   LambdaLoggingLevel:
     Description: Logging verbosity of the Lambda function
     Type: String
@@ -101,30 +101,30 @@ Parameters:
   MaximumLambdaConcurrency:
     Description: Maximum number of Lambda functions running concurrently. The concurrency is reserved for the queue processing function, so it's guaranteed. 
     Type: Number
-    Default: "30"
+    Default: 30
   LambdaSQSMessageBatchSize:
     Type: Number
     Description: Maximum number of messages to batch per each Queue Processing Lambda function execution
-    Default: "4"
-    MaxValue: "10"
+    Default: 4
+    MaxValue: 10
   LambdaMaximumExecutionTime:
     Type: Number
     Description: Maximum execution time in seconds for the Lambda processing function (configure a value that allows enough time to process the number of messages configured on LambdaSQSMessageBatchSize)
-    Default: "300"
-    MaxValue: "900"
+    Default: 300
+    MaxValue: 900
   SQSVisibilityTimeout:
     Type: Number
     Description: "Visibility timeout. This value must be greater than the Lambda Execution timeout: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html"
-    Default: "420"
+    Default: 420
   SQSLongPollingMaxSeconds:
     Type: Number
     Description: Maximum seconds to wait for messages during ReceiveMessage long polling requests to receive up to SQSMessageBatchSize number of messages.
-    Default: "20"
-    MaxValue: "20"
+    Default: 20
+    MaxValue: 20
   MaximumSQSMessageRetries:
     Type: Number
     Description: Maximum number of retries for failed processing of S3 Object Created notification messages
-    Default: "2"
+    Default: 2
 
 Conditions:
   SecondDTEnvironmentSpecified: !Not [!Equals [!Ref DynatraceEnvironment2URL, "" ]]
@@ -488,6 +488,15 @@ Resources:
                     [
                       ".",
                       "DynatraceHTTP429Throttled",
+                      ".",
+                      ".",
+                      {
+                        "yAxis": "right"
+                      }
+                    ],
+                    [
+                      ".",
+                      "DynatraceHTTP400InvalidLogEntries",
                       ".",
                       ".",
                       {
