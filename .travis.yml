@@ -21,7 +21,7 @@ before_install:
     # before_install: Install AWS CLI and download Lambda Layers
     set -e
     # Get CPU architecture
-    if [[ $TRAVIS_CPU_ARCH == "amd64" ]]; then export LAMBDA_ARCH=x86_64; export AWSCLI_ARCH=aarch64; elif [[ ${TRAVIS_CPU_ARCH:0:5} == "arm64" ]]; then export LAMBDA_ARCH=arm64; export AWSCLI_ARCH=aarch64; fi
+    if [[ $TRAVIS_CPU_ARCH == "amd64" ]]; then export LAMBDA_ARCH=x86_64; export AWSCLI_ARCH=x86_64; elif [[ ${TRAVIS_CPU_ARCH:0:5} == "arm64" ]]; then export LAMBDA_ARCH=arm64; export AWSCLI_ARCH=aarch64; fi
     # Install AWS CLI v2
     if ! [ -x "$(command -v aws)" ]; then wget -nv "https://awscli.amazonaws.com/awscli-exe-linux-${AWSCLI_ARCH}.zip"; unzip -qq awscli-exe-linux-x86_64.zip; sudo ./aws/install ; fi
     aws --version
@@ -70,6 +70,7 @@ jobs:
   
   - stage: end-to-end-test
     name: End-to-end deployment test
+    if: fork = false
     script:
       - |
         # e2e tests
