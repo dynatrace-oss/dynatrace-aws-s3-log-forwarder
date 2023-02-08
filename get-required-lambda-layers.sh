@@ -35,7 +35,7 @@ for arch in "X86_64" "ARM64"
 do
     arch_to_lower=$(echo $arch | tr '[:upper:]' '[:lower:]')
     # if this is a travis build, download only the layers for the CPU architecture of the build
-    if [ -n $LAMBDA_ARCH ] && [ $LAMBDA_ARCH != $arch_to_lower ]; then continue; fi
+    if [ -n $LAMBDA_ARCH ] && [[ $LAMBDA_ARCH != $arch_to_lower ]]; then continue; fi
     mkdir -p $BASE_DIR/"$arch_to_lower"
     for extension in "AWS_APPCONFIG" "AWS_LAMBDA_INSIGHTS"
     do
