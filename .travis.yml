@@ -25,6 +25,8 @@ before_install:
     # Install AWS CLI v2
     if ! [ -x "$(command -v aws)" ]; then wget -nv "https://awscli.amazonaws.com/awscli-exe-linux-${AWSCLI_ARCH}.zip"; unzip -qq awscli-exe-linux-x86_64.zip; sudo ./aws/install ; fi
     aws --version
+    # Get dependent lambda layers
+    bash get-required-lambda-layers.sh
     # Build container image
     export COMMIT=${TRAVIS_COMMIT:0:7}
     export STACK_NAME=e2e-dt-aws-s3-log-forwarder-${TRAVIS_BUILD_ID}
@@ -56,8 +58,6 @@ jobs:
 
   - stage: build
     name: Build
-    install:
-      - bash get-required-lambda-layers.sh
     script:
       - |
         # Build
