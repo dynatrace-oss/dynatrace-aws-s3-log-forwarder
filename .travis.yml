@@ -30,6 +30,7 @@ before_install:
     # Build container image
     export COMMIT=${TRAVIS_COMMIT:0:7}
     export STACK_NAME=e2e-dt-aws-s3-log-forwarder-${TRAVIS_BUILD_ID}
+    export E2E_TESTING_BUCKET_NAME=dynatrace-aws-s3-log-forwarder-e2e-testing
 
 jobs:
   include:
@@ -107,7 +108,7 @@ jobs:
 
         aws cloudformation deploy --stack-name ${STACK_NAME}-s3-bucket-configuration --parameter-overrides \
                         DynatraceAwsS3LogForwarderStackName=${STACK_NAME} \
-                        LogsBucketName=dynatrace-aws-s3-log-forwarder-e2e-testing \
+                        LogsBucketName=${E2E_TESTING_BUCKET_NAME} \
                         LogsBucketPrefix1=test/${TRAVIS_BUILD_ID}/ \
                         --capabilities CAPABILITY_IAM \
                         --template-file dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml \
@@ -117,23 +118,14 @@ jobs:
 
         # Write logs to S3
         echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] E2E testing validation log entry" > ${TRAVIS_BUILD_ID}.log
-        aws s3 cp ${TRAVIS_BUILD_ID}.log s3://dynatrace-aws-s3-log-forwarder-e2e-testing/test/${TRAVIS_BUILD_ID}/test_log.log
+        aws s3 cp ${TRAVIS_BUILD_ID}.log s3://${E2E_TESTING_BUCKET_NAME}/test/${TRAVIS_BUILD_ID}/test_log.log
         # Allow time for log ingestion
         sleep 90
       
         # Validate log entry
-        python tests/e2e/test_validate_logs.yaml
+        python tests/e2e/validate_logs_exist.py --bucket ${E2E_TESTING_BUCKET_NAME} --key test/${TRAVIS_BUILD_ID}/test_log.log
     
     after_script: 
-      - echo "Deleting Cloudformation Stack ${STACK_NAME}-s3-bucket-configutation"
-      - aws cloudformation delete-stack --stack-name ${STACK_NAME}-s3-bucket-configuration
-      - aws cloudformation wait stack-delete-complete --stack-name ${STACK_NAME}-s3-bucket-configuration
-      - echo "Deleting Cloudformation Stack ${STACK_NAME}-configutation"
-      - aws cloudformation delete-stack --stack-name ${STACK_NAME}-configuration
-      - aws cloudformation wait stack-delete-complete --stack-name ${STACK_NAME}-configuration
-      - echo "Deleting Cloudformation Stack ${STACK_NAME}-s3-bucket-configutation"
-      - aws cloudformation delete-stack --stack-name ${STACK_NAME}
-      - aws cloudformation wait stack-delete-complete --stack-name ${STACK_NAME}
-      - echo "Deleting SSM parameter /dynatrace/s3-log-forwarder/${STACK_NAME}/api-key"
-      - aws ssm delete-parameter --name "/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key"
-        
+      - ./tests/e2e/clean_up_resources.sh
+    after_failure: 
+      - ./tests/e2e/clean_up_resources.sh   
