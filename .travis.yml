@@ -38,7 +38,7 @@ before_install:
     export COMMIT=${TRAVIS_COMMIT:0:7}
     export STACK_NAME=e2e-dt-aws-s3-log-forwarder-${TRAVIS_BUILD_ID}
     export E2E_TESTING_BUCKET_NAME=dynatrace-aws-s3-log-forwarder-e2e-testing
-    export LAMBDA_BASE_IMAGE_TAG=$(cat template.yaml | yq r - 'Mappings.LambdaBaseImageMap.${LAMBDA_ARCH}.Tag')
+    export LAMBDA_BASE_IMAGE_TAG=$(cat template.yaml | yq r - "Mappings.LambdaBaseImageMap.${LAMBDA_ARCH}.Tag")
 
 jobs:
   include:
@@ -47,12 +47,13 @@ jobs:
     services:
     - docker
     script:
+      - ./scripts/pull_lambda_base_image.sh
       - |
-        # Unit Tests
         set -e
-        # Build dev image with dev requirements
+        # Build container image with dev dependencies
         docker build --progress=plain -t queueprocessingfunction:test --build-arg ARCH=$LAMBDA_ARCH  \
           --build-arg LAMBDA_BASE_IMAGE_TAG=${LAMBDA_BASE_IMAGE_TAG} --build-arg ENABLE_LAMBDA_INSIGHTS="false" --build-arg ENV="DEV" .
+        # Run unit tests
         docker run --entrypoint="" --mount type=bind,source=${TRAVIS_BUILD_DIR}/tests,target=/var/task/tests --env-file=tests/unit/unit_test.env \
           queueprocessingfunction:test python -m unittest discover -s tests -b
 
@@ -68,13 +69,14 @@ jobs:
   - stage: build
     name: Build
     script:
+      - ./scripts/pull_lambda_base_image.sh
       - |
         # Build
         set -e
-        # Log in to ECR
-        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
         docker build -t dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT} . --build-arg ARCH=$LAMBDA_ARCH \
                      --build-arg ENABLE_LAMBDA_INSIGHTS="false" --build-arg LAMBDA_BASE_IMAGE_TAG=${LAMBDA_BASE_IMAGE_TAG}
+        # Log in to ECR
+        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
         # Push image
         docker tag dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT} ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT}
         docker push ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT}
