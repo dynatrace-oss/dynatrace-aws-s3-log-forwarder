@@ -8,7 +8,8 @@ notifications:
   email:
     recipients:
       secure: ej6/5zNDDQUhSqobhxnp+x23cAnd6Jg9Fu6Dh7PFtMeHfn8xHkLDb0qsZ75B9vRoI1cwuTTw7hzmxkA4EbAdr8Sl/mZMZJOmHLUKZ6zz/Or9Um0Cg7be1lzBogXVXE/zXnhy4nYZ7ga3VbK0553L6aBfCbkiixy7fiR8Hvt0GgME3Gp3lgpj4S7Hjdhx3IiKFAW0zuzQPrlGVjFLmxzTtEp+ActSiaBghB59qbHhqTmbj4UPMZdKhQV/Heho18eYmpk2y7uYo+aCFLjDhtmzfnhZCRG4ZNTO7MfyailUMcu3MGss9CA9NPmRGaEUHR+Qu2rIe66aDdJaQX1zifSVvV3NW74vLJ1AbqOcGK2ZdrjPSrG78AWX+Cvb31ZjHoo6+5QUa8hfcOedmbBj6hdn+4ev59FknjIC5JjEzq6keflhPbOfaGlIMbZCwoAnk+Ulc5ZEAnRHrAQ1UG+w/Zr/DhtoC1T13uG6WGbSESIqr1U3fV70cs6Uh2JPRU4MUs7WqY3erhtPfVtLbnM+9YCA0JGHkT8CB2PeVVjkPvH3/iCOoEo0VY1/v6ppQugsO5QdoVw48XmW4UEHVQOhemwQzDcAVRnBMxsCDaOrf7+Oh7yUHuOhLYp/UXKkqOIqoq2FOPMXxqSqxhbs4gfXMqcQrB4GUDJxWc1Jg5q15bowjhQ=
-
+    on_success: never
+    on_failure: always
 env:
   global:
   - secure: rQuBF5LJD/GVwaypyvO8YsGry6dLH9K66uKx4GnYsXcAe7AazPkAR70ICyDHSVZ4Ow0/06FF/6iMaKZBFcZxyhy1ikQkiy1O181LdVInWxERsnbd6Xk7/jCsXv+mYx4yR7wX6bpcGBj9rWM6eW0rIgUVy3p3gj8H/yQViZys/iigcdSfKoU1GxlplDRxILWY9G2GXoupwJPefa7OVP1XZr6jo1O12uX8DDtAe13DFep+alCdzAOTM4B4d795tzbZYM93Iba1jp20VBnVIGI0pFg/BzrX0G6/hDYwNdIx2OEJ6MZhkQX7fMp+o/9jDEQ0Iqp7v4EZLqtB/LMCsxf3hX84E7ze8iPRnkytdK/oz9lbTC0RuETQXkOinTDuoWTdyYY0HhqYIRbVOVEqr4OS1fYzFQf8ZgM0+sq+vgE4GuWuEGamzhCXTHac7+o0ylW9GNEWJfYa4QbB0LE2FFVVWCmgp0p7sxZZHTxYSuDot4KrTjjZRNXEXWaDW4HV1PpTTiI3iYA5EKB8maVbCWv3X6ozoSV+pyJBzPadry4rM/08I2XTEtNldIuct6L/HmPS4wQhadh5n6JUhgwo6E4ATkXjnedCdjCg31LVj8y7jOyC/cratmxz6J65VHOxonlPTzipcjJtrgeS8uB97lOLb37L7hhybkz9C4AfzqIPFgg=
@@ -123,9 +124,7 @@ jobs:
         sleep 90
       
         # Validate log entry
-        python tests/e2e/validate_logs_exist.py --bucket ${E2E_TESTING_BUCKET_NAME} --key test/${TRAVIS_BUILD_ID}/test_log.log
+        ./tests/e2e/validate_logs_exist.py --bucket ${E2E_TESTING_BUCKET_NAME} --key test/${TRAVIS_BUILD_ID}/test_log.log
     
     after_script: 
       - ./tests/e2e/clean_up_resources.sh
-    after_failure: 
-      - ./tests/e2e/clean_up_resources.sh   
