@@ -140,7 +140,7 @@ Conditions:
   DeployMonitoringDashboard: !Equals [ !Ref DeployCloudWatchMonitoringDashboard, "true" ]
   IsEmailConfigured: !Not [!Equals [ !Ref NotificationsEmail, "" ]]
   ContainerImageUriIsDefined: !Not [!Equals [ !Ref ContainerImageUri, "" ]]
-  ArchIsArm: !Equals [ !Ref ProcessorArchitecture, "amd64"]
+  ArchIsArm: !Equals [ !Ref ProcessorArchitecture, "arm64"]
 
 Globals:
   Function:
