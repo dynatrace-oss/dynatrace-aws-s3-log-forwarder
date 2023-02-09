@@ -7,7 +7,7 @@ PREFIX="cloudwatch-logs-exports/lambda"
 LAMBDA_FUNCTION_NAME=$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} --query \
                          'Stacks[].Outputs[?OutputKey==`QueueProcessingFunction`].OutputValue' \
                          --output text | cut -d':' -f7)
-TO_TIME=$(date +%s000)
+TO_TIME=$(($(date +%s000) + 900000))
 FROM_TIME=$(($TO_TIME - 3600000))
 
 EXPORT_TASK_ID=$(aws logs create-export-task --destination ${E2E_TESTING_BUCKET_NAME} \
@@ -23,6 +23,8 @@ do
     EXPORT_STATUS=$(aws logs describe-export-tasks --task-id ${EXPORT_TASK_ID} --query 'exportTasks[].status.code' --output text)
     if [[ $EXPORT_STATUS == "COMPLETED" ]];
     then
+        echo "Export task marked as completed. Allowing 1 minute before deleting Log group"
+        sleep 60
         echo "Deleting log group /aws/lambda/${LAMBDA_FUNCTION_NAME}"
         aws logs delete-log-group --log-group-name "/aws/lambda/${LAMBDA_FUNCTION_NAME}"
         break
