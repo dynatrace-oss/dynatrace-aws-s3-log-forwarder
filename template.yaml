@@ -149,6 +149,13 @@ Globals:
         POWERTOOLS_METRICS_NAMESPACE: dynatrace-aws-s3-log-forwarder
         DEPLOYMENT_NAME: !Ref AWS::StackName
 
+Mappings:
+  LambdaBaseImageMap:
+    x86_64: 
+      Tag: '3.9.2023.02.03.11-x86_64'
+    arm64:
+      Tag: '3.9.2023.02.03.11-arm64'
+
 Resources:
   QueueProcessingFunction:
     Type: AWS::Serverless::Function
@@ -159,6 +166,7 @@ Resources:
       DockerBuildArgs:
         ARCH: !Ref ProcessorArchitecture
         ENABLE_LAMBDA_INSIGHTS: !Ref EnableLambdaInsights
+        LAMBDA_BASE_IMAGE_TAG: !FindInMap [ LambdaBaseImageMap, !Ref ProcessorArchitecture, 'Tag' ]
     Properties:
       PackageType: Image
       ImageUri: !If [ ContainerImageUriIsDefined, !Ref ContainerImageUri, !Ref AWS::NoValue ]
