@@ -50,8 +50,8 @@ jobs:
         # Unit Tests
         set -e
         # Build dev image with dev requirements
-        docker build --progress=plain -t queueprocessingfunction:test --build-arg ARCH=$LAMBDA_ARCH --build-arg \
-          --build-arg LAMBDA_BASE_IMAGE_TAG=${LAMBDA_BASE_IMAGE_TAG} ENABLE_LAMBDA_INSIGHTS="false" --build-arg ENV="DEV" .
+        docker build --progress=plain -t queueprocessingfunction:test --build-arg ARCH=$LAMBDA_ARCH  \
+          --build-arg LAMBDA_BASE_IMAGE_TAG=${LAMBDA_BASE_IMAGE_TAG} --build-arg ENABLE_LAMBDA_INSIGHTS="false" --build-arg ENV="DEV" .
         docker run --entrypoint="" --mount type=bind,source=${TRAVIS_BUILD_DIR}/tests,target=/var/task/tests --env-file=tests/unit/unit_test.env \
           queueprocessingfunction:test python -m unittest discover -s tests -b
 
