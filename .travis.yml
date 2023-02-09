@@ -97,8 +97,6 @@ jobs:
       - |
         # e2e tests: Deploy dynatrace-aws-s3-log-forwarder stack
 
-        set -e
-
         aws ssm put-parameter --name "/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key" \
                                --type SecureString --value $DT_TENANT_API_KEY
 
@@ -138,12 +136,10 @@ jobs:
         echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] E2E testing validation log entry" > ${TRAVIS_BUILD_ID}.log
         aws s3 cp ${TRAVIS_BUILD_ID}.log s3://${E2E_TESTING_BUCKET_NAME}/test/${TRAVIS_BUILD_ID}/validation/test_log.log
         # Allow time for log ingestion
-        sleep 90
+        sleep 120
       
         # Validate log entry
         ./tests/e2e/validate_logs_exist.py --bucket ${E2E_TESTING_BUCKET_NAME} --key test/${TRAVIS_BUILD_ID}/validation/test_log.log
     
     after_script: 
-      - ./tests/e2e/clean_up_resources.sh
-    after_failure: 
       - ./tests/e2e/clean_up_resources.sh
