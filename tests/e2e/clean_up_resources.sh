@@ -3,7 +3,7 @@
 set -v
 
 # Export Lambda CloudWatch Logs to S3 and delete the Log Group
-PREFIX="cloudwatch-logs-exports/lambda"
+PREFIX="test/${TRAVIS_BUILD_ID}/lambda-logs"
 LAMBDA_FUNCTION_NAME=$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} --query \
                          'Stacks[].Outputs[?OutputKey==`QueueProcessingFunction`].OutputValue' \
                          --output text | cut -d':' -f7)
@@ -11,7 +11,7 @@ TO_TIME=$(($(date +%s000) + 900000))
 FROM_TIME=$(($TO_TIME - 3600000))
 
 EXPORT_TASK_ID=$(aws logs create-export-task --destination ${E2E_TESTING_BUCKET_NAME} \
-                    --destination-prefix ${PREFIX}/${TRAVIS_BUILD_ID} \
+                    --destination-prefix ${PREFIX} \
                     --log-group-name "/aws/lambda/${LAMBDA_FUNCTION_NAME}" \
                     --from ${FROM_TIME} \
                     --to ${TO_TIME} --query 'taskId' --output text)
