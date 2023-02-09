@@ -44,6 +44,15 @@ jobs:
         docker run --entrypoint="" --mount type=bind,source=${TRAVIS_BUILD_DIR}/tests,target=/var/task/tests --env-file=tests/unit/unit_test.env \
           queueprocessingfunction:test python -m unittest discover -s tests -b
 
+  - stage: validate-cfn-templates
+    name: Validate CloudFormation Templates
+    script:
+      - aws cloudformation validate-template --template-body file://template.yaml
+      - aws cloudformation validate-template --template-body file://dynatrace-aws-s3-log-forwarder-configuration.yaml
+      - aws cloudformation validate-template --template-body file://dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml
+      - aws cloudformation validate-template --template-body file://eventbridge-cross-account-forward-rules.yaml
+      - aws cloudformation validate-template --template-body file://eventbridge-cross-region-forward-rules.yaml
+
   - stage: build
     name: Build
     script:
@@ -58,15 +67,6 @@ jobs:
         # Push image
         docker tag dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT} ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT}
         docker push ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT}
-
-  - stage: validate-cfn-templates
-    name: Validate CloudFormation Templates
-    script:
-      - aws cloudformation validate-template --template-body file://template.yaml
-      - aws cloudformation validate-template --template-body file://dynatrace-aws-s3-log-forwarder-configuration.yaml
-      - aws cloudformation validate-template --template-body file://dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml
-      - aws cloudformation validate-template --template-body file://eventbridge-cross-account-forward-rules.yaml
-      - aws cloudformation validate-template --template-body file://eventbridge-cross-region-forward-rules.yaml
   
   - stage: end-to-end-test
     name: End-to-end deployment test

@@ -54,6 +54,8 @@ To deploy the solution, follow the instructions below:
     export DYNATRACE_TENANT_UUID=replace_with_your_dynatrace_tenant_uuid
     ```
 
+    **IMPORTANT:** Your stack name should be 54 characters o shorter.
+
 1. Create an AWS SSM SecureString Parameter to store your Dynatrace access token to ingest logs.
 
     ```bash
