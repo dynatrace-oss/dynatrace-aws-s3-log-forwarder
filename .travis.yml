@@ -38,7 +38,7 @@ before_install:
     export COMMIT=${TRAVIS_COMMIT:0:7}
     export STACK_NAME=e2e-dt-aws-s3-log-forwarder-${TRAVIS_BUILD_ID}
     export E2E_TESTING_BUCKET_NAME=dynatrace-aws-s3-log-forwarder-e2e-testing
-    export LAMBDA_BASE_IMAGE_TAG=$(cat template.yaml | yq r - '.Mappings.LambdaBaseImageMap.${LAMBDA_ARCH}.Tag')
+    export LAMBDA_BASE_IMAGE_TAG=$(cat template.yaml | yq r - 'Mappings.LambdaBaseImageMap.${LAMBDA_ARCH}.Tag')
 
 jobs:
   include:
