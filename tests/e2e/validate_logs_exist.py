@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Copyright 2023 Dynatrace LLC
 
@@ -51,10 +51,10 @@ def main():
 
     if results.status_code == 200 and results.json().get('sliceSize',0) == 1:
         print("Success. Log entries found!")
-        return 0
+        exit(0)
     else:
         print("Error. No log entries found for given bucket and key")
-        return 1
+        exit(1)
 
 if __name__ == "__main__":
     main()
