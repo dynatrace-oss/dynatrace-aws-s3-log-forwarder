@@ -25,8 +25,9 @@ before_install:
     # Install AWS CLI v2
     if ! [ -x "$(command -v aws)" ]; then wget -nv "https://awscli.amazonaws.com/awscli-exe-linux-${AWSCLI_ARCH}.zip"; unzip -qq awscli-exe-linux-x86_64.zip; sudo ./aws/install ; fi
     aws --version
-    # Download dependent AWS Lambda layers (AWS AppConfig and Lambda Insights) 
-    bash get-required-lambda-layers.sh
+    # Build container image
+    export COMMIT=${TRAVIS_COMMIT:0:7}
+    export STACK_NAME=e2e-dt-aws-s3-log-forwarder-${TRAVIS_BUILD_ID}
 
 jobs:
   include:
@@ -55,14 +56,14 @@ jobs:
 
   - stage: build
     name: Build
+    install:
+      - bash get-required-lambda-layers.sh
     script:
       - |
         # Build
         set -e
         # Log in to ECR
         aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
-        # Build container image
-        export COMMIT=${TRAVIS_COMMIT:0:7}
         docker build -t dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT} . --build-arg ARCH=$LAMBDA_ARCH --build-arg ENABLE_LAMBDA_INSIGHTS="false"
         # Push image
         docker tag dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT} ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT}
@@ -78,8 +79,6 @@ jobs:
         # e2e tests: Deploy dynatrace-aws-s3-log-forwarder stack
 
         set -e
-
-        export STACK_NAME=e2e-dt-aws-s3-log-forwarder-${TRAVIS_BUILD_ID}
 
         aws ssm put-parameter --name "/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key" \
                                --type SecureString --value $DT_TENANT_API_KEY
