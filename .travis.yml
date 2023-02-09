@@ -3,6 +3,7 @@ dist: jammy
 addons:
   snaps:
     - name: yq
+      confinement: classic
       channel: v3/stable
 
 if: fork = false
