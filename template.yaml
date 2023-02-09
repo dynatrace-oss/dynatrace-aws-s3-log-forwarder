@@ -140,6 +140,7 @@ Conditions:
   DeployMonitoringDashboard: !Equals [ !Ref DeployCloudWatchMonitoringDashboard, "true" ]
   IsEmailConfigured: !Not [!Equals [ !Ref NotificationsEmail, "" ]]
   ContainerImageUriIsDefined: !Not [!Equals [ !Ref ContainerImageUri, "" ]]
+  ArchIsArm: !Equals [ !Ref ProcessorArchitecture, "amd64"]
 
 Globals:
   Function:
@@ -151,7 +152,9 @@ Globals:
 
 Mappings:
   LambdaBaseImageMap:
-    x86_64: 
+    # Mappings only support alphanumeric chars, '-' and '.', so name can't be x86_64
+    # That means to resolve the image tag we need !If [ ArchIsArm , !FindInMap arm, !FindInMap x86]
+    x86: 
       Tag: '3.9.2023.02.03.11-x86_64'
     arm64:
       Tag: '3.9.2023.02.03.11-arm64'
@@ -166,7 +169,7 @@ Resources:
       DockerBuildArgs:
         ARCH: !Ref ProcessorArchitecture
         ENABLE_LAMBDA_INSIGHTS: !Ref EnableLambdaInsights
-        LAMBDA_BASE_IMAGE_TAG: !FindInMap [ LambdaBaseImageMap, !Ref ProcessorArchitecture, 'Tag' ]
+        LAMBDA_BASE_IMAGE_TAG: !If [ ArchIsArm, !FindInMap [ LambdaBaseImageMap, "arm64", 'Tag' ], !FindInMap [ LambdaBaseImageMap, "x86", 'Tag'] ]
     Properties:
       PackageType: Image
       ImageUri: !If [ ContainerImageUriIsDefined, !Ref ContainerImageUri, !Ref AWS::NoValue ]
