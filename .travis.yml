@@ -41,9 +41,6 @@ before_install:
     # CloudFormation Mappings don't support "_" in names, so we need to match mapping name x86
     export MAPPING=$(if [[ $LAMBDA_ARCH == "x86_64" ]];then echo "x86"; else echo $LAMBDA_ARCH; fi )
     export LAMBDA_BASE_IMAGE_TAG=$(cat template.yaml | yq r - "Mappings.LambdaBaseImageMap.${MAPPING}.Tag")
-
-    # alias echo to show timestamp
-    alias echo="/bin/echo \[$(date -u '+%Y-%m-%dT%H:%M:%SZ')\]"
     
 
 jobs:
@@ -95,7 +92,7 @@ jobs:
 
       # Write logs to S3 and allow time for ingestion
       - |
-        echo "E2E testing validation log entry" > ${TRAVIS_BUILD_ID}.log
+        echo "\[$(date -u '+%Y-%m-%dT%H:%M:%SZ')\] E2E testing validation log entry" > ${TRAVIS_BUILD_ID}.log
         aws s3 cp ${TRAVIS_BUILD_ID}.log s3://${E2E_TESTING_BUCKET_NAME}/test/${TRAVIS_BUILD_ID}/validation/test_log.log
         sleep 120
       
@@ -107,6 +104,6 @@ jobs:
   
   - stage: release
     name: Release
-    if: (tag =~ '/^v.*') AND (branch = main)
+    if: (tag =~ '/^test-release.*') 
     script:
       - echo to do

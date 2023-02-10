@@ -1,14 +1,15 @@
  #!/bin/bash
 
-set -v
+# alias echo to show timestamp
+alias echo="/bin/echo \[$(date -u '+%Y-%m-%dT%H:%M:%SZ')\]"
 
 # Export Lambda CloudWatch Logs to S3 and delete the Log Group
 PREFIX="test/${TRAVIS_BUILD_ID}/lambda-logs"
 LAMBDA_FUNCTION_NAME=$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} --query \
                          'Stacks[].Outputs[?OutputKey==`QueueProcessingFunction`].OutputValue' \
                          --output text | cut -d':' -f7)
-TO_TIME=$(($(date +%s000) + 900000))
-FROM_TIME=$(($TO_TIME - 3600000))
+TO_TIME=$(($(date +%s%N)/1000000))
+FROM_TIME=$(($(date -d "-1 hours" +%s%N)/1000000))
 
 EXPORT_TASK_ID=$(aws logs create-export-task --destination ${E2E_TESTING_BUCKET_NAME} \
                     --destination-prefix ${PREFIX} \
@@ -34,7 +35,8 @@ done
 
 if [ $EXPORT_STATUS != "COMPLETED" ]; then echo "CloudWatch Logs export task didn't finish within 1 minute. CloudWatch Log group not deleted."; fi
 
-# 
+
+# Delete resources
 
 echo "Deleting Cloudformation Stack ${STACK_NAME}-s3-bucket-configutation"
 aws cloudformation delete-stack --stack-name ${STACK_NAME}-s3-bucket-configuration
