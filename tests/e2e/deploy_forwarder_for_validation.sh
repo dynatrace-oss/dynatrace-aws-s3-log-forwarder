@@ -11,7 +11,7 @@ echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Deploying the log forwarder template"
 aws cloudformation deploy --stack-name ${STACK_NAME} --parameter-overrides \
                 DynatraceEnvironment1URL=${DT_TENANT_URL} \
                 DynatraceEnvironment1ApiKeyParameter="/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key" \
-                ContainerImageUri=${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT} \
+                ContainerImageUri=${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${COMMIT}-${LAMBDA_ARCH} \
                 EnableCrossRegionCrossAccountForwarding=true \
                 ProcessorArchitecture=${LAMBDA_ARCH} \
                 --template-file template.yaml --capabilities CAPABILITY_IAM \
