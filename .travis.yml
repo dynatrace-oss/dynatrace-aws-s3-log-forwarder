@@ -124,3 +124,10 @@ jobs:
       # Push to ECR Public
       - docker tag ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${COMMIT}-${LAMBDA_ARCH} public.ecr.aws/dynatrace-oss/dynatrace-aws-s3-log-forwarder:${TRAVIS_TAG}-${LAMBDA_ARCH}
       - docker push public.ecr.aws/dynatrace-oss/dynatrace-aws-s3-log-forwarder:${TRAVIS_TAG}-${LAMBDA_ARCH}
+      # Push templates to S3
+      - aws s3 cp template.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
+      - aws s3 cp dynatrace-aws-s3-log-forwarder-configuration.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
+      - aws s3 cp dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
+      - aws s3 cp eventbridge-cross-account-forward-rules.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
+      - aws s3 cp eventbridge-cross-region-forward-rules.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
+
