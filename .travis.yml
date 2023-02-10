@@ -63,17 +63,20 @@ jobs:
     - docker
     script:
       # Build container image with dev dependencies
-      - docker build --progress=plain -t queueprocessingfunction:test --build-arg ARCH=$LAMBDA_ARCH  \
+      - |
+        docker build --progress=plain -t queueprocessingfunction:test --build-arg ARCH=$LAMBDA_ARCH  \
           --build-arg LAMBDA_BASE_IMAGE_TAG=${LAMBDA_BASE_IMAGE_TAG} --build-arg ENABLE_LAMBDA_INSIGHTS="false" --build-arg ENV="DEV" .
       # Run unit tests
-      - docker run --entrypoint="" --mount type=bind,source=${TRAVIS_BUILD_DIR}/tests,target=/var/task/tests --env-file=tests/unit/unit_test.env \
+      - |
+        docker run --entrypoint="" --mount type=bind,source=${TRAVIS_BUILD_DIR}/tests,target=/var/task/tests --env-file=tests/unit/unit_test.env \
           queueprocessingfunction:test python -m unittest discover -s tests -b
 
   - stage: build
     name: Build
     script:
       # Build container image
-      - docker build -t dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT} . --build-arg ARCH=$LAMBDA_ARCH \
+      - |
+        docker build -t dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT} . --build-arg ARCH=$LAMBDA_ARCH \
                      --build-arg ENABLE_LAMBDA_INSIGHTS="false" --build-arg LAMBDA_BASE_IMAGE_TAG=${LAMBDA_BASE_IMAGE_TAG}
       # Log in to ECR
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
