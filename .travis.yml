@@ -107,7 +107,7 @@ jobs:
   
   - stage: release-container-image
     name: Release Container Image
-    if: (( tag =~ /^v.* ) AND ( branch = main ))
+    if: branch == main AND tag =~ /^v.*"
     env:
       secure: "pqJSEsFc/9Pu6srukaPDG0DiBlejA0xzRTNGKjNUAqQtFQGi9LbpkZ2APjNcIu2z4/T8CjuFdCOnpJWvv++LHh3+qUXD4RODcxXQRlRmvkcF1oePDMU172VlkTiXPpA2rBFsPgyMzsUnbCnYAvGmlJ4MgzaAzzOE/F96GJEBJXwMc8KtZwK2x46GYzAhot9F62ePUkofioiSEWjAHBIrfQP1xblUutp5BPPU53gfRM/RSrTMpc0K/gxy9fvs/cYTXggUJgGGR8BdHuzRwWAwJwDJlO+0rhh/W2z6J83QCePshPn5he09cRtLjp5MRpsOIalLi8fTy0qQyVsvDtUEbhoJW/8ouEjTW02W7f/gcmINe/D77qJgADE+yJllb5Z4I6VkscJPrU3xodAcufT3qr2+8HL1imwHOc5gbjjxFhkVetMaiuz7fydgG9+AnXnPqyuwo000gwh/HVfZDC4iQltp+ed5+I//1jyUsMyOOw0COmM1fI0jYQj/1sa82IdrpzybYwPx7TBJLTlq1acR9yrSYWDNj3/MRdycnbqyJ3ImP3luX+CrkzA2W3PgK9u8Ud7QM02WczuKh2ajRsoodL249NMiV1He1pS4G0PiisfLSdyfc4V58fojck9Vb2J9HV5cZ7/2gnDFkc6I2zWPJXp9S8/PA9Mj+wnQMTKg4DQ="
     script:
