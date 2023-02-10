@@ -41,26 +41,13 @@ before_install:
     # CloudFormation Mappings don't support "_" in names, so we need to match mapping name x86
     export MAPPING=$(if [[ $LAMBDA_ARCH == "x86_64" ]];then echo "x86"; else echo $LAMBDA_ARCH; fi )
     export LAMBDA_BASE_IMAGE_TAG=$(cat template.yaml | yq r - "Mappings.LambdaBaseImageMap.${MAPPING}.Tag")
+
+    # alias echo to show timestamp
+    alias echo="/bin/echo \[$(date -u '+%Y-%m-%dT%H:%M:%SZ')\]"
     
 
 jobs:
   include:
-  - stage: unit_tests
-    name: Unit Tests
-    services:
-    - docker
-    script:
-      - |
-        # Build container image with dev dependencies
-
-        set -e
-        
-        docker build --progress=plain -t queueprocessingfunction:test --build-arg ARCH=$LAMBDA_ARCH  \
-          --build-arg LAMBDA_BASE_IMAGE_TAG=${LAMBDA_BASE_IMAGE_TAG} --build-arg ENABLE_LAMBDA_INSIGHTS="false" --build-arg ENV="DEV" .
-        # Run unit tests
-        docker run --entrypoint="" --mount type=bind,source=${TRAVIS_BUILD_DIR}/tests,target=/var/task/tests --env-file=tests/unit/unit_test.env \
-          queueprocessingfunction:test python -m unittest discover -s tests -b
-
   - stage: validate-cfn-templates
     name: Validate CloudFormation Templates
     script:
@@ -70,23 +57,30 @@ jobs:
       - aws cloudformation validate-template --template-body file://eventbridge-cross-account-forward-rules.yaml
       - aws cloudformation validate-template --template-body file://eventbridge-cross-region-forward-rules.yaml
 
+  - stage: unit_tests
+    name: Unit Tests
+    services:
+    - docker
+    script:
+      # Build container image with dev dependencies
+      - docker build --progress=plain -t queueprocessingfunction:test --build-arg ARCH=$LAMBDA_ARCH  \
+          --build-arg LAMBDA_BASE_IMAGE_TAG=${LAMBDA_BASE_IMAGE_TAG} --build-arg ENABLE_LAMBDA_INSIGHTS="false" --build-arg ENV="DEV" .
+      # Run unit tests
+      - docker run --entrypoint="" --mount type=bind,source=${TRAVIS_BUILD_DIR}/tests,target=/var/task/tests --env-file=tests/unit/unit_test.env \
+          queueprocessingfunction:test python -m unittest discover -s tests -b
+
   - stage: build
     name: Build
     script:
-      - |
-        # Build container image
-
-        set -e
-        
-        docker build -t dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT} . --build-arg ARCH=$LAMBDA_ARCH \
+      # Build container image
+      - docker build -t dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT} . --build-arg ARCH=$LAMBDA_ARCH \
                      --build-arg ENABLE_LAMBDA_INSIGHTS="false" --build-arg LAMBDA_BASE_IMAGE_TAG=${LAMBDA_BASE_IMAGE_TAG}
+      # Log in to ECR
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
         
-        # Log in to ECR
-        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
-        
-        # Push image
-        docker tag dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT} ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT}
-        docker push ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT}
+      # Push image
+      - docker tag dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT} ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT}
+      - docker push ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT}
   
   - stage: end-to-end-test
     name: End-to-end deployment test
@@ -94,52 +88,22 @@ jobs:
     install:
       - pip install argparse requests
     script:
+      - ./tests/e2e/deploy_forwarder_for_validation.sh
+
+      # Write logs to S3 and allow time for ingestion
       - |
-        # e2e tests: Deploy dynatrace-aws-s3-log-forwarder stack
-
-        aws ssm put-parameter --name "/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key" \
-                               --type SecureString --value $DT_TENANT_API_KEY
-
-        aws cloudformation deploy --stack-name ${STACK_NAME} --parameter-overrides \
-                        DynatraceEnvironment1URL=${DT_TENANT_URL} \
-                        DynatraceEnvironment1ApiKeyParameter="/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key" \
-                        ContainerImageUri=${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${LAMBDA_ARCH}-${COMMIT} \
-                        EnableCrossRegionCrossAccountForwarding=true \
-                        ProcessorArchitecture=${LAMBDA_ARCH} \
-                        --template-file template.yaml --capabilities CAPABILITY_IAM \
-                        --role-arn ${CFN_ROLE_ARN}
-
-        aws cloudformation wait stack-create-complete  --stack-name ${STACK_NAME}
-
-        # e2e tests: Deploy dynatrace-aws-s3-log-forwarder-configuration stack
-
-        aws cloudformation deploy --stack-name ${STACK_NAME}-configuration --parameter-overrides \
-                        DynatraceAwsS3LogForwarderStackName=${STACK_NAME} \
-                        --template-file dynatrace-aws-s3-log-forwarder-configuration.yaml  \
-                        --role-arn ${CFN_ROLE_ARN}
-      
-        aws cloudformation wait stack-create-complete  --stack-name ${STACK_NAME}-configuration
-
-        # Deploy the S3 Bucket Configuration stack
-
-        aws cloudformation deploy --stack-name ${STACK_NAME}-s3-bucket-configuration --parameter-overrides \
-                        DynatraceAwsS3LogForwarderStackName=${STACK_NAME} \
-                        LogsBucketName=${E2E_TESTING_BUCKET_NAME} \
-                        LogsBucketPrefix1=test/${TRAVIS_BUILD_ID}/validation/ \
-                        --capabilities CAPABILITY_IAM \
-                        --template-file dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml \
-                        --role-arn ${CFN_ROLE_ARN}
-        
-        aws cloudformation wait stack-create-complete  --stack-name ${STACK_NAME}-configuration
-
-        # Write logs to S3
-        echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] E2E testing validation log entry" > ${TRAVIS_BUILD_ID}.log
+        echo "E2E testing validation log entry" > ${TRAVIS_BUILD_ID}.log
         aws s3 cp ${TRAVIS_BUILD_ID}.log s3://${E2E_TESTING_BUCKET_NAME}/test/${TRAVIS_BUILD_ID}/validation/test_log.log
-        # Allow time for log ingestion
         sleep 120
       
-        # Validate log entry
-        ./tests/e2e/validate_logs_exist.py --bucket ${E2E_TESTING_BUCKET_NAME} --key test/${TRAVIS_BUILD_ID}/validation/test_log.log
+      # Validate log entry
+      - ./tests/e2e/validate_logs_exist.py --bucket ${E2E_TESTING_BUCKET_NAME} --key test/${TRAVIS_BUILD_ID}/validation/test_log.log
     
     after_script: 
       - ./tests/e2e/clean_up_resources.sh
+  
+  - stage: release
+    name: Release
+    if: (tag =~/^v.*) AND (branch = main)
+    script:
+      - echo to do
