@@ -34,6 +34,7 @@ Parameters:
   DynatraceEnvironment2URL:
     Description: "[Optional]: URL of an additional Dynatrace environment you want to forward logs to. If none, leave this empy. [This feature is experimental and may change in the future]"
     Type: String
+    Default: ""
   DynatraceEnvironment2ApiKeyParameter:
     Description: "[Optional]: Name of the SecureString Parameter in AWS Parameter Store storing the Dynatrace Environment 2 API Key.[This feature is experimental and may change in the future]"
     Type: String
@@ -52,9 +53,9 @@ Parameters:
   LambdaFunctionMemorySize:
     Description: Memory size of the queue processing Lambda function
     Type: Number
-    Default: "256"
-    MinValue: "128"
-    MaxValue: "10240"
+    Default: 256
+    MinValue: 128
+    MaxValue: 10240
   LambdaLoggingLevel:
     Description: Logging verbosity of the Lambda function
     Type: String
@@ -101,30 +102,34 @@ Parameters:
   MaximumLambdaConcurrency:
     Description: Maximum number of Lambda functions running concurrently. The concurrency is reserved for the queue processing function, so it's guaranteed. 
     Type: Number
-    Default: "30"
+    Default: 30
   LambdaSQSMessageBatchSize:
     Type: Number
     Description: Maximum number of messages to batch per each Queue Processing Lambda function execution
-    Default: "4"
-    MaxValue: "10"
+    Default: 4
+    MaxValue: 10
   LambdaMaximumExecutionTime:
     Type: Number
     Description: Maximum execution time in seconds for the Lambda processing function (configure a value that allows enough time to process the number of messages configured on LambdaSQSMessageBatchSize)
-    Default: "300"
-    MaxValue: "900"
+    Default: 300
+    MaxValue: 900
   SQSVisibilityTimeout:
     Type: Number
     Description: "Visibility timeout. This value must be greater than the Lambda Execution timeout: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html"
-    Default: "420"
+    Default: 420
   SQSLongPollingMaxSeconds:
     Type: Number
     Description: Maximum seconds to wait for messages during ReceiveMessage long polling requests to receive up to SQSMessageBatchSize number of messages.
-    Default: "20"
-    MaxValue: "20"
+    Default: 20
+    MaxValue: 20
   MaximumSQSMessageRetries:
     Type: Number
     Description: Maximum number of retries for failed processing of S3 Object Created notification messages
-    Default: "2"
+    Default: 2
+  ContainerImageUri:
+    Type: String
+    Description: If deploying from ECR, URI of the Container image for the lambda function to deploy.
+    Default: ""
 
 Conditions:
   SecondDTEnvironmentSpecified: !Not [!Equals [!Ref DynatraceEnvironment2URL, "" ]]
@@ -134,6 +139,8 @@ Conditions:
   CreateEventBridgePolicy: !And [ !Condition AwsAccountListIsNotEmpty , !Condition CrossRegionCrossAccountForwardingIsEnabled ]
   DeployMonitoringDashboard: !Equals [ !Ref DeployCloudWatchMonitoringDashboard, "true" ]
   IsEmailConfigured: !Not [!Equals [ !Ref NotificationsEmail, "" ]]
+  ContainerImageUriIsDefined: !Not [!Equals [ !Ref ContainerImageUri, "" ]]
+  ArchIsArm: !Equals [ !Ref ProcessorArchitecture, "arm64"]
 
 Globals:
   Function:
@@ -142,6 +149,15 @@ Globals:
       Variables:
         POWERTOOLS_METRICS_NAMESPACE: dynatrace-aws-s3-log-forwarder
         DEPLOYMENT_NAME: !Ref AWS::StackName
+
+Mappings:
+  LambdaBaseImageMap:
+    # Mappings only support alphanumeric chars, '-' and '.', so name can't be x86_64
+    # That means to resolve the image tag we need !If [ ArchIsArm , !FindInMap arm, !FindInMap x86]
+    x86: 
+      Tag: '3.9.2023.02.03.11-x86_64'
+    arm64:
+      Tag: '3.9.2023.02.03.11-arm64'
 
 Resources:
   QueueProcessingFunction:
@@ -153,8 +169,10 @@ Resources:
       DockerBuildArgs:
         ARCH: !Ref ProcessorArchitecture
         ENABLE_LAMBDA_INSIGHTS: !Ref EnableLambdaInsights
+        LAMBDA_BASE_IMAGE_TAG: !If [ ArchIsArm, !FindInMap [ LambdaBaseImageMap, "arm64", 'Tag' ], !FindInMap [ LambdaBaseImageMap, "x86", 'Tag'] ]
     Properties:
       PackageType: Image
+      ImageUri: !If [ ContainerImageUriIsDefined, !Ref ContainerImageUri, !Ref AWS::NoValue ]
       MemorySize: !Ref LambdaFunctionMemorySize
       Environment:
         Variables:
@@ -191,7 +209,7 @@ Resources:
               - !Sub 'arn:aws:appconfig:${AWS::Region}:${AWS::AccountId}:application/${AppConfigApplication}/environment/${AppConfigEnvironment}/*'
             Action:
               - appconfig:StartConfigurationSession
-              - appconfig:GetLatestConfiguration    
+              - appconfig:GetLatestConfiguration
       ReservedConcurrentExecutions: !Ref MaximumLambdaConcurrency
 
   S3NotificationsQueue:
@@ -382,7 +400,7 @@ Resources:
   AppConfigDeploymentStrategy:
     Type: AWS::AppConfig::DeploymentStrategy
     Properties:
-      Name: !Sub ${AWS::StackName}-AllAtOnce-Deployment-Strategy
+      Name: !Sub ${AWS::StackName}-AllAtOnce
       DeploymentDurationInMinutes: 0
       FinalBakeTimeInMinutes: 0
       GrowthFactor: 100
@@ -488,6 +506,15 @@ Resources:
                     [
                       ".",
                       "DynatraceHTTP429Throttled",
+                      ".",
+                      ".",
+                      {
+                        "yAxis": "right"
+                      }
+                    ],
+                    [
+                      ".",
+                      "DynatraceHTTP400InvalidLogEntries",
                       ".",
                       ".",
                       {

@@ -1,0 +1,126 @@
+os: linux
+dist: jammy
+addons:
+  snaps:
+    - name: yq
+      channel: v3/stable
+
+if: fork = false
+
+language: shell
+
+notifications:
+  email:
+    recipients:
+      secure: ej6/5zNDDQUhSqobhxnp+x23cAnd6Jg9Fu6Dh7PFtMeHfn8xHkLDb0qsZ75B9vRoI1cwuTTw7hzmxkA4EbAdr8Sl/mZMZJOmHLUKZ6zz/Or9Um0Cg7be1lzBogXVXE/zXnhy4nYZ7ga3VbK0553L6aBfCbkiixy7fiR8Hvt0GgME3Gp3lgpj4S7Hjdhx3IiKFAW0zuzQPrlGVjFLmxzTtEp+ActSiaBghB59qbHhqTmbj4UPMZdKhQV/Heho18eYmpk2y7uYo+aCFLjDhtmzfnhZCRG4ZNTO7MfyailUMcu3MGss9CA9NPmRGaEUHR+Qu2rIe66aDdJaQX1zifSVvV3NW74vLJ1AbqOcGK2ZdrjPSrG78AWX+Cvb31ZjHoo6+5QUa8hfcOedmbBj6hdn+4ev59FknjIC5JjEzq6keflhPbOfaGlIMbZCwoAnk+Ulc5ZEAnRHrAQ1UG+w/Zr/DhtoC1T13uG6WGbSESIqr1U3fV70cs6Uh2JPRU4MUs7WqY3erhtPfVtLbnM+9YCA0JGHkT8CB2PeVVjkPvH3/iCOoEo0VY1/v6ppQugsO5QdoVw48XmW4UEHVQOhemwQzDcAVRnBMxsCDaOrf7+Oh7yUHuOhLYp/UXKkqOIqoq2FOPMXxqSqxhbs4gfXMqcQrB4GUDJxWc1Jg5q15bowjhQ=
+    on_success: never
+    on_failure: always
+env:
+  global:
+  - secure: rQuBF5LJD/GVwaypyvO8YsGry6dLH9K66uKx4GnYsXcAe7AazPkAR70ICyDHSVZ4Ow0/06FF/6iMaKZBFcZxyhy1ikQkiy1O181LdVInWxERsnbd6Xk7/jCsXv+mYx4yR7wX6bpcGBj9rWM6eW0rIgUVy3p3gj8H/yQViZys/iigcdSfKoU1GxlplDRxILWY9G2GXoupwJPefa7OVP1XZr6jo1O12uX8DDtAe13DFep+alCdzAOTM4B4d795tzbZYM93Iba1jp20VBnVIGI0pFg/BzrX0G6/hDYwNdIx2OEJ6MZhkQX7fMp+o/9jDEQ0Iqp7v4EZLqtB/LMCsxf3hX84E7ze8iPRnkytdK/oz9lbTC0RuETQXkOinTDuoWTdyYY0HhqYIRbVOVEqr4OS1fYzFQf8ZgM0+sq+vgE4GuWuEGamzhCXTHac7+o0ylW9GNEWJfYa4QbB0LE2FFVVWCmgp0p7sxZZHTxYSuDot4KrTjjZRNXEXWaDW4HV1PpTTiI3iYA5EKB8maVbCWv3X6ozoSV+pyJBzPadry4rM/08I2XTEtNldIuct6L/HmPS4wQhadh5n6JUhgwo6E4ATkXjnedCdjCg31LVj8y7jOyC/cratmxz6J65VHOxonlPTzipcjJtrgeS8uB97lOLb37L7hhybkz9C4AfzqIPFgg=
+  - secure: PN78JTV5yEd1UlOs1MLwmqZKuAy0UP/H7utFLpf3TXA+Uy2Byfw1FpEBAhqD3MiQ7tJM0G6xPJCRAjKVyV5K1qaLCKRu+abtpvqpf4P67i2ccl0WcNOYXlmwAuKXNb+uSUCKsoVu3j9c+FuP1Rw6JhPFtA15vG8KKcbio7Ed8c4+7OtzpIcLcORWSXHWMvS2vh3/p/9Tj6jT7wF0uGwVQKn0gOg3folu6O2aOiOrJkBIjJiTLF9Ok8kUFc7c2CzRYdBxZsG5f1tJDanwoWDfUzpDNNkAll8VlCdTwhM3MszKRwDbemsoldNdMFEanl2/4LwNMJaKl5h0tRJ4fqAx59qCvDQ9WfbGON/C4cmTmk7jlEhT05gr5V11CHU0nYAoMIu925vM08Oiqt7vI6HqcyaifmLOTqgUBu+7X29bshJtcTznDynBVmgUKezQLBlyT3yOwODHLNZYB5ybM/V4wyMqT0LL2MvEKm7N0ny8rdP50uBZf9C0ynAdmDNuIJVlj92q6BwgWBsl6xPcnBOb/W0V6PF9rucFMveDHOlzqq/we6fUZFtJDtBmPmvxX+swprdqToPp6HUbx+f8SWyFez9nlgOeo2/EPeChtjd1kV7XgvPdhqDyJvP0NDyak+noiXqSt+nqrdjOrBIbDt+73tidfZw4BX74xehmPp1JAao=
+  - secure: oUMamNk0dvAj+wueUL4RwIRtEWhboFu0oVvkDkgQJDMpykOl23ZFPxyd+PPSjtKzrzpfIWgE5r5z4q7hS+r9S+xoAl3lVpq7ASUgZZKoMGuXdJ9Tcl6aycKYkCIYpFKWaD4oweh5TL2Ted9BMNniya8SqD94VLpUKVZDQUI29igKr/mGqErF9aDKfKH7J8+eZkPUdzjBc/bxOewK8N5pwRVcObTGIFDU0n4E3aq44lz+gXYTYw/gPt2XCjxWMHIMLfF+JKe62mO3Z5k25+a7wgaQ7Mpfm7dc0YMn8alGeHBUvxzo5XW6Q/+x9v2T20WQXM8KlZy/aQqVvaTGLOcNUWF9oYzU0TBlIL07/FVtS2Sd/Z/FkHiw8YtSeGasmAnx25Nk51X72WbOdiiY8tjhQnV7p+ok3PviuQe/vCDCIHLy2F1/QimovJ02+aePkXs0GIfVqlog4oOXiSCBC11Z5+jDbX4SrKJhGlOJRyY3A8cKi2tkropzWY3063TOhstkChHKV2QGVEFAbRhKU+MxV6vP1kbRcdbRCWoARyIZDMzHBesuHjiLHb+inZHfRRWKenUecj+U+UmM/QZeHmH4pwKEKo0m9iN6cS26f5wWxM/y3C9tX1OxTl6LgKeHLtxAg9EFVLs6tP7rW/Na1DSLHimEbiUHA8AIH7ZkD01R1YA=
+  - secure: "vSgdt2TqQ6uz3nOBqesacOCmgA8l7ixu4Wfx5LoDUJ02I+yynEvUy+zzVNSgFCCTTMaBZ8Tn1bKgUP16UMCO/3QSPp1c9Qb3Nf9E7/c7pKrj1L31u3xx30y+h2ziiUyaaa1OWzdZkpA+HH2Y86NSKOv9pTJrE39DHSNdftMW4RE6PYndfVMiHmOgDJ+tYhh720mFNlkFuDZhm6BPiGGSbfrDFf1ly0oUNsk9+v+5GPM+xMSuSFYJZSm1DCagxrLnEdWSx/s/mYuNTz4SuPn63H3r7mFiQWwEXw9tKz0cTQBYFaHJ3/Q/qDEvCpiC+QQaL5z5yZzV9M03mQzrMOZpYwBtLcepnUEhsO5xUJXzOpxL5OPPlewOI8xbGAG2bandCV9XlvSxdR+TkE5lgVsiT7abBH0ppVZs4z0jIPrLkH857nJhWHE3+5xutIs8c/nfV6zeASUQ/nIFS1CscOZbWRN1Doys2LEBb74ogJl8deW9kxcTcP0bxuuJGV56WkC0Zertsqbn7wMEHIUhnVjWItQBvyKbmuu2+WG+ol0U25UJjw7q9/BQ6qdlyBKlfBuF+wIHsfvk7j0hxvSQeqIbEbS7RtiYzwlV+QBF6+QArGGvC7khtgdT0h+7pQ+cdDt7hUk9dNLq1rdKejANFUWGUH1hsL56qEg1RzckV3YGv10="
+
+before_install:
+  - |
+    # before_install: Install AWS CLI and download Lambda Layers
+    set -e
+    # Get CPU architecture
+    if [[ $TRAVIS_CPU_ARCH == "amd64" ]]; then export LAMBDA_ARCH=x86_64; export AWSCLI_ARCH=x86_64; elif [[ ${TRAVIS_CPU_ARCH:0:5} == "arm64" ]]; then export LAMBDA_ARCH=arm64; export AWSCLI_ARCH=aarch64; fi
+    # Install AWS CLI v2
+    if ! [ -x "$(command -v aws)" ]; then wget -nv "https://awscli.amazonaws.com/awscli-exe-linux-${AWSCLI_ARCH}.zip"; unzip -qq awscli-exe-linux-x86_64.zip; sudo ./aws/install ; fi
+    aws --version
+    # Get dependent lambda layers
+    bash get-required-lambda-layers.sh
+    # Define env vars
+    export COMMIT=${TRAVIS_COMMIT:0:7}
+    export STACK_NAME=e2e-dt-aws-s3-log-forwarder-${TRAVIS_BUILD_ID}
+    export E2E_TESTING_BUCKET_NAME=dynatrace-aws-s3-log-forwarder-e2e-testing
+
+    # CloudFormation Mappings don't support "_" in names, so we need to match mapping name x86
+    export MAPPING=$(if [[ $LAMBDA_ARCH == "x86_64" ]];then echo "x86"; else echo $LAMBDA_ARCH; fi )
+    export LAMBDA_BASE_IMAGE_TAG=$(cat template.yaml | yq r - "Mappings.LambdaBaseImageMap.${MAPPING}.Tag")
+    
+
+jobs:
+  include:
+  - stage: validate-cfn-templates
+    name: Validate CloudFormation Templates
+    script:
+      - aws cloudformation validate-template --template-body file://template.yaml
+      - aws cloudformation validate-template --template-body file://dynatrace-aws-s3-log-forwarder-configuration.yaml
+      - aws cloudformation validate-template --template-body file://dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml
+      - aws cloudformation validate-template --template-body file://eventbridge-cross-account-forward-rules.yaml
+      - aws cloudformation validate-template --template-body file://eventbridge-cross-region-forward-rules.yaml
+
+  - stage: unit_tests
+    name: Unit Tests
+    services:
+    - docker
+    script:
+      # Build container image with dev dependencies
+      - |
+        docker build --progress=plain -t queueprocessingfunction:test --build-arg ARCH=$LAMBDA_ARCH  \
+          --build-arg LAMBDA_BASE_IMAGE_TAG=${LAMBDA_BASE_IMAGE_TAG} --build-arg ENABLE_LAMBDA_INSIGHTS="false" --build-arg ENV="DEV" .
+      # Run unit tests
+      - |
+        docker run --entrypoint="" --mount type=bind,source=${TRAVIS_BUILD_DIR}/tests,target=/var/task/tests --env-file=tests/unit/unit_test.env \
+          queueprocessingfunction:test python -m unittest discover -s tests -b
+
+  - stage: build
+    name: Build
+    script:
+      # Build container image
+      - |
+        docker build -t dynatrace-aws-s3-log-forwarder:${COMMIT}-${LAMBDA_ARCH} . --build-arg ARCH=$LAMBDA_ARCH \
+                     --build-arg ENABLE_LAMBDA_INSIGHTS="false" --build-arg LAMBDA_BASE_IMAGE_TAG=${LAMBDA_BASE_IMAGE_TAG}
+      # Log in to ECR
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
+        
+      # Push image
+      - docker tag dynatrace-aws-s3-log-forwarder:${COMMIT}-${LAMBDA_ARCH} ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${COMMIT}-${LAMBDA_ARCH}
+      - docker push ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${COMMIT}-${LAMBDA_ARCH}
+  
+  - stage: end-to-end-test
+    name: End-to-end deployment test
+    if: fork = false
+    install:
+      - pip install argparse requests
+    script:
+      - ./tests/e2e/deploy_forwarder_for_validation.sh
+
+      # Write logs to S3 and allow time for ingestion
+      - |
+        echo "\[$(date -u '+%Y-%m-%dT%H:%M:%SZ')\] E2E testing validation log entry" > ${TRAVIS_BUILD_ID}.log
+        aws s3 cp ${TRAVIS_BUILD_ID}.log s3://${E2E_TESTING_BUCKET_NAME}/test/${TRAVIS_BUILD_ID}/validation/test_log.log
+        sleep 120
+      
+      # Validate log entry
+      - ./tests/e2e/validate_logs_exist.py --bucket ${E2E_TESTING_BUCKET_NAME} --key test/${TRAVIS_BUILD_ID}/validation/test_log.log
+    
+    after_script: 
+      - ./tests/e2e/clean_up_resources.sh
+    
+    after_failure: 
+      - ./tests/e2e/clean_up_resources.sh
+  
+  - stage: release-container-image
+    name: Release Container Image
+    if: (tag =~ '/^v.*') AND (branch = main) 
+    env:
+      secure: "pqJSEsFc/9Pu6srukaPDG0DiBlejA0xzRTNGKjNUAqQtFQGi9LbpkZ2APjNcIu2z4/T8CjuFdCOnpJWvv++LHh3+qUXD4RODcxXQRlRmvkcF1oePDMU172VlkTiXPpA2rBFsPgyMzsUnbCnYAvGmlJ4MgzaAzzOE/F96GJEBJXwMc8KtZwK2x46GYzAhot9F62ePUkofioiSEWjAHBIrfQP1xblUutp5BPPU53gfRM/RSrTMpc0K/gxy9fvs/cYTXggUJgGGR8BdHuzRwWAwJwDJlO+0rhh/W2z6J83QCePshPn5he09cRtLjp5MRpsOIalLi8fTy0qQyVsvDtUEbhoJW/8ouEjTW02W7f/gcmINe/D77qJgADE+yJllb5Z4I6VkscJPrU3xodAcufT3qr2+8HL1imwHOc5gbjjxFhkVetMaiuz7fydgG9+AnXnPqyuwo000gwh/HVfZDC4iQltp+ed5+I//1jyUsMyOOw0COmM1fI0jYQj/1sa82IdrpzybYwPx7TBJLTlq1acR9yrSYWDNj3/MRdycnbqyJ3ImP3luX+CrkzA2W3PgK9u8Ud7QM02WczuKh2ajRsoodL249NMiV1He1pS4G0PiisfLSdyfc4V58fojck9Vb2J9HV5cZ7/2gnDFkc6I2zWPJXp9S8/PA9Mj+wnQMTKg4DQ="
+    script:
+      # Log in to ECR Private repo
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
+      # Log in to Docker Hub
+      - echo $DOCKER_HUB_TOKEN | docker login --username dts3logfowarderuser --password-stdin registry.hub.docker.com
+      # Log in to ECR Public
+      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/dynatrace-oss
+      # pull from ECR and push to Docker hub: dynatrace/dynatrace-aws-s3-log-forwarder:vx.y.z
+      - docker pull ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${COMMIT}-${LAMBDA_ARCH}
+      - docker tag ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${COMMIT}-${LAMBDA_ARCH} dynatrace/dynatrace-aws-s3-log-forwarder:${TRAVIS_TAG}-${LAMBDA_ARCH}
+      - docker push dynatrace/dynatrace-aws-s3-log-forwarder:${TRAVIS_TAG}-${LAMBDA_ARCH}
+      # Push to ECR Public
+      - docker tag ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${COMMIT}-${LAMBDA_ARCH} public.ecr.aws/dynatrace-oss/dynatrace-aws-s3-log-forwarder:${TRAVIS_TAG}-${LAMBDA_ARCH}
+      - docker push public.ecr.aws/dynatrace-oss/dynatrace-aws-s3-log-forwarder:${TRAVIS_TAG}-${LAMBDA_ARCH}

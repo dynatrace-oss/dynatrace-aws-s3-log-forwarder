@@ -28,18 +28,20 @@ AWS_LAMBDA_INSIGHTS_EXTENSION_X86_64="arn:aws:lambda:us-east-1:580247275435:laye
 AWS_LAMBDA_INSIGHTS_EXTENSION_ARM64="arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension-Arm64:2"
 
 download_layer() {
-    aws lambda get-layer-version-by-arn --arn $1 --query 'Content.Location' | xargs curl -s -o $BASE_DIR/$2/$3_extension.zip
+    aws lambda get-layer-version-by-arn --arn "$1" --query 'Content.Location' | xargs curl -s -o $BASE_DIR/"$2"/"$3"_extension.zip
 }
 
 for arch in "X86_64" "ARM64"
 do
     arch_to_lower=$(echo $arch | tr '[:upper:]' '[:lower:]')
-    mkdir -p $BASE_DIR/$arch_to_lower
+    # if this is a travis build, download only the layers for the CPU architecture of the build
+    if [ -n $LAMBDA_ARCH ] && [[ $LAMBDA_ARCH != $arch_to_lower ]]; then continue; fi
+    mkdir -p $BASE_DIR/"$arch_to_lower"
     for extension in "AWS_APPCONFIG" "AWS_LAMBDA_INSIGHTS"
     do
         extension_to_lower=$(echo $extension | tr '[:upper:]' '[:lower:]')
-        varname=${extension}_EXTENSION_${arch}
-        echo Downloading AWS Lambda Layer $varname: ${!varname}
-        download_layer ${!varname} ${arch_to_lower} ${extension_to_lower}
+        varname="${extension}"_EXTENSION_"${arch}"
+        echo Downloading AWS Lambda Layer $varname: "${!varname}"
+        download_layer "${!varname}" "${arch_to_lower}" "${extension_to_lower}"
     done
 done

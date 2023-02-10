@@ -14,8 +14,9 @@
 
 ARG ARCH
 ARG ENABLE_LAMBDA_INSIGHTS
+ARG LAMBDA_BASE_IMAGE_TAG
 
-FROM public.ecr.aws/lambda/python:3.9-${ARCH} AS base
+FROM public.ecr.aws/lambda/python:${LAMBDA_BASE_IMAGE_TAG} AS base
 
 ARG ARCH
 ARG ENV 

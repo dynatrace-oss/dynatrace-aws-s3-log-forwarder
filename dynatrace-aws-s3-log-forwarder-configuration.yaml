@@ -99,6 +99,7 @@ Resources:
 
   LogProcessingRulesDeployment:
     Type: AWS::AppConfig::Deployment
+    DependsOn: LogForwardingRulesDeployment
     Properties:
       ApplicationId: 
         Fn::ImportValue:
