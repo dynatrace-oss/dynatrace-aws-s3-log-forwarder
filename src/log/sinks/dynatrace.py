@@ -215,6 +215,12 @@ class DynatraceSink():
             success = True
             metrics.add_metric(
                 name='DynatraceHTTP200PartialSuccess', unit=MetricUnit.Count, value=1)
+        elif resp.status_code == 400:
+            logger.warning(
+                '%s: Parts of batch %s were not successfully posted: %s',tenant_id, batch_num, resp.text)
+            success = True
+            metrics.add_metric(
+                name='DynatraceHTTP400InvalidLogEntries', unit=MetricUnit.Count, value=1)
         elif resp.status_code == 429:
             logger.error("%s: Throttled by Dynatrace. Exhausted retry attempts...", tenant_id)
             metrics.add_metric(name='DynatraceHTTP429Throttled',unit=MetricUnit.Count, value=1)
@@ -270,7 +276,7 @@ def empty_sinks(sinks:list):
     '''
     Gets a list of DynatraceSink objects and empties its contents
     '''
-    for name, sink in sinks.items():
+    for _ , sink in sinks.items():
         sink.empty_sink()
 
 
