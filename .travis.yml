@@ -107,6 +107,6 @@ jobs:
   
   - stage: release
     name: Release
-    if: (tag =~/^v.*) AND (branch = main)
+    if: (tag =~ /^v.*) AND (branch = main)
     script:
       - echo to do
