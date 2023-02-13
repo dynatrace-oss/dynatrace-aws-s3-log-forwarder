@@ -111,10 +111,12 @@ The SAM template deploys the forwarder with the following default parameters tha
 
 It's possible to centralize log forwarding from S3 buckets on different AWS regions on a single `dynatrace-aws-s3-log-forwarder` deployment on a specific AWS region to avoid the overhead of deploying and managing multiple S3 log forwarders.
 
-In this case, you will need to configure Amazon EventBridge rules on the AWS region where your S3 bucket is to forward S3 Object Created notifications fto a dedicated event bus on the AWS region where you have deployed the `dynatrace-aws-s3-log-forwarder`. Before proceeding, make sure you have deployed the `dynatrace-aws-s3-log-forwarder` setting the `EnableCrossRegionCrossAccountForwarding` parameter to "true", so a dedicated Event Bus is created to receive cross-region notifications. If you didn't set this parameter when you deployed the forwarder, you can simply re-deploy the SAM template enabling it.
+In this case, you will need to configure Amazon EventBridge rules on the AWS region where your S3 bucket is to forward S3 Object Created notifications fto a dedicated event bus on the AWS region where you have deployed the `dynatrace-aws-s3-log-forwarder`. Before proceeding, make sure you have deployed the `dynatrace-aws-s3-log-forwarder` setting the `EnableCrossRegionCrossAccountForwarding` parameter to "true", so a dedicated Event Bus is created to receive cross-region notifications. If you didn't set this parameter when you deployed the forwarder, you can simply update the log forwarder CloudFormation stack to enable it.
 
 ```bash
-sam deploy --parameter-overrides EnableCrossRegionCrossAccountForwarding=true
+aws cloudformation deploy --stack-name $STACK_NAME --parameter-overrides \
+    EnableCrossRegionCrossAccountForwarding=true \
+    --template-file template.yaml --capabilities CAPABILITY_IAM 
 ```
 
 The diagram below showcases what needs to be deployed to enable cross-region log forwarding:
@@ -177,10 +179,13 @@ For each S3 bucket located in a different AWS region than where the log forwarde
 
 ## Forward logs from S3 buckets on different AWS accounts
 
-You can centralize log forwarding for logs in multiple AWS accounts and AWS regions on a single `dynatrace-aws-s3-log-forwarder` deployment to avoid the overhead of deploying and managing multiple log forwarding instances. Before proceeding, make sure you have deployed the `dynatrace-aws-s3-log-forwarder` setting the `EnableCrossRegionCrossAccountForwarding` parameter set to "true", so a dedicated Event Bus is created to receive cross-region notifications. You also need to grant permissions to the AWS account using the `AwsAccountsToReceiveLogsFrom` parameter, which takes a comma separated list of AWS account ids to grant permission to. To do so, re-deploy the SAM template:
+You can centralize log forwarding for logs in multiple AWS accounts and AWS regions on a single `dynatrace-aws-s3-log-forwarder` deployment to avoid the overhead of deploying and managing multiple log forwarding instances. Before proceeding, make sure you have deployed the `dynatrace-aws-s3-log-forwarder` setting the `EnableCrossRegionCrossAccountForwarding` parameter set to "true", so a dedicated Event Bus is created to receive cross-region notifications. You also need to grant permissions to the AWS account using the `AwsAccountsToReceiveLogsFrom` parameter, which takes a comma separated list of AWS account ids to grant permission to. To do so, update your CloudFormation stack executing the command below:
 
 ```bash
-sam deploy --parameter-overrides EnableCrossRegionCrossAccountForwarding=true AwsAccountsToReceiveLogsFrom="aws_account_1,aws_account_2..."
+aws cloudformation deploy --stack-name $STACK_NAME --parameter-overrides \
+    EnableCrossRegionCrossAccountForwarding=true \
+    AwsAccountsToReceiveLogsFrom="aws_account_1,aws_account_2..." \
+    --template-file template.yaml --capabilities CAPABILITY_IAM 
 ```
 
 **IMPORTANT NOTE:** If you had already some AWS accounts configured on the AwsAccountsToReceiveLogsFrom parameter, make sure to add them to the list on the above command, as it overwrites the previous content of the parameter. If you run `sam deploy --guided` you can see the current value and copy-paste from there adding new accounts.

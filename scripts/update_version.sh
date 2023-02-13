@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 echo  "Travis tag:     ${TRAVIS_TAG}"
 echo  "Travis commit:  ${TRAVIS_COMMIT}"
 
@@ -16,10 +18,10 @@ else
 fi
 
 # Update version.py
-sed -i "s/__version__ = \"dev\"/__version__ = \"${VERSION}\"/g" version.py
+sed -i "s/__version__ = \"dev\"/__version__ = \"${VERSION}\"/g" src/version.py
 
 # Update CloudFormation templates
-for file in $(ls *.yaml);
+for file in $(ls src/*.yaml);
 do
     yq -i -e '.Metadata.Version.Description = strenv(VERSION)' $file
 done
