@@ -135,4 +135,6 @@ jobs:
       - aws s3 cp dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
       - aws s3 cp eventbridge-cross-account-forward-rules.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
       - aws s3 cp eventbridge-cross-region-forward-rules.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
+      - zip templates.zip template.yaml dynatrace-aws-s3-log-forwarder-configuration.yaml dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml eventbridge-cross-account-forward-rules.yaml eventbridge-cross-region-forward-rules.yaml
+      - aws s3 cp templates.zip s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
 
