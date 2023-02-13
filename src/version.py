@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 __author__ = "Dynatrace"
-__version__ = "0.3.1"
+__version__ = "dev"
 
 def get_version():
     return __version__

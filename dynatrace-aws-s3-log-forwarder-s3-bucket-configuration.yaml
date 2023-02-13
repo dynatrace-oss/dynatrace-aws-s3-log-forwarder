@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: >
+Description: |
   dynatrace-aws-s3-log-forwarder-s3-bucket-configuration
 
   For a given AWS bucket and optionally between 1 up to 10 S3 Key prefixes, this AWS CloudFormation template does:
@@ -11,7 +11,7 @@ Description: >
 
 Metadata:
   License:
-    Description: >
+    Description: |
       Copyright 2022 Dynatrace LLC
 
       Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,8 +26,11 @@ Metadata:
       See the License for the specific language governing permissions and
       limitations under the License.
 
+  Version:
+    Description: dev
+
   Instructions:
-    Description: >
+    Description: |
       Deploy this template once per every Amazon S3 bucket you want to configure to forward logs to Dynatrace on the same AWS Account and region
       where the dynatrace-aws-s3-log-forwarder is deployed. LogBucketPrefix# parameters are optional, only use them if you want to narrow down 
       the ingestion to specific prefixes in your bucket.

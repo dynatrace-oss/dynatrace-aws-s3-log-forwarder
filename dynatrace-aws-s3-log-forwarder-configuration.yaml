@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: >
+Description: |
   dynatrace-aws-s3-log-forwarder-configuration
 
   This template deploys log forwarding and log processing rules to be used by the dynatrace-aws-s3-log-forwarder
@@ -13,7 +13,7 @@ Description: >
 
 Metadata:
   License:
-    Description: >
+    Description: |
       Copyright 2023 Dynatrace LLC
 
       Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,8 +28,11 @@ Metadata:
       See the License for the specific language governing permissions and
       limitations under the License.
 
+  Version:
+    Description: dev
+
   Instructions:
-    Description: >
+    Description: |
       This stack deploys your log forwarding and custom log processing log processing rules for the log forwarding AWS Lambda function.
 
       To deploy, run the following AWS CLI:

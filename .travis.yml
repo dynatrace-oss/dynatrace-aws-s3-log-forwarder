@@ -71,6 +71,7 @@ jobs:
   - stage: build
     name: Build
     script:
+      - ./scripts/update_version.sh
       # Build container image
       - |
         docker build -t dynatrace-aws-s3-log-forwarder:${COMMIT}-${LAMBDA_ARCH} . --build-arg ARCH=$LAMBDA_ARCH \
@@ -84,7 +85,7 @@ jobs:
   
   - stage: end-to-end-test
     name: End-to-end deployment test
-    if: fork = false
+    if: fork = false AND ( branch == main OR type == pull_request )
     install:
       - pip install argparse requests
     script:
@@ -107,14 +108,14 @@ jobs:
   
   - stage: release-container-image
     name: Release Container Image
-    if: branch == main AND tag =~ /^v.*$/
+    if: tag =~ /^v.*$/
     env:
       secure: "pqJSEsFc/9Pu6srukaPDG0DiBlejA0xzRTNGKjNUAqQtFQGi9LbpkZ2APjNcIu2z4/T8CjuFdCOnpJWvv++LHh3+qUXD4RODcxXQRlRmvkcF1oePDMU172VlkTiXPpA2rBFsPgyMzsUnbCnYAvGmlJ4MgzaAzzOE/F96GJEBJXwMc8KtZwK2x46GYzAhot9F62ePUkofioiSEWjAHBIrfQP1xblUutp5BPPU53gfRM/RSrTMpc0K/gxy9fvs/cYTXggUJgGGR8BdHuzRwWAwJwDJlO+0rhh/W2z6J83QCePshPn5he09cRtLjp5MRpsOIalLi8fTy0qQyVsvDtUEbhoJW/8ouEjTW02W7f/gcmINe/D77qJgADE+yJllb5Z4I6VkscJPrU3xodAcufT3qr2+8HL1imwHOc5gbjjxFhkVetMaiuz7fydgG9+AnXnPqyuwo000gwh/HVfZDC4iQltp+ed5+I//1jyUsMyOOw0COmM1fI0jYQj/1sa82IdrpzybYwPx7TBJLTlq1acR9yrSYWDNj3/MRdycnbqyJ3ImP3luX+CrkzA2W3PgK9u8Ud7QM02WczuKh2ajRsoodL249NMiV1He1pS4G0PiisfLSdyfc4V58fojck9Vb2J9HV5cZ7/2gnDFkc6I2zWPJXp9S8/PA9Mj+wnQMTKg4DQ="
     script:
       # Log in to ECR Private repo
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
       # Log in to Docker Hub
-      - echo $DOCKER_HUB_TOKEN | docker login --username dts3logfowarderuser --password-stdin registry.hub.docker.com
+      - echo $DOCKER_HUB_TOKEN | docker login --username dts3logforwarderuser --password-stdin docker.io
       # Log in to ECR Public
       - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/dynatrace-oss
       # pull from ECR and push to Docker hub: dynatrace/dynatrace-aws-s3-log-forwarder:vx.y.z
@@ -125,6 +126,7 @@ jobs:
       - docker tag ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${COMMIT}-${LAMBDA_ARCH} public.ecr.aws/dynatrace-oss/dynatrace-aws-s3-log-forwarder:${TRAVIS_TAG}-${LAMBDA_ARCH}
       - docker push public.ecr.aws/dynatrace-oss/dynatrace-aws-s3-log-forwarder:${TRAVIS_TAG}-${LAMBDA_ARCH}
       # Push templates to S3
+      - ./scripts/update_version.sh
       - aws s3 cp template.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
       - aws s3 cp dynatrace-aws-s3-log-forwarder-configuration.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
       - aws s3 cp dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
