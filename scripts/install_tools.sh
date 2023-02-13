@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # yq
 YQ_VERSION="v4.30.8"

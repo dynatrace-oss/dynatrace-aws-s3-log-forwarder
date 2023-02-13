@@ -43,7 +43,7 @@ before_install:
 
     # CloudFormation Mappings don't support "_" in names, so we need to match mapping name x86
     export MAPPING=$(if [[ $LAMBDA_ARCH == "x86_64" ]];then echo "x86"; else echo $LAMBDA_ARCH; fi )
-    export LAMBDA_BASE_IMAGE_TAG=$(cat template.yaml | yq r - "Mappings.LambdaBaseImageMap.${MAPPING}.Tag")
+    export LAMBDA_BASE_IMAGE_TAG=$(cat template.yaml | yq ".Mappings.LambdaBaseImageMap.${MAPPING}.Tag")
     
 
 jobs:
