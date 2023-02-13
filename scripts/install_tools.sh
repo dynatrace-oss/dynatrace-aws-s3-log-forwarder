@@ -18,3 +18,10 @@ else
     echo "ERROR! yq tarball doesn't match checksum"
     exit 1
 fi
+
+# Get CPU architecture
+if [[ $TRAVIS_CPU_ARCH == "amd64" ]]; then export LAMBDA_ARCH=x86_64; export AWSCLI_ARCH=x86_64; elif [[ ${TRAVIS_CPU_ARCH:0:5} == "arm64" ]]; then export LAMBDA_ARCH=arm64; export AWSCLI_ARCH=aarch64; fi
+
+# Install AWS CLI v2
+if ! [ -x "$(command -v aws)" ]; then wget -nv "https://awscli.amazonaws.com/awscli-exe-linux-${AWSCLI_ARCH}.zip"; unzip -qq awscli-exe-linux-x86_64.zip; sudo ./aws/install ; fi
+aws --version

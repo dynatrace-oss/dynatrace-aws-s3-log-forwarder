@@ -21,16 +21,8 @@ env:
 before_install:
   - |
     # before_install: Install AWS CLI and download Lambda Layers
-    set -e
-
-    # Get CPU architecture
-    if [[ $TRAVIS_CPU_ARCH == "amd64" ]]; then export LAMBDA_ARCH=x86_64; export AWSCLI_ARCH=x86_64; elif [[ ${TRAVIS_CPU_ARCH:0:5} == "arm64" ]]; then export LAMBDA_ARCH=arm64; export AWSCLI_ARCH=aarch64; fi
     
-    # Install AWS CLI v2
-    if ! [ -x "$(command -v aws)" ]; then wget -nv "https://awscli.amazonaws.com/awscli-exe-linux-${AWSCLI_ARCH}.zip"; unzip -qq awscli-exe-linux-x86_64.zip; sudo ./aws/install ; fi
-    aws --version
-    
-    # install yq
+    # install yq and AWS CLI
     ./scripts/install_tools.sh
     
     # Get dependent lambda layers
@@ -45,7 +37,6 @@ before_install:
     export MAPPING=$(if [[ $LAMBDA_ARCH == "x86_64" ]];then echo "x86"; else echo $LAMBDA_ARCH; fi )
     export LAMBDA_BASE_IMAGE_TAG=$(cat template.yaml | yq ".Mappings.LambdaBaseImageMap.${MAPPING}.Tag")
     
-
 jobs:
   include:
   - stage: validate-cfn-templates
@@ -96,7 +87,7 @@ jobs:
 
       # Write logs to S3 and allow time for ingestion
       - |
-        echo "\[$(date -u '+%Y-%m-%dT%H:%M:%SZ')\] E2E testing validation log entry" > ${TRAVIS_BUILD_ID}.log
+        echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] E2E testing validation log entry" > ${TRAVIS_BUILD_ID}.log
         aws s3 cp ${TRAVIS_BUILD_ID}.log s3://${E2E_TESTING_BUCKET_NAME}/test/${TRAVIS_BUILD_ID}/validation/test_log.log
         sleep 120
       
