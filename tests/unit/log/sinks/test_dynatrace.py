@@ -109,7 +109,6 @@ class TestDynatraceSink(unittest.TestCase):
         adapter = HTTPAdapter(max_retries=retry_strategy)
 
         session = requests.Session()
-        session.mount("http://", adapter)
         session.mount("https://", adapter)
         
         with self.assertRaises(MaxRetryError):

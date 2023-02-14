@@ -77,7 +77,6 @@ class DynatraceSink():
         adapter = HTTPAdapter(max_retries=retry_strategy)
         
         self.session = requests.Session()
-        self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
 
     def get_num_of_buffered_messages(self):
