@@ -61,11 +61,11 @@ def create_log_processing_rule(rule_dict):
                            'filter_json_objects_value', 'attribute_extraction_from_top_level_json']
 
     for attribute in required_attributes:
-        if attribute not in rule_dict.keys():
+        if attribute not in rule_dict:
             raise InvalidLogProcessingRuleFile
 
     for attribute in optional_attributes:
-        if attribute not in rule_dict.keys():
+        if attribute not in rule_dict:
             rule_dict[attribute] = None
 
     # Check that source on the rule is valid. (
@@ -153,6 +153,8 @@ def load_processing_rules_from_yaml(body: str):
                 if isinstance(processing_rule_dict, dict):
                     log_processing_rules[processing_rule_dict['source']][processing_rule_dict['name']
                                                                          ] = create_log_processing_rule(processing_rule_dict)
+                    logger.info("Loaded custom log_processing-rule: %s",log_processing_rules[processing_rule_dict['source']
+                                                        ][processing_rule_dict['name']])
                 elif processing_rule_dict is None:
                     logger.warning("Skipping empty log processing rule")
                 else:

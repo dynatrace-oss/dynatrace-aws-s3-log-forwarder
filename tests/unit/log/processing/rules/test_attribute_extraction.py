@@ -354,7 +354,47 @@ class TestWAFLogAttributeExtraction(unittest.TestCase):
 
     def test_waf_attribute_extraction(self):
         extracted_attributes = self.waf_processing_rule.get_extracted_log_attributes(self.waf_log_entry)
-        print(extracted_attributes)
+        self.assertEqual(extracted_attributes, self.expected_attributes)
+
+class TestVPCDNSquerylogs(unittest.TestCase):
+    log_entry = {
+          "version": "1.100000",
+          "account_id": "012345678910",
+          "region": "us-east-1",
+          "vpc_id": "vpc-0123456789abcdef12",
+          "query_timestamp": "2023-02-15T18:33:54Z",
+          "query_name": "ec2messages.us-east-1.amazonaws.com.",
+          "query_type": "A",
+          "query_class": "IN",
+          "rcode": "NOERROR",
+          "answers": [
+            {
+              "Rdata": "5.6.7.8",
+              "Type": "A",
+              "Class": "IN"
+            }
+          ],
+          "srcaddr": "1.2.3.4",
+          "srcport": "38900",
+          "transport": "UDP",
+          "srcids": {
+            "instance": "i-0db59e1c912332372"
+          }
+        }
+
+    expected_attributes = {
+        "timestamp": '2023-02-15T18:33:54Z',
+        "aws.account.id": "012345678910",
+        "aws.region": "us-east-1",
+        "aws.resource.id": "vpc-0123456789abcdef12",
+        "net.host.name": "ec2messages.us-east-1.amazonaws.com.",
+        "severity": "INFO"
+    }
+
+    vpcdnsquery_processing_rule = processing_rules['aws']['vpcdnsquerylogs']
+
+    def test_vpcdnsquerylogs_attribute_extraction(self):
+        extracted_attributes = self.vpcdnsquery_processing_rule.get_extracted_log_attributes(self.log_entry)
         self.assertEqual(extracted_attributes, self.expected_attributes)
 
 if __name__ == '__main__':
