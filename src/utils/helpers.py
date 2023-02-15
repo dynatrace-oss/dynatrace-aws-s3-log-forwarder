@@ -30,7 +30,8 @@ helper_regexes = {
     'classic_load_balancer_id_pattern' : r'[a-zA-Z0-9][a-zA-Z0-9-]{0,30}[a-zA-Z0-9]',
     # ALB / NLB Load Balancer id can be up to 48 chars, and / is substituted with .,
     'elbv2_id_pattern' : r'[a-zA-Z0-9][a-zA-Z0-9-.]{0,46}[a-zA-Z0-9]',
-    'ipv4_address_pattern' : r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
+    'ipv4_address_pattern' : r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)',
+    'wafv2_rule_name_pattern': r'[a-zA-Z0-9-_]{1,128}'
 }
 
 def get_split_member(params,name):
@@ -52,13 +53,6 @@ def get_attributes_from_cloudwatch_logs_data(log_group_name,log_stream_name):
             # /aws/eks/cluster-name/cluster
             "log_group_name": {
                 "aws.resource.id": {
-                    "operation": "split",
-                    "parameters": {
-                        "delimiter" :"/",
-                        "attribute_index": 3
-                    }
-                },
-                "k8s.cluster.name": {
                     "operation": "split",
                     "parameters": {
                         "delimiter" :"/",

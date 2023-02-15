@@ -229,6 +229,7 @@ def load_custom_rules():
     If custom rules are local, version is set to 0.
     '''
     log_processing_rules_verison = 0
+    log_processing_rules = {}
 
     if os.environ.get('LOG_FORWARDER_CONFIGURATION_LOCATION') == 'aws-appconfig':
         log_processing_rules, log_processing_rules_verison = load_custom_rules_from_aws_appconfig()

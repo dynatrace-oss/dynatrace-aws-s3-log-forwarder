@@ -178,8 +178,11 @@ class LogProcessingRule:
                 jmespath_attr = jmespath.search(v, json_message)
                 if jmespath_attr is not None:
                     attributes_dict[k] = jmespath_attr
-                    # if attribute is being renamed, remove (pygrok fails when keys contain '.')
-                    attributes_dict.pop(v,'')
+                    # if attribute is being renamed from existing attribute remove
+                    # but consider the case when an attribute is being extracted from json with the same name for mapping
+                    # e.g timestamp extraction
+                    if k != v:
+                        attributes_dict.pop(v,'')
                 else:
                     logger.warning('No matches for JMESPATH expression %s', v)
 
@@ -219,7 +222,7 @@ class LogProcessingRule:
 
         attributes.update(self.get_attributes_from_s3_key_name(s3_key_name))
         attributes.update(self.get_extracted_log_attributes(message))
-        attributes.update(self.get_processing_log_annotations)
+        attributes.update(self.get_processing_log_annotations())
 
         return attributes
 

@@ -327,5 +327,35 @@ class TestNLBAttributeExtraction(unittest.TestCase):
         extracted_attributes = self.nlb_processing_rule.get_extracted_log_attributes(self.nlb_test_entry)
         self.assertEqual(self.expected_attributes,extracted_attributes)
 
+class TestS3AccessLogsAttributeExtraction(unittest.TestCase):
+    s3_access_log_entry = '79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be DOC-EXAMPLE-BUCKET1 [06/Feb/2019:00:00:38 +0000] 192.0.2.3 79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be 3E57427F3EXAMPLE REST.GET.VERSIONING - "GET /DOC-EXAMPLE-BUCKET1?versioning HTTP/1.1" 200 - 113 - 7 - "-" "S3Console/0.4" - s9lzHYrFp76ZVxRcpX9+5cjAnEH2ROuNkd2BHfIa6UkFVdtjf5mKR3/eTPFvsiP/XV/VLi31234= SigV4 ECDHE-RSA-AES128-GCM-SHA256 AuthHeader DOC-EXAMPLE-BUCKET1.s3.us-west-1.amazonaws.com TLSV1.2 arn:aws:s3:us-west-1:123456789012:accesspoint/example-AP Yes'
+
+    expected_attributes = {
+        'aws.resource.id': 'DOC-EXAMPLE-BUCKET1',
+        'timestamp': '2019-02-06T00:00:38+00:00'
+    }
+
+    s3_processing_rule = processing_rules['aws']['s3']
+
+    def test_s3_attribute_extraction(self):
+        extracted_attributes = self.s3_processing_rule.get_extracted_log_attributes(self.s3_access_log_entry)
+        self.assertEqual(self.expected_attributes,extracted_attributes)
+
+class TestWAFLogAttributeExtraction(unittest.TestCase):
+    waf_log_entry = {"timestamp":1668191404453,"formatVersion":1,"webaclId":"arn:aws:wafv2:us-east-1:012345678910:regional/webacl/my-web-acl/5b291f89-a9c6-496f-bc56-28fe34178f25","terminatingRuleId":"Default_Action","terminatingRuleType":"REGULAR","action":"ALLOW","terminatingRuleMatchDetails":[],"httpSourceName":"ALB","httpSourceId":"012345678910-app/my-lb/083081a32688b957","ruleGroupList":[{"ruleGroupId":"AWS#AWSManagedRulesKnownBadInputsRuleSet","terminatingRule":None,"nonTerminatingMatchingRules":[],"excludedRules":None,"customerConfig":None},{"ruleGroupId":"AWS#AWSManagedRulesLinuxRuleSet","terminatingRule":None,"nonTerminatingMatchingRules":[],"excludedRules":None,"customerConfig":None},{"ruleGroupId":"AWS#AWSManagedRulesPHPRuleSet","terminatingRule":None,"nonTerminatingMatchingRules":[],"excludedRules":None,"customerConfig":None},{"ruleGroupId":"AWS#AWSManagedRulesSQLiRuleSet","terminatingRule":None,"nonTerminatingMatchingRules":[],"excludedRules":None,"customerConfig":None}],"rateBasedRuleList":[],"nonTerminatingMatchingRules":[],"requestHeadersInserted":None,"responseCodeSent":None,"httpRequest":{"clientIp":"1.2.3.4","country":"ES","headers":[{"name":"Host","value":"my-lb-123456.us-east-1.elb.amazonaws.com"},{"name":"User-Agent","value":"curl/7.79.1"},{"name":"Accept","value":"*/*"}],"uri":"/index.php","args":"","httpVersion":"HTTP/1.1","httpMethod":"GET","requestId":"1-636e94ac-0955431c62e36012512d103e"}}
+
+    expected_attributes = {
+        "aws.arn": 'arn:aws:wafv2:us-east-1:012345678910:regional/webacl/my-web-acl/5b291f89-a9c6-496f-bc56-28fe34178f25',
+        "audit.action": 'ALLOW',
+        "timestamp": 1668191404453
+    }
+
+    waf_processing_rule = processing_rules['aws']['waf']
+
+    def test_waf_attribute_extraction(self):
+        extracted_attributes = self.waf_processing_rule.get_extracted_log_attributes(self.waf_log_entry)
+        print(extracted_attributes)
+        self.assertEqual(extracted_attributes, self.expected_attributes)
+
 if __name__ == '__main__':
     unittest.main()
