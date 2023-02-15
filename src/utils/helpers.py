@@ -33,5 +33,93 @@ helper_regexes = {
     'ipv4_address_pattern' : r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
 }
 
+def get_split_member(params,name):
+    return name.split(params['delimiter'])[params['attribute_index']]
+
+def get_string_found(params,name):
+    for string in params["strings"]:
+        if name.find(string) != -1:
+            return string
+
+    return ''
+
+def get_attributes_from_cloudwatch_logs_data(log_group_name,log_stream_name):
+    '''
+    Extracts AWS attributes given a CloudWatch Logs Log Group and Log Stream names
+    '''
+    aws_service_cw_logs_attribute_map = {
+        "eks": {
+            # /aws/eks/cluster-name/cluster
+            "log_group_name": {
+                "aws.resource.id": {
+                    "operation": "split",
+                    "parameters": {
+                        "delimiter" :"/",
+                        "attribute_index": 3
+                    }
+                },
+                "k8s.cluster.name": {
+                    "operation": "split",
+                    "parameters": {
+                        "delimiter" :"/",
+                        "attribute_index": 3
+                    }
+                }
+            },
+            # kube-api-server
+            "log_stream_name": {
+                "log.source": {
+                    "operation": "find_strings",
+                    "parameters": {
+                        "strings": [
+                            "kube-apiserver-audit",
+                            "kube-apiserver",
+                            "authenticator",
+                            "kube-controller-manager",
+                            "kube-scheduler"
+                        ]
+                    }
+                }
+
+            }
+        },
+        "lambda": {
+            "log_group_name": {
+                "aws.resource.id": {
+                    "operation": "split",
+                    "parameters": {
+                        "delimiter" :"/",
+                        "attribute_index": 3
+                    }
+                }
+            },
+            "log_stream_name": {}
+        }
+    }
+
+    options = {
+        "split": get_split_member,
+        "find_strings": get_string_found
+    }
+
+    aws_service_name = log_group_name.split("/")[2]
+
+    cwl_attributes = {
+        "log_group_name": log_group_name,
+        "log_stream_name": log_stream_name
+    }
+
+    extracted_attributes = { 
+        "aws.service": aws_service_name
+    }
+
+    if aws_service_name in aws_service_cw_logs_attribute_map:
+        for i in ["log_group_name", "log_stream_name"]:
+            for attribute,extraction_details in aws_service_cw_logs_attribute_map[aws_service_name][i].items():
+                extracted_attributes[attribute] = options[extraction_details['operation']](
+                                        extraction_details['parameters'], cwl_attributes[i])
+    
+    return extracted_attributes
+
 def is_yaml_file(file: str):
     return file.endswith('.yaml') or file.endswith('.yml')

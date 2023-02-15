@@ -12,18 +12,22 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
 from dataclasses import dataclass, field
 from typing import Optional, List
 import logging
+import re
 from pygrok import Grok
 import jmespath
-import re
-from utils.helpers import helper_regexes
-
+import dateutil.parser as dateparser
+from utils.helpers import helper_regexes, get_attributes_from_cloudwatch_logs_data
 
 logger = logging.getLogger(__name__)
 
+def parse_date_from_string(date_string: str):
+    '''
+    Uses dateutil to parse a date from a given str
+    '''
+    return dateparser.parse(date_string,fuzzy=True).isoformat()
 
 @dataclass(frozen=True)
 class LogProcessingRule:
@@ -31,7 +35,8 @@ class LogProcessingRule:
     source: str
     known_key_path_pattern: str
     log_format: str
-    # if json_stream, we may want to filter out specific objects from a string containing a specific key/value pair
+    # if json_stream, we may want to filter out specific objects from a string 
+    # containing a specific key/value pair
     filter_json_objects_key: Optional[str]
     filter_json_objects_value: Optional[str]
     # if json or json_stream, a key may contain the list of log entries
@@ -104,7 +109,8 @@ class LogProcessingRule:
             self.known_key_path_pattern.format(**helper_regexes)))
 
         if self.attribute_extraction_from_key_name is not None:
-            # Compile regular expressions for attribute extraction from key using the defined helper patterns
+            # Compile regular expressions for attribute extraction from key using
+            # the defined helper patterns
             compiled_regexes_dict = {}
             for k, v in self.attribute_extraction_from_key_name.items():
                 compiled_regexes_dict[k] = re.compile(
@@ -139,6 +145,8 @@ class LogProcessingRule:
         Receives the log message (dict or str) and extracts attributes.
         Text log: apply grok expression if it exists; then apply jmespath expression if it exists to calculate additional fields.
         JSON log: apply JMESPATH expressions to extract attributes.
+        Tries to generate an ISO timestamp if the attribute timestamp_to_transform is present after extraction
+        Cleans up attributes with Null values
         '''
 
         attributes_dict = {}
@@ -150,14 +158,15 @@ class LogProcessingRule:
                     message)
                 if grok_attributes is not None:
                     attributes_dict.update(grok_attributes)
-                    # Create JSON message, in case we need to apply also JMESPATH to new extracted attributes
+                    # Create JSON message, in case we need to apply also
+                    # JMESPATH to new extracted attributes
                     json_message.update(grok_attributes)
                 else:
-                    logger.warning(
+                    logger.debug(
                         'Grok expression did not match log message: %s --> No attributes extracted.',
                         message)
             else:
-                logger.warning(
+                logger.error(
                     "Can't apply Grok expression to non-str object.")
 
         # if no grok expression, check if message is a Dict
@@ -169,10 +178,27 @@ class LogProcessingRule:
                 jmespath_attr = jmespath.search(v, json_message)
                 if jmespath_attr is not None:
                     attributes_dict[k] = jmespath_attr
+                    # if attribute is being renamed, remove (pygrok fails when keys contain '.')
+                    attributes_dict.pop(v,'')
                 else:
                     logger.warning('No matches for JMESPATH expression %s', v)
 
-        return attributes_dict
+        # Check if timestamp needs to be translated to ISO format
+        if "timestamp_to_transform" in attributes_dict:
+            attributes_dict['timestamp'] = parse_date_from_string(
+                                            attributes_dict['timestamp_to_transform'])
+            attributes_dict.pop('timestamp_to_transform')
+        
+        # Check if aws.log_group exists to extract aws.service and aws.resource.id
+        if "aws.log_group" and "aws.log_stream" in json_message:
+            attributes_dict.update(get_attributes_from_cloudwatch_logs_data(
+                json_message['aws.log_group'], json_message['aws.log_stream']
+            ))
+
+        # Clean up Null values
+        clean_attributes_dict = {k: v for k,v in attributes_dict.items() if v is not None}
+
+        return clean_attributes_dict
 
     def get_processing_log_annotations(self):
         attributes = {}
@@ -198,6 +224,9 @@ class LogProcessingRule:
         return attributes
 
     def match_s3_key(self, key_name: str) -> bool:
+        '''
+        Matches the given S3 key against known format for processing rule
+        '''
         if self.known_key_path_pattern_regex.match(key_name):
             return True
         else:

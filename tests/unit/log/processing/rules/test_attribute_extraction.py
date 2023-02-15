@@ -87,7 +87,6 @@ class TestALBAttributeExtraction(unittest.TestCase):
     expected_attributes = {
                             'request_type': 'http',
                             'timestamp': '2022-09-27T15:28:18.612792Z',
-                            'elbv2_id': 'app/k8s-podinfo-podinfoi-ffbc3dc280/82a34fae168ba1aa',
                             'client_ip': '54.25.124.220',
                             'client_port': 63763,
                             'target_ip': '192.168.15.219',
@@ -104,25 +103,17 @@ class TestALBAttributeExtraction(unittest.TestCase):
                             'urihost': 'k8s-podinfo-podinfoi-ffbc3dc280-1325129400.us-east-1.elb.amazonaws.com:80',
                             'port': '80',
                             'uripath': '/',
-                            'uriparam': None,
                             'http_version': 'HTTP/1.1',
                             'user_agent': 'curl/7.79.1',
-                            'ssl_cipher': None,
-                            'ssl_protocol': None,
                             'target_group_arn': 'arn:aws:elasticloadbalancing:us-east-1:012345678910:targetgroup/k8s-podinfo-frontend-b634dbe3b4/c0bcccc5dfc7c29c',
                             'x_amzn_trace_id': 'Root=1-63331692-0dd6b14130c01d3e378a6ea5',
-                            'domain_name': None,
-                            'chosen_cert_arn': None,
                             'matched_rule_priority': '1',
                             'request_creation_time': '2022-09-27T15:28:18.565000Z',
                             'actions_executed': 'forward',
-                            'redirect_url': None,
-                            'error_reason': None,
                             'target_port_list': '192.168.15.219:9898',
                             'target_status_code_list': '200',
-                            'classification': None,
-                            'classification_reason': None,
-                            'severity': 'INFO'
+                            'severity': 'INFO',
+                            'aws.resource.id': 'app/k8s-podinfo-podinfoi-ffbc3dc280/82a34fae168ba1aa'
                          }
     alb_processing_rule = processing_rules['aws']['ALB']
 
@@ -134,7 +125,6 @@ class TestALBAttributeExtraction(unittest.TestCase):
         log_entry = 'http 2018-07-02T22:23:00.186641Z app/my-loadbalancer/50dc6c495c0c9188 192.168.131.39:2817 10.0.0.1:80 0.000 0.001 0.000 200 200 34 366 "GET http://www.example.com:80/ HTTP/1.1" "curl/7.46.0" - - arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337262-36d228ad5d99923122bbe354" "-" "-" 0 2018-07-02T22:22:48.364000Z "forward" "-" "-" "10.0.0.1:80" "200" "-" "-"'
         expected_attributes = { 'request_type': 'http',
                                 'timestamp': '2018-07-02T22:23:00.186641Z',
-                                'elbv2_id': 'app/my-loadbalancer/50dc6c495c0c9188',
                                 'client_ip': '192.168.131.39',
                                 'client_port': 2817,
                                 'target_ip': '10.0.0.1',
@@ -151,25 +141,17 @@ class TestALBAttributeExtraction(unittest.TestCase):
                                 'urihost': 'www.example.com:80',
                                 'port': '80',
                                 'uripath': '/',
-                                'uriparam': None,
                                 'http_version': 'HTTP/1.1',
                                 'user_agent': 'curl/7.46.0',
-                                'ssl_cipher': None,
-                                'ssl_protocol': None,
                                 'target_group_arn': 'arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067',
                                 'x_amzn_trace_id': 'Root=1-58337262-36d228ad5d99923122bbe354',
-                                'domain_name': None,
-                                'chosen_cert_arn': None,
                                 'matched_rule_priority': '0',
                                 'request_creation_time': '2018-07-02T22:22:48.364000Z',
                                 'actions_executed': 'forward',
-                                'redirect_url': None,
-                                'error_reason': None,
                                 'target_port_list': '10.0.0.1:80',
                                 'target_status_code_list': '200',
-                                'classification': None,
-                                'classification_reason': None,
-                                'severity': 'INFO'
+                                'severity': 'INFO',
+                                'aws.resource.id': 'app/my-loadbalancer/50dc6c495c0c9188'
                             }
 
         extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry)
@@ -179,7 +161,6 @@ class TestALBAttributeExtraction(unittest.TestCase):
         log_entry = 'https 2018-07-02T22:23:00.186641Z app/my-loadbalancer/50dc6c495c0c9188 192.168.131.39:2817 10.0.0.1:80 0.086 0.048 0.037 200 200 0 57 "GET https://www.example.com:443/ HTTP/1.1" "curl/7.46.0" ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2 arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337281-1d84f3d73c47ec4e58577259" "www.example.com" "arn:aws:acm:us-east-2:123456789012:certificate/12345678-1234-1234-1234-123456789012" 1 2018-07-02T22:22:48.364000Z "authenticate,forward" "-" "-" "10.0.0.1:80" "200" "-" "-"'
         expected_attributes = { 'request_type': 'https',
                                 'timestamp': '2018-07-02T22:23:00.186641Z',
-                                'elbv2_id': 'app/my-loadbalancer/50dc6c495c0c9188',
                                 'client_ip': '192.168.131.39',
                                 'client_port': 2817,
                                 'target_ip': '10.0.0.1',
@@ -196,7 +177,6 @@ class TestALBAttributeExtraction(unittest.TestCase):
                                 'urihost': 'www.example.com:443',
                                 'port': '443',
                                 'uripath': '/',
-                                'uriparam': None,
                                 'http_version': 'HTTP/1.1',
                                 'user_agent': 'curl/7.46.0',
                                 'ssl_cipher': 'ECDHE-RSA-AES128-GCM-SHA256',
@@ -208,13 +188,10 @@ class TestALBAttributeExtraction(unittest.TestCase):
                                 'matched_rule_priority': '1',
                                 'request_creation_time': '2018-07-02T22:22:48.364000Z',
                                 'actions_executed': 'authenticate,forward',
-                                'redirect_url': None,
-                                'error_reason': None,
                                 'target_port_list': '10.0.0.1:80',
                                 'target_status_code_list': '200',
-                                'classification': None,
-                                'classification_reason': None,
-                                'severity': 'INFO'
+                                'severity': 'INFO',
+                                'aws.resource.id': 'app/my-loadbalancer/50dc6c495c0c9188'
                             }
         extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry)
         self.assertEqual(expected_attributes,extracted_attributes)
@@ -223,7 +200,6 @@ class TestALBAttributeExtraction(unittest.TestCase):
         log_entry = 'h2 2018-07-02T22:23:00.186641Z app/my-loadbalancer/50dc6c495c0c9188 10.0.1.252:48160 10.0.0.66:9000 0.000 0.002 0.000 200 200 5 257 "GET https://10.0.2.105:773/ HTTP/2.0" "curl/7.46.0" ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2 arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337327-72bd00b0343d75b906739c42" "-" "-" 1 2018-07-02T22:22:48.364000Z "redirect" "https://example.com:80/" "-" "10.0.0.66:9000" "200" "-" "-"'
         expected_attributes = { 'request_type': 'h2', 
                                 'timestamp': '2018-07-02T22:23:00.186641Z',
-                                'elbv2_id': 'app/my-loadbalancer/50dc6c495c0c9188',
                                 'client_ip': '10.0.1.252',
                                 'client_port': 48160,
                                 'target_ip': '10.0.0.66',
@@ -240,25 +216,20 @@ class TestALBAttributeExtraction(unittest.TestCase):
                                 'urihost': '10.0.2.105:773',
                                 'port': '773',
                                 'uripath': '/',
-                                'uriparam': None,
                                 'http_version': 'HTTP/2.0',
                                 'user_agent': 'curl/7.46.0',
                                 'ssl_cipher': 'ECDHE-RSA-AES128-GCM-SHA256',
                                 'ssl_protocol': 'TLSv1.2',
                                 'target_group_arn': 'arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067',
                                 'x_amzn_trace_id': 'Root=1-58337327-72bd00b0343d75b906739c42',
-                                'domain_name': None,
-                                'chosen_cert_arn': None,
                                 'matched_rule_priority': '1',
                                 'request_creation_time': '2018-07-02T22:22:48.364000Z',
                                 'actions_executed': 'redirect',
                                 'redirect_url': 'https://example.com:80/',
-                                'error_reason': None,
                                 'target_port_list': '10.0.0.66:9000',
                                 'target_status_code_list': '200',
-                                'classification': None,
-                                'classification_reason': None,
-                                'severity': 'INFO' }
+                                'severity': 'INFO',
+                                'aws.resource.id': 'app/my-loadbalancer/50dc6c495c0c9188' }
         extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry)
         self.assertEqual(expected_attributes,extracted_attributes)
     
@@ -266,7 +237,6 @@ class TestALBAttributeExtraction(unittest.TestCase):
         log_entry = 'ws 2018-07-02T22:23:00.186641Z app/my-loadbalancer/50dc6c495c0c9188 10.0.0.140:40914 10.0.1.192:8010 0.001 0.003 0.000 101 101 218 587 "GET http://10.0.0.30:80/ HTTP/1.1" "-" - - arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337364-23a8c76965a2ef7629b185e3" "-" "-" 1 2018-07-02T22:22:48.364000Z "forward" "-" "-" "10.0.1.192:8010" "101" "-" "-"'
         expected_attributes = { 'request_type': 'ws',
                                 'timestamp': '2018-07-02T22:23:00.186641Z',
-                                'elbv2_id': 'app/my-loadbalancer/50dc6c495c0c9188',
                                 'client_ip': '10.0.0.140',
                                 'client_port': 40914,
                                 'target_ip': '10.0.1.192',
@@ -283,25 +253,17 @@ class TestALBAttributeExtraction(unittest.TestCase):
                                 'urihost': '10.0.0.30:80',
                                 'port': '80',
                                 'uripath': '/',
-                                'uriparam': None,
                                 'http_version': 'HTTP/1.1',
                                 'user_agent': '-',
-                                'ssl_cipher': None,
-                                'ssl_protocol': None,
                                 'target_group_arn': 'arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067',
                                 'x_amzn_trace_id': 'Root=1-58337364-23a8c76965a2ef7629b185e3',
-                                'domain_name': None,
-                                'chosen_cert_arn': None,
                                 'matched_rule_priority': '1',
                                 'request_creation_time': '2018-07-02T22:22:48.364000Z',
                                 'actions_executed': 'forward',
-                                'redirect_url': None,
-                                'error_reason': None,
                                 'target_port_list': '10.0.1.192:8010',
                                 'target_status_code_list': '101',
-                                'classification': None,
-                                'classification_reason': None,
-                                'severity': 'INFO'
+                                'severity': 'INFO',
+                                'aws.resource.id': 'app/my-loadbalancer/50dc6c495c0c9188'
                             }
         extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry)
         self.assertEqual(expected_attributes,extracted_attributes)
@@ -309,7 +271,6 @@ class TestALBAttributeExtraction(unittest.TestCase):
 class TestClassicELBAttributeExtraction(unittest.TestCase):
     classic_elb_test_entry = '2022-09-27T22:48:26.330387Z a2e8277e0e09143fbb06db5dcd2a14c2 3.67.7.163:8596 192.168.18.161:32728 0.000042 0.004504 0.000036 404 404 0 1086 "GET http://a2e8277e0e09143fbb06db5dcd2a14c2-1086714162.us-east-1.elb.amazonaws.com:80/n9BxiYVakde9.php HTTP/1.1" "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0)" - -'
     expected_attributes = { "timestamp": "2022-09-27T22:48:26.330387Z",
-                            "elb": "a2e8277e0e09143fbb06db5dcd2a14c2",
                             "client_ip": "3.67.7.163",
                             "client_port": 8596,
                             "backend_ip": "192.168.18.161",
@@ -327,13 +288,10 @@ class TestClassicELBAttributeExtraction(unittest.TestCase):
                             "urihost": "a2e8277e0e09143fbb06db5dcd2a14c2-1086714162.us-east-1.elb.amazonaws.com:80",
                             "port": "80",
                             "path": "/n9BxiYVakde9.php",
-                            "params": None,
                             "httpversion": "1.1",
-                            "rawrequest": None,
                             "user_agent": "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0)",
-                            "ssl_cipher": None,
-                            "ssl_protocol": None,
-                            "severity": "WARN"
+                            "severity": "WARN",
+                            "aws.resource.id": "a2e8277e0e09143fbb06db5dcd2a14c2"
                           }
 
     classic_elb_processing_rule = processing_rules['aws']['Classic-ELB']
@@ -348,7 +306,6 @@ class TestNLBAttributeExtraction(unittest.TestCase):
     expected_attributes = { 'listener_type': 'tls',
                             'version': '2.0',
                             'timestamp': '2022-09-27T17:10:23',
-                            'elb_id': 'net/k8s-podinfo-frontend-352ef7564b/809b86b470cfa0ff',
                             'listener': 'f0f22c45225e4663',
                             'client_ip': '192.168.18.161',
                             'client_port': '60808',
@@ -358,16 +315,11 @@ class TestNLBAttributeExtraction(unittest.TestCase):
                             'tls_handshake_time': '16',
                             'received_bytes': '140',
                             'sent_bytes': '518',
-                            'incoming_tls_alert': None,
                             'chosen_cert_arn': 'arn:aws:acm:us-east-1:012345678910:certificate/ae6e87cd-9848-465b-9433-b0d34850a685',
-                            'chosen_cert_serial': None,
                             'tls_cipher': 'ECDHE-RSA-AES128-GCM-SHA256',
                             'tls_protocol_version': 'tlsv12',
-                            'tls_named_group': None,
                             'domain_name': 'k8s-podinfo-frontend-352ef7564b-809b86b470cfa0ff.elb.us-east-1.amazonaws.com',
-                            'alpn_fe_protocol': None,
-                            'alpn_be_protocol': None,
-                            'alpn_client_preference_list': None
+                            'aws.resource.id': 'net/k8s-podinfo-frontend-352ef7564b/809b86b470cfa0ff'
                         }
     nlb_processing_rule = processing_rules['aws']['NLB']
 

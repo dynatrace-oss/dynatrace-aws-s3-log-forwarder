@@ -55,9 +55,8 @@ def get_jsonslicer_path_prefix_from_jmespath_path(jmespath_expr: str):
 
     return jsonslicer_tuple
 
-
-def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key: str, log_sinks: list, lambda_context,
-                       user_defined_annotations: dict = None, session: boto3.Session = None):
+def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key: str, bucket_region: str, log_sinks: list,
+                       lambda_context, user_defined_annotations: dict = None, session: boto3.Session = None):
     '''
     Downloads a log from S3, decompresses and reads log messages within it and transforms the messages to Dynatrace LogV2 API format.
     Can read JSON logs (list of dicts) or text line by line (both gzipped or plain).
@@ -169,11 +168,17 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
                     dt_log_message = {}
                     dt_log_message['content'] = json.dumps(sub_entry)
 
-                    # add log attributes
                     dt_log_message.update(top_level_json_attributes)
+
+                    # add cwl attributes to subentry for additional extraction
+                    sub_entry.update(top_level_json_attributes)
                     dt_log_message.update(
                         log_processing_rule.get_extracted_log_attributes(sub_entry))
                     dt_log_message.update(context_log_attributes)
+
+                    # if the aws.region is not found, infer region from bucket
+                    if "aws.region" not in dt_log_message:
+                        dt_log_message['aws.region'] = bucket_region
 
                     # Push to destination sink(s)
                     for log_sink in log_sinks:
@@ -228,6 +233,10 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
         # Add extracted attributes and log annotations from log processing rule
         dt_log_message.update(
             log_processing_rule.get_extracted_log_attributes(log_entry))
+
+        # if the aws.region is not found, infer region from bucket
+        if "aws.region" not in dt_log_message:
+            dt_log_message['aws.region'] = bucket_region
 
         # Push to destination sink(s)
         for log_sink in log_sinks:

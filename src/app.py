@@ -24,6 +24,7 @@ from log.processing import processing
 from log.forwarding import log_forwarding_rules
 from log.sinks import dynatrace
 from utils import aws_appconfig_extension_helpers as aws_appconfig_helpers
+from version import get_version
 
 
 logger = logging.getLogger()
@@ -94,6 +95,8 @@ def reload_rules(rules_type: str):
 
 @metrics.log_metrics
 def lambda_handler(event, context):
+
+    logging.info("dynatrace-aws-s3-log-forwarder version: %s", get_version())
 
     # If we're using AWS AppConfig and there's a new config version available, reload
     reload_rules('forwarding')
@@ -174,7 +177,7 @@ def lambda_handler(event, context):
                     continue
 
                 processing.process_log_object(
-                    matched_log_processing_rule, bucket_name, key_name,
+                    matched_log_processing_rule, bucket_name, key_name, s3_notification['region'],
                     log_object_destination_sinks, context,
                     user_defined_annotations=user_defined_log_annotations,
                     session=boto3_session
