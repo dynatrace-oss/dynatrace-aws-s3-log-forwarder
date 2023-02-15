@@ -23,4 +23,4 @@ source: generic
 log_format: text
 
 # Try to find timestamp value
-attribute_extraction_grok_expression: "(?:%{TIMESTAMP_ISO8601:timestamp}|%SYSLOGTIMESTAMP:timestamp})"
+attribute_extraction_grok_expression: "(?:%{TIMESTAMP_ISO8601:timestamp}|%{SYSLOGTIMESTAMP:timestamp})"
