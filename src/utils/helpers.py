@@ -32,7 +32,13 @@ helper_regexes = {
     'elbv2_id_pattern' : r'[a-zA-Z0-9][a-zA-Z0-9-.]{0,46}[a-zA-Z0-9]',
     'ipv4_address_pattern' : r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)',
     'wafv2_rule_name_pattern': r'[a-zA-Z0-9-_]{1,128}',
-    'vpc_id_pattern': r'vpc\-[0-9a-f]{8}(?:[0-9a-f]{9})?'
+    'vpc_id_pattern': r'vpc-[0-9a-f]{8}(?:[0-9a-f]{9})?',
+    'cloudfront_distribution_id_pattern': r'E[A-Z0-9]{13}'
+}
+
+custom_grok_expressions = {
+    # grab timestamp from CloudFront log (YYY-mm-dd\tHH:MM:SS)
+    'CLOUDFRONTTIMESTAMP' : '%{YEAR}-%{MONTHNUM}-%{MONTHDAY}%{SPACE}%{TIME}'
 }
 
 def get_split_member(params,name):

@@ -65,5 +65,13 @@ class TestAWSAttributeInjection(unittest.TestCase):
         
         self.assertEqual(attributes,expected_attributes)
 
+    def test_cloudfront_attributes(self):
+        cloudfront_key_name = 'example/E1SFLUZKKLSP61.2023-02-16-14.e519cdee.gz'
+        expected_attributes = {'aws.resource.id': 'E1SFLUZKKLSP61'}
+        cloudfront_processing_rule = processing_rules['aws']['cloudfront']
+        attributes = cloudfront_processing_rule.get_attributes_from_s3_key_name(cloudfront_key_name)
+
+        self.assertEqual(attributes,expected_attributes)
+
 if __name__ == '__main__':
     unittest.main()

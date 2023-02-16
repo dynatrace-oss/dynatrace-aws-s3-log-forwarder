@@ -34,9 +34,8 @@ annotations:
 # map message keys to DT LogsV2 API format  
 attribute_extraction_jmespath_expression:
   timestamp: query_timestamp
-  aws.account.id: account_id
-  aws.region: region
-  aws.resource.id: vpc_id
-  net.host.name: query_name
-  severity: "rcode == 'NOERROR' && 'INFO' || 'ERROR'"
-  
+  #aws.account.id: account_id
+  #aws.region: region
+  #aws.resource.id: vpc_id
+  #net.host.name: query_name
+  #severity: "rcode == 'NOERROR' && 'INFO' || 'ERROR'"

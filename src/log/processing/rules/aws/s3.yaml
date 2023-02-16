@@ -18,7 +18,7 @@ name: s3
 # Prefix: [/prefix]/YYYY-mm-DD-HH-MM-SS-UniqueString -> Unique string is a 16 HEX digits number
 # File Name example: 2022-10-03-10-13-50-A211246203787B7F
 # Random string is 8 chars?
-known_key_path_pattern: '^.*?/{year_pattern}-{month_pattern}-{day_pattern}-{hour_pattern}-{minutes_pattern}-{minutes_pattern}-[A-FZ0-9]{{16}}$'
+known_key_path_pattern: '^.*?{year_pattern}-{month_pattern}-{day_pattern}-{hour_pattern}-{minutes_pattern}-{minutes_pattern}-[A-F0-9]{{16}}$'
 source: aws
 
 log_format: text

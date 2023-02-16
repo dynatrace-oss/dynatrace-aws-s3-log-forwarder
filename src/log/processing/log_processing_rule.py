@@ -19,7 +19,7 @@ import re
 from pygrok import Grok
 import jmespath
 import dateutil.parser as dateparser
-from utils.helpers import helper_regexes, get_attributes_from_cloudwatch_logs_data
+from utils.helpers import helper_regexes, custom_grok_expressions, get_attributes_from_cloudwatch_logs_data
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class LogProcessingRule:
     source: str
     known_key_path_pattern: str
     log_format: str
-    # if json_stream, we may want to filter out specific objects from a string 
+    # if json_stream, we may want to filter out specific objects from a string
     # containing a specific key/value pair
     filter_json_objects_key: Optional[str]
     filter_json_objects_value: Optional[str]
@@ -51,6 +51,7 @@ class LogProcessingRule:
     known_key_path_pattern_regex: re.Pattern = field(init=False)
     attribute_extraction_from_key_name_regex: re.Pattern = field(init=False)
     attribute_extraction_grok_object: Grok = field(init=False)
+    skip_header_lines: Optional[int] = None
 
     def validate(self):
         '''
@@ -102,6 +103,14 @@ class LogProcessingRule:
             raise ValueError(
                 "log_format must be either text, json or json_stream.")
 
+        # validate skip_header_lines is int if defined, and not defined for non text log
+        if self.skip_header_lines != 0 and self.log_format != "text":
+            raise ValueError("skip_header_lines is only valid for text log format")
+        elif not isinstance(self.skip_header_lines, int):
+            raise ValueError(
+                "skip_header_lines must be an int."
+            )
+
     def __post_init__(self):
         self.validate()
         # Compile Regular expression here using defined helper patterns
@@ -124,7 +133,7 @@ class LogProcessingRule:
         # Load Grok object once. PyGrok reloads all patterns on __init__
         if self.attribute_extraction_grok_expression is not None:
             object.__setattr__(self, "attribute_extraction_grok_object", Grok(
-                self.attribute_extraction_grok_expression))
+                self.attribute_extraction_grok_expression,custom_patterns=custom_grok_expressions))
         else:
             object.__setattr__(self, "attribute_extraction_grok_object", None)
 

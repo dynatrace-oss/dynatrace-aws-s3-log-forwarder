@@ -383,18 +383,31 @@ class TestVPCDNSquerylogs(unittest.TestCase):
         }
 
     expected_attributes = {
-        "timestamp": '2023-02-15T18:33:54Z',
-        "aws.account.id": "012345678910",
-        "aws.region": "us-east-1",
-        "aws.resource.id": "vpc-0123456789abcdef12",
-        "net.host.name": "ec2messages.us-east-1.amazonaws.com.",
-        "severity": "INFO"
+        "timestamp": '2023-02-15T18:33:54Z'
+        #"aws.account.id": "012345678910",
+        #"aws.region": "us-east-1",
+        #"aws.resource.id": "vpc-0123456789abcdef12",
+        #"net.host.name": "ec2messages.us-east-1.amazonaws.com.",
+        #"severity": "INFO"
     }
 
     vpcdnsquery_processing_rule = processing_rules['aws']['vpcdnsquerylogs']
 
     def test_vpcdnsquerylogs_attribute_extraction(self):
         extracted_attributes = self.vpcdnsquery_processing_rule.get_extracted_log_attributes(self.log_entry)
+        self.assertEqual(extracted_attributes, self.expected_attributes)
+
+class testCloudFrontLogs(unittest.TestCase):
+    log_entry = '2023-02-16	14:11:45	HEL50-C2	926	213.27.198.18	GET	d2p3hufu2xzzmv.cloudfront.net	/	200	-	curl/7.79.1	-	-	Hit	4hywY-pj7l9Wpc1WaHT2rUoyuuxTe_GT7aY2CkbFxOhYrC_qbqRTtQ==	d2p3hufu2xzzmv.cloudfront.net	https	51	0.026	-	TLSv1.3	TLS_AES_128_GCM_SHA256	Hit	HTTP/2.0	-	-	9428	0.026	Hit	text/html	615	-	-'
+
+    expected_attributes = {
+        'timestamp': '2023-02-16T14:11:45'
+    }
+
+    cloudfront_processing_rule = processing_rules['aws']['cloudfront']
+
+    def test_cloudfrontlogs_attribute_extraction(self):
+        extracted_attributes = self.cloudfront_processing_rule.get_extracted_log_attributes(self.log_entry)
         self.assertEqual(extracted_attributes, self.expected_attributes)
 
 if __name__ == '__main__':

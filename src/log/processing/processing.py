@@ -204,6 +204,10 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
 
         # if log is text, json list or json stream
         elif log_processing_rule.log_format == 'text':
+            # check if we need to skip header lines
+            if num_log_entries+1 <= log_processing_rule.skip_header_lines:
+                num_log_entries +=1
+                continue
             if isinstance(log_entry, bytes):
                 log_entry = log_entry.decode(ENCODING)
                 if log_entry == '':
