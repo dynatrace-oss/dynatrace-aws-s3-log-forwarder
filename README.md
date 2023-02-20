@@ -32,7 +32,7 @@ The AWS Lambda function that performs log forwarding is built as a container ima
 
 To deploy the `dynatrace-aws-s3-log-forwarder` using the provided container images, follow the instructions below:
 
-1. Define a name for your `dynatrace-aws-s3-log-forwarder` deployment name (e.g. mycompany-dynatrace-s3-log-forwarder) and your dynatrace tenant UUID (e.g. `abc12345` if your Dynatrace environment url is `https://abc12345.live.dynatrace.com`) in environment variables that will be used along the deployment process.
+1. Define a name for your `dynatrace-aws-s3-log-forwarder` deployment (e.g. mycompany-dynatrace-s3-log-forwarder) and your dynatrace tenant UUID (e.g. `abc12345` if your Dynatrace environment url is `https://abc12345.live.dynatrace.com`) in environment variables that will be used along the deployment process.
 
     ```bash
     export STACK_NAME=replace_with_your_log_forwarder_stack_name
@@ -68,7 +68,7 @@ To deploy the `dynatrace-aws-s3-log-forwarder` using the provided container imag
     # Get the latest version
     export VERSION_TAG=$(curl -s https://api.github.com/repos/dynatrace-oss/dynatrace-aws-s3-log-forwarder/releases/latest | grep tag_name | cut -d'"' -f4)
     # Get private repo URI
-    export REPOSITORY_URI=$(aws ecr describe-repositories --repository-names test --query 'repositories[0].repositoryUri')
+    export REPOSITORY_URI=$(aws ecr describe-repositories --repository-names dynatrace-aws-s3-log-forwarder --query 'repositories[0].repositoryUri')
 
     # Pull the image
     docker pull public.ecr.aws/dynatrace-oss/dynatrace-aws-s3-log-forwarder:${VERSION_TAG}-x86_64
