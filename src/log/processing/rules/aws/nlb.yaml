@@ -19,7 +19,7 @@ name: NLB
 # File Name: aws-account-id_elasticloadbalancing_region_net.load-balancer-id_end-time_random-string.log.gz
 # Random string is 8 chars?
 # IMPORTANT: NLB Access Logs are only created if there's a TLS listener and they only contain information about TLS requests.
-known_key_path_pattern: '^.*?{aws_logs_prefix}/{aws_account_id_pattern}/(elasticloadbalancing)/{aws_region_pattern}/{year_pattern}/{month_pattern}/{day_pattern}/{aws_account_id_pattern}_(elasticloadbalancing)_{aws_region_pattern}_(net.){elbv2_id_pattern}_{year_pattern}{month_pattern}{day_pattern}T{hour_pattern}{minutes_pattern}Z_[a-zA-Z0-9]{{8}}(.log.gz)$'
+known_key_path_pattern: '^.*?{aws_logs_prefix}/{aws_account_id_pattern}/(elasticloadbalancing)/{aws_region_pattern}/{year_pattern}/{month_pattern}/{day_pattern}/{aws_account_id_pattern}_(elasticloadbalancing)_{aws_region_pattern}_(net\.){elbv2_id_pattern}_{year_pattern}{month_pattern}{day_pattern}T{hour_pattern}{minutes_pattern}Z_[a-zA-Z0-9]{{8}}(\.log\.gz)$'
 source: aws
 
 log_format: text

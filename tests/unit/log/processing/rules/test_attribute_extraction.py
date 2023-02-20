@@ -410,5 +410,18 @@ class testCloudFrontLogs(unittest.TestCase):
         extracted_attributes = self.cloudfront_processing_rule.get_extracted_log_attributes(self.log_entry)
         self.assertEqual(extracted_attributes, self.expected_attributes)
 
+class testMSKLogs(unittest.TestCase):
+    log_entry = '[2023-02-20 17:10:36,845] INFO App info kafka.consumer for consumer-consumer-lag-19 unregistered (org.apache.kafka.common.utils.AppInfoParser)'
+
+    expected_attributes = {
+        'timestamp': '2023-02-20T17:10:36.845000'
+    }
+
+    msk_processing_rule = processing_rules['aws']['msk']
+
+    def test_msk_logs(self):
+        extracted_attributes = self.msk_processing_rule.get_extracted_log_attributes(self.log_entry)
+        self.assertEqual(extracted_attributes,self.expected_attributes)
+
 if __name__ == '__main__':
     unittest.main()
