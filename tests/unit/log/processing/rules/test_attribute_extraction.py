@@ -414,7 +414,8 @@ class testMSKLogs(unittest.TestCase):
     log_entry = '[2023-02-20 17:10:36,845] INFO App info kafka.consumer for consumer-consumer-lag-19 unregistered (org.apache.kafka.common.utils.AppInfoParser)'
 
     expected_attributes = {
-        'timestamp': '2023-02-20T17:10:36.845000'
+        'timestamp': '2023-02-20T17:10:36.845000',
+        'severity': 'INFO'
     }
 
     msk_processing_rule = processing_rules['aws']['msk']

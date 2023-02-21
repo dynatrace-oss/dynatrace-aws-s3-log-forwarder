@@ -119,7 +119,8 @@ class TestAWSAttributeInjection(unittest.TestCase):
         expected_attributes = {
             'aws.account.id': '012345678910',
             'aws.region': 'us-east-1',
-            'aws.resource.id': 'demo-cluster-2-043b6d76-352c-494a-9eee-fbff5cc1687d-20'
+            'aws.resource.id': 'demo-cluster-2-043b6d76-352c-494a-9eee-fbff5cc1687d-20',
+            'aws.msk.broker': 'Broker-1'
         }
 
         msk_processing_rule = processing_rules['aws']['msk']
