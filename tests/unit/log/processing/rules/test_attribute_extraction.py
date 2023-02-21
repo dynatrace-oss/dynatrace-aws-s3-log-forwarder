@@ -424,5 +424,18 @@ class testMSKLogs(unittest.TestCase):
         extracted_attributes = self.msk_processing_rule.get_extracted_log_attributes(self.log_entry)
         self.assertEqual(extracted_attributes,self.expected_attributes)
 
+class testGlobalAcceleratorLogs(unittest.TestCase):
+    log_entry = '2.0 512220559759 f0154cf1-4ac0-451b-87a2-5b2ce89142e6 1.2.3.4 57825 5.6.7.8 80 172.31.25.4 80 TCP IPV4 0 0 1676984801 1676984809 ACCEPT OK - 0 us-east-1 JFK6-2 INGRESS vpc-01234567891abcdef'
+
+    expected_attributes = {
+        'timestamp': '1676984801'
+    }
+
+    global_accelerator_processing_rule = processing_rules['aws']['global-accelerator']
+
+    def test_global_accelerator_logs(self):
+        extracted_attributes = self.global_accelerator_processing_rule.get_extracted_log_attributes(self.log_entry)
+        self.assertEqual(extracted_attributes,self.expected_attributes)
+
 if __name__ == '__main__':
     unittest.main()

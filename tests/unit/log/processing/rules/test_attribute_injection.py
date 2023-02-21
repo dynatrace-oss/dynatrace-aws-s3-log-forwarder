@@ -30,6 +30,7 @@ cloudfront_key_name = 'example/E1SFLUZKKLSP61.2023-02-16-14.e519cdee.gz'
 vpcflowlog_key_name = 'optional_prefix/AWSLogs/012345678910/vpcflowlogs/us-east-1/2023/02/14/012345678910_vpcflowlogs_us-east-1_fl-07f38b767c7cd46e3_20230214T0000Z_129a0cf7.log.gz'
 network_firewall_key_name = 'random_prefix/AWSLogs/012345678910/network-firewall/flow/us-east-1/my-test-firewall/2023/02/20/16/012345678910_network-firewall_flow_us-east-1_my-test-firewall_202302201610_e5c84094.log.gz'
 msk_key_name = 'AWSLogs/012345678910/KafkaBrokerLogs/us-east-1/demo-cluster-2-043b6d76-352c-494a-9eee-fbff5cc1687d-20/2023-02-20-17/Broker-1_17-05_5b17f696.log.gz'
+global_accelerator_key_name = 'myprefix/AWSLogs/012345678910/globalaccelerator/us-west-2/2023/02/21/012345678910_globalaccelerator_f0154cf1-4ac0-451b-87a2-5b2ce89142e6_20230221T1305Z_2e13fabb.log.gz'
 
 class TestAWSAttributeInjection(unittest.TestCase):
     def test_cloudtrail_attributes(self):
@@ -126,6 +127,17 @@ class TestAWSAttributeInjection(unittest.TestCase):
         msk_processing_rule = processing_rules['aws']['msk']
         attributes = msk_processing_rule.get_attributes_from_s3_key_name(msk_key_name)
         self.assertEqual(attributes,expected_attributes)
+    
+    def test_global_accelerator_attributes(self):
+        expected_attributes = {
+            'aws.account.id': '012345678910',
+            'aws.region': 'us-west-2',
+            'aws.resource.id': 'f0154cf1-4ac0-451b-87a2-5b2ce89142e6'
+        }
+
+        global_accelerator_processing_rule = processing_rules['aws']['global-accelerator']
+        attributes = global_accelerator_processing_rule.get_attributes_from_s3_key_name(global_accelerator_key_name)
+        self.assertEqual(attributes,expected_attributes)
 
 class TestS3KeyMatchingExpression(unittest.TestCase):
 
@@ -163,6 +175,9 @@ class TestS3KeyMatchingExpression(unittest.TestCase):
     
     def test_msk_s3_key(self):
         self.assertTrue(processing_rules['aws']['msk'].match_s3_key(msk_key_name))
+
+    def test_global_accelerator_s3_key(self):
+        self.assertTrue(processing_rules['aws']['global-accelerator'].match_s3_key(global_accelerator_key_name))
 
 if __name__ == '__main__':
     unittest.main()
