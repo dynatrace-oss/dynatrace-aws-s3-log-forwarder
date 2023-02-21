@@ -168,13 +168,13 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
                     dt_log_message = {}
                     dt_log_message['content'] = json.dumps(sub_entry)
 
+                    dt_log_message.update(context_log_attributes)
                     dt_log_message.update(top_level_json_attributes)
 
                     # add cwl attributes to subentry for additional extraction
                     sub_entry.update(top_level_json_attributes)
                     dt_log_message.update(
                         log_processing_rule.get_extracted_log_attributes(sub_entry))
-                    dt_log_message.update(context_log_attributes)
 
                     # if the aws.region is not found, infer region from bucket
                     if "aws.region" not in dt_log_message:

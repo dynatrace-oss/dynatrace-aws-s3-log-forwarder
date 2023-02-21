@@ -35,12 +35,14 @@ helper_regexes = {
     'vpc_id_pattern': r'vpc-[0-9a-f]{8}(?:[0-9a-f]{9})?',
     'cloudfront_distribution_id_pattern': r'E[A-Z0-9]{13}',
     'vpc_flow_id_pattern': r'fl-[0-9a-f]{8}(?:[0-9a-f]{9})?',
-    'aws_global_accelerator_id_pattern': r'[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}'
+    'aws_global_accelerator_id_pattern': r'[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}',
+    'redshift_cluster_name_pattern': r'[a-z][a-z0-9-]{1,61}[a-z0-9]?'
 }
 
 custom_grok_expressions = {
     # grab timestamp from CloudFront log (YYY-mm-dd\tHH:MM:SS)
-    'CLOUDFRONTTIMESTAMP' : '%{YEAR}-%{MONTHNUM}-%{MONTHDAY}%{SPACE}%{TIME}'
+    'CLOUDFRONTTIMESTAMP' : '%{YEAR}-%{MONTHNUM}-%{MONTHDAY}%{SPACE}%{TIME}',
+    'REDSHIFTTIMESTAMP': '%{DAY}, %{MONTHDAY} %{MONTH} %{YEAR} %{TIME}'
 }
 
 def get_split_member(params,name):
@@ -79,7 +81,8 @@ def get_attributes_from_cloudwatch_logs_data(log_group_name,log_stream_name):
                             "kube-apiserver",
                             "authenticator",
                             "kube-controller-manager",
-                            "kube-scheduler"
+                            "kube-scheduler",
+                            "cloud-controller-manager"
                         ]
                     }
                 }
@@ -97,6 +100,27 @@ def get_attributes_from_cloudwatch_logs_data(log_group_name,log_stream_name):
                 }
             },
             "log_stream_name": {}
+        },
+        # CloudWatch Log Group is user defined. For the forwarder to pick it up must be 
+        # /aws/route53/...
+        "route53": {
+            "log_group_name": {},
+            "log_stream_name": {
+                "aws.resource.id": {
+                    "operation": "split",
+                    "parameters": {
+                        "delimiter": "/",
+                        "attribute_index": 1
+                    }
+                },
+                "aws.edge_location": {
+                    "operation": "split",
+                    "parameters": {
+                        "delimiter": "/",
+                        "attribute_index": 2
+                    }
+                }
+            }
         }
     }
 
@@ -105,22 +129,28 @@ def get_attributes_from_cloudwatch_logs_data(log_group_name,log_stream_name):
         "find_strings": get_string_found
     }
 
-    aws_service_name = log_group_name.split("/")[2]
+    extracted_attributes = {}
 
-    cwl_attributes = {
-        "log_group_name": log_group_name,
-        "log_stream_name": log_stream_name
-    }
+    try:
+        aws_service_name = log_group_name.split("/")[2]
 
-    extracted_attributes = { 
-        "aws.service": aws_service_name
-    }
+        cwl_attributes = {
+            "log_group_name": log_group_name,
+            "log_stream_name": log_stream_name
+        }
 
-    if aws_service_name in aws_service_cw_logs_attribute_map:
-        for i in ["log_group_name", "log_stream_name"]:
-            for attribute,extraction_details in aws_service_cw_logs_attribute_map[aws_service_name][i].items():
-                extracted_attributes[attribute] = options[extraction_details['operation']](
-                                        extraction_details['parameters'], cwl_attributes[i])
+        extracted_attributes = {
+            "aws.service": aws_service_name
+        }
+
+        if (aws_service_name in aws_service_cw_logs_attribute_map and
+            log_group_name.split("/")[1] == "aws"):
+            for i in ["log_group_name", "log_stream_name"]:
+                for attribute,extraction_details in aws_service_cw_logs_attribute_map[aws_service_name][i].items():
+                    extracted_attributes[attribute] = options[extraction_details['operation']](
+                                            extraction_details['parameters'], cwl_attributes[i])
+    except IndexError:
+        pass
     
     return extracted_attributes
 

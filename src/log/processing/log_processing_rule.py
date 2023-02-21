@@ -27,7 +27,19 @@ def parse_date_from_string(date_string: str):
     '''
     Uses dateutil to parse a date from a given str
     '''
-    return dateparser.parse(date_string,fuzzy=True).isoformat()
+    datetime = date_string
+
+    try:
+        datetime = dateparser.parse(date_string,fuzzy=True).isoformat()
+    except dateparser.ParserError:
+        # Redshift timestamp doesn't include timezone, but logs are UTC. Example:
+        # authenticated |Tue, 21 Feb 2023 16:58:20:471|[local]
+        try:
+            datetime = dateparser.parse(date_string + "Z",fuzzy=True).isoformat()
+        except dateparser.ParserError:
+            logger.exception("Unable to convert string timestamp")
+
+    return datetime
 
 @dataclass(frozen=True)
 class LogProcessingRule:
