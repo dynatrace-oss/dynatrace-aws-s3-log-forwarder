@@ -21,6 +21,9 @@ log_format: json_stream
 # from the stream of JSON objects, just select the ones with messageType: DATA_MESSAGE
 # (CWL sends CONTROL_MESSAGE messages to check deliverability to Firehose)
 filter_json_objects_key: messageType
+filter_json_objects_value: DATA_MESSAGE
+
+log_entries_key: logEvents
 
 annotations:
   log.source: aws.cloudwatch_logs

@@ -110,14 +110,14 @@ def get_attributes_from_cloudwatch_logs_data(log_group_name,log_stream_name):
                     "operation": "split",
                     "parameters": {
                         "delimiter": "/",
-                        "attribute_index": 1
+                        "attribute_index": 0
                     }
                 },
                 "aws.edge_location": {
                     "operation": "split",
                     "parameters": {
                         "delimiter": "/",
-                        "attribute_index": 2
+                        "attribute_index": 1
                     }
                 }
             }
