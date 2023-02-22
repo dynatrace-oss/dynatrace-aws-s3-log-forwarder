@@ -437,5 +437,45 @@ class testGlobalAcceleratorLogs(unittest.TestCase):
         extracted_attributes = self.global_accelerator_processing_rule.get_extracted_log_attributes(self.log_entry)
         self.assertEqual(extracted_attributes,self.expected_attributes)
 
+class testCWLtoFirehoseLogs(unittest.TestCase):
+
+    def test_route53_public_query_logs(self):
+        log_entry = {
+            'content': '1.0 2023-02-21T16:34:06Z Z0195849T189REVYAU10 test.ivallho.com A NOERROR UDP MAD51-C2 79.157.104.114 -',
+            'aws.log_group': '/aws/route53/public/example.com',
+            'aws.log_stream': 'Z0195849T189REVYAU10/MAD51-C2',
+            'aws.log_event_id': '37398288281683578257046633068901495458990097452373442560',
+            'timestamp': '2023-02-21T16:34:06Z'
+        }
+        expected_attributes = {
+            'timestamp':'2023-02-21T16:34:06Z',
+            'aws.service': 'route53',
+            'aws.resource.id': 'Z0195849T189REVYAU10',
+            'aws.edge_location': 'MAD51-C2'
+        }
+
+        extracted_attributes = processing_rules['custom']['cwl_to_fh'].get_extracted_log_attributes(log_entry)
+        self.assertEqual(extracted_attributes,expected_attributes)
+
+    def test_eks_control_plane_logs(self):
+
+        log_entry = {
+            'content': 'I0221 18:41:59.098346      10 cleaner.go:172] Cleaning CSR "csr-lrn9z" as it is more than 1h0m0s old and approved.',
+            'aws.log_group': '/aws/eks/my-cluster-name/cluster',
+            'aws.log_stream': 'kube-controller-manager-1e770729c82dc68998d47f9f28408516',
+            'aws.log_event_id': '37398288281683578257046633068901495458990097452373442560',
+            'timestamp': '2023-02-21T16:34:06Z'
+        }
+
+        expected_attributes = {
+            'timestamp':'2023-02-21T16:34:06Z',
+            'aws.service': 'eks',
+            'aws.resource.id': 'my-cluster-name',
+            'log.source': 'kube-controller-manager'
+        }
+
+        extracted_attributes = processing_rules['custom']['cwl_to_fh'].get_extracted_log_attributes(log_entry)
+        self.assertEqual(extracted_attributes,expected_attributes)
+
 if __name__ == '__main__':
     unittest.main()
