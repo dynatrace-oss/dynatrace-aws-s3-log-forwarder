@@ -55,6 +55,20 @@ def get_jsonslicer_path_prefix_from_jmespath_path(jmespath_expr: str):
 
     return jsonslicer_tuple
 
+def get_log_entry_size(log_entry):
+    '''
+    Gets a log entry instance of type dict or bytes and returns its raw size
+    '''
+    if isinstance(log_entry,dict):
+        size = sys.getsizeof(json.dumps(log_entry).encode(ENCODING))
+    elif isinstance(log_entry,bytes):
+        size = sys.getsizeof(log_entry)
+    else:
+        logger.warning("Can't determine the size of the log entry")
+        size = 0
+
+    return size
+
 def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key: str, bucket_region: str, log_sinks: list,
                        lambda_context, user_defined_annotations: dict = None, session: boto3.Session = None):
     '''
@@ -78,6 +92,8 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
     log_obj_http_response = s3_client.get_object(Bucket=bucket, Key=key)
 
     log_obj_http_response_body = log_obj_http_response['Body']
+
+    logger.debug("s3://%s/%s Object size: %i KB",bucket,key,log_obj_http_response['ContentLength']/1024)
 
     if key.endswith('.gz'):
         log_stream = gzip.GzipFile(
@@ -138,8 +154,10 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
 
     for log_entry in log_entries:
 
-        decompressed_log_object_size += sys.getsizeof(log_entry)
         dt_log_message = {}
+
+        # calculate raw log entry size
+        decompressed_log_object_size += get_log_entry_size(log_entry)
 
         # start with the json_list within json_stream case as it requires a
         # second level of iteration
