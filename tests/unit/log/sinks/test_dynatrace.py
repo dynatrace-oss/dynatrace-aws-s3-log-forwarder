@@ -74,11 +74,11 @@ class TestDynatraceSink(unittest.TestCase):
         num_messages_to_push = ceil(dynatrace.DYNATRACE_LOG_INGEST_PAYLOAD_MAX_SIZE / log_message_size) + 1
         
         responses.add(responses.POST, dynatrace_sink.get_environment_url() + dynatrace.LOGV2_API_URL_SUFFIX,
-                      body=json.dumps({'details': {'message': 'Success','code': 204}}).encode(dynatrace.ENCODING), 
+                      body=json.dumps({'details': {'message': 'Success','code': 204}}).encode(dynatrace.ENCODING),
                       content_type="application/json",
                       status=204)
 
-        for i in range(1,num_messages_to_push):
+        for _ in range(1,num_messages_to_push):
             dynatrace_sink.push(log_message)
 
         self.assertEqual(log_message_size,dynatrace_sink.get_size_of_buffered_messages())
@@ -97,7 +97,6 @@ class TestDynatraceSink(unittest.TestCase):
                       content_type="application/json",
                       status=429)
 
-        session = requests.Session()
         retry_strategy = Retry(
             total = 3,
             status_forcelist = [429],
@@ -110,7 +109,7 @@ class TestDynatraceSink(unittest.TestCase):
 
         session = requests.Session()
         session.mount("https://", adapter)
-        
+
         with self.assertRaises(MaxRetryError):
             dynatrace_sink.ingest_logs(test_log_entries,session=session)
 

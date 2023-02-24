@@ -96,10 +96,9 @@ class LogProcessingRule:
                 "attribute_extraction_from_top_level_json is only valid for JSON Stream with JSON list entries")
 
         # validate filter json key-value if not None
-        if self.filter_json_objects_key:
-            if not self.filter_json_objects_value:
-                raise ValueError(
-                    "filter_json_objects_value can't be None if filter_json_objects_key is specified")
+        if self.filter_json_objects_key and not self.filter_json_objects_value:
+            raise ValueError(
+                "filter_json_objects_value can't be None if filter_json_objects_key is specified")
 
         # validate optional lists
         if not (isinstance(self.requester, list) or self.requester is None):

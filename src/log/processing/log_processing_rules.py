@@ -296,7 +296,7 @@ def lookup_processing_rule(source: str, source_name: str, processing_rules: dict
     source_name is only used for 'custom' rules.
     '''
 
-    if not source in AVAILABLE_LOG_SOURCES or source is None:
+    if source not in AVAILABLE_LOG_SOURCES or source is None:
         return None
     # is it a generic or custom rule?
     elif source == 'custom' or source == 'generic':
