@@ -102,9 +102,6 @@ jobs:
     
     after_script: 
       - ./tests/e2e/clean_up_resources.sh
-    
-    after_failure: 
-      - ./tests/e2e/clean_up_resources.sh
   
   - stage: release-container-image
     name: Release Container Image

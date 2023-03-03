@@ -19,7 +19,7 @@ name: NLB
 # File Name: aws-account-id_elasticloadbalancing_region_net.load-balancer-id_end-time_random-string.log.gz
 # Random string is 8 chars?
 # IMPORTANT: NLB Access Logs are only created if there's a TLS listener and they only contain information about TLS requests.
-known_key_path_pattern: '^.*?{aws_logs_prefix}/{aws_account_id_pattern}/(elasticloadbalancing)/{aws_region_pattern}/{year_pattern}/{month_pattern}/{day_pattern}/{aws_account_id_pattern}_(elasticloadbalancing)_{aws_region_pattern}_(net.){elbv2_id_pattern}_{year_pattern}{month_pattern}{day_pattern}T{hour_pattern}{minutes_pattern}Z_[a-zA-Z0-9]{{8}}(.log.gz)$'
+known_key_path_pattern: '^.*?{aws_logs_prefix}/{aws_account_id_pattern}/(elasticloadbalancing)/{aws_region_pattern}/{year_pattern}/{month_pattern}/{day_pattern}/{aws_account_id_pattern}_(elasticloadbalancing)_{aws_region_pattern}_(net\.){elbv2_id_pattern}_{year_pattern}{month_pattern}{day_pattern}T{hour_pattern}{minutes_pattern}Z_[a-zA-Z0-9]{{8}}(\.log\.gz)$'
 source: aws
 
 log_format: text
@@ -38,3 +38,6 @@ attribute_extraction_from_key_name:
   aws.region: '{aws_region_pattern}'
 
 attribute_extraction_grok_expression: "%{WORD:listener_type} %{NOTSPACE:version} %{TIMESTAMP_ISO8601:timestamp} %{DATA:elb_id} %{DATA:listener} %{IP:client_ip}:%{INT:client_port} %{IP:destination_ip}:%{INT:destination_port} %{INT:connection_time} %{INT:tls_handshake_time} %{INT:received_bytes} %{INT:sent_bytes} (?:-|%{INT:incoming_tls_alert}) (?:-|%{DATA:chosen_cert_arn}) (?:-|%{DATA:chosen_cert_serial}) (?:-|%{DATA:tls_cipher}) (?:-|%{DATA:tls_protocol_version}) (?:-|%{DATA:tls_named_group}) (?:-|%{DATA:domain_name}) (?:-|%{DATA:alpn_fe_protocol}) (?:-|%{DATA:alpn_be_protocol}) (?:-|%{GREEDYDATA:alpn_client_preference_list})"
+
+attribute_extraction_jmespath_expression:
+  aws.resource.id: elb_id

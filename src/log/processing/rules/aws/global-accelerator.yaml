@@ -1,0 +1,44 @@
+# Copyright 2023 Dynatrace LLC
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#      https://www.apache.org/licenses/LICENSE-2.0
+
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+
+name: global-accelerator
+
+# https://docs.aws.amazon.com/global-accelerator/latest/dg/monitoring-global-accelerator.flow-logs.html
+# Format: s3-bucket_name/s3-bucket-prefix/AWSLogs/aws_account_id/globalaccelerator/region/yyyy/mm/dd/aws_account_id_globalaccelerator_accelerator_id_flow_log_id_timestamp_hash.log.gz
+# Example file name: optional_prefix/AWSLogs/123456789012/globalaccelerator/us-west-2/2018/11/23/123456789012_globalaccelerator_1234abcd-abcd-1234-abcd-1234abcdefgh_20181123T0005Z_1fb12345.log.gz
+known_key_path_pattern: '^.*?{aws_logs_prefix}\/{aws_account_id_pattern}\/(globalaccelerator)\/{aws_region_pattern}\/{year_pattern}/{month_pattern}/{day_pattern}\/{aws_account_id_pattern}_(globalaccelerator)_{aws_global_accelerator_id_pattern}_{year_pattern}{month_pattern}{day_pattern}T{hour_pattern}{minutes_pattern}Z_[a-fA-F0-9]{{8}}(\.log\.gz)$'
+
+source: aws
+
+log_format: text
+
+requester:
+  - delivery.logs.amazonaws.com
+
+annotations:
+  cloud.provider: aws
+  aws.service: global-accelerator
+
+
+attribute_extraction_from_key_name:
+  aws.account.id: '{aws_account_id_pattern}'
+  aws.region: '{aws_region_pattern}'
+  aws.resource.id: '{aws_global_accelerator_id_pattern}(?=_{year_pattern}{month_pattern}{day_pattern}T{hour_pattern}{minutes_pattern}Z_[a-fA-F0-9]{{8}}(\.log\.gz)$)'
+
+
+# https://docs.aws.amazon.com/global-accelerator/latest/dg/monitoring-global-accelerator.flow-logs.html#monitoring-global-accelerator.flow-logs.records.syntax
+attribute_extraction_grok_expression: '%{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE:timestamp} %{GREEDYDATA}'
+
+skip_header_lines: 1

@@ -21,3 +21,6 @@ known_key_path_pattern: '^.*$'
 source: generic
 
 log_format: text
+
+# Try to find timestamp value
+attribute_extraction_grok_expression: "(?:%{TIMESTAMP_ISO8601:timestamp_to_transform}|%{SYSLOGTIMESTAMP:timestamp_to_transform})"

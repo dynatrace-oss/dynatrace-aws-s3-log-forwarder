@@ -61,11 +61,11 @@ def create_log_processing_rule(rule_dict):
                            'filter_json_objects_value', 'attribute_extraction_from_top_level_json']
 
     for attribute in required_attributes:
-        if attribute not in rule_dict.keys():
+        if attribute not in rule_dict:
             raise InvalidLogProcessingRuleFile
 
     for attribute in optional_attributes:
-        if attribute not in rule_dict.keys():
+        if attribute not in rule_dict:
             rule_dict[attribute] = None
 
     # Check that source on the rule is valid. (
@@ -89,7 +89,8 @@ def create_log_processing_rule(rule_dict):
             attribute_extraction_jmespath_expression=rule_dict[
                 'attribute_extraction_jmespath_expression'],
             attribute_extraction_from_top_level_json=rule_dict[
-                'attribute_extraction_from_top_level_json']
+                'attribute_extraction_from_top_level_json'],
+            skip_header_lines=rule_dict.get('skip_header_lines',0)
         )
     except ValueError as ex:
         raise InvalidLogProcessingRuleFile(
@@ -153,6 +154,8 @@ def load_processing_rules_from_yaml(body: str):
                 if isinstance(processing_rule_dict, dict):
                     log_processing_rules[processing_rule_dict['source']][processing_rule_dict['name']
                                                                          ] = create_log_processing_rule(processing_rule_dict)
+                    logger.info("Loaded custom log_processing-rule: %s",log_processing_rules[processing_rule_dict['source']
+                                                        ][processing_rule_dict['name']])
                 elif processing_rule_dict is None:
                     logger.warning("Skipping empty log processing rule")
                 else:
@@ -229,6 +232,7 @@ def load_custom_rules():
     If custom rules are local, version is set to 0.
     '''
     log_processing_rules_verison = 0
+    log_processing_rules = {}
 
     if os.environ.get('LOG_FORWARDER_CONFIGURATION_LOCATION') == 'aws-appconfig':
         log_processing_rules, log_processing_rules_verison = load_custom_rules_from_aws_appconfig()
@@ -292,7 +296,7 @@ def lookup_processing_rule(source: str, source_name: str, processing_rules: dict
     source_name is only used for 'custom' rules.
     '''
 
-    if not source in AVAILABLE_LOG_SOURCES or source is None:
+    if source not in AVAILABLE_LOG_SOURCES or source is None:
         return None
     # is it a generic or custom rule?
     elif source == 'custom' or source == 'generic':

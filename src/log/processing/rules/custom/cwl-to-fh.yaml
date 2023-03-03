@@ -23,7 +23,6 @@ log_format: json_stream
 filter_json_objects_key: messageType
 filter_json_objects_value: DATA_MESSAGE
 
-# Within each JSON object in the stream, iterate through logEvents
 log_entries_key: logEvents
 
 annotations:

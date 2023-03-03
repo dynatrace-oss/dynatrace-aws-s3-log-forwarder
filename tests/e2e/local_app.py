@@ -134,7 +134,7 @@ if os.environ['AWS_SAM_LOCAL'] == 'True':
         client.put_parameter(Name=api_key_parameter, Type='SecureString',
                              Value=os.environ['DYNATRACE_1_API_KEY'])
 
-    class Test_Context():
+    class test_context():
         def __init__(self):
             self.invoked_function_arn = 'test'
 
@@ -151,7 +151,7 @@ if os.environ['AWS_SAM_LOCAL'] == 'True':
         save_test_ssm_parameters()
         events = load_s3_test_data_from_disk()
         
-        lambda_handler(json.loads(events), Test_Context())
+        lambda_handler(json.loads(events), test_context())
 
 if __name__ == '__main__':
     run_locally()

@@ -1,0 +1,36 @@
+# Copyright 2023 Dynatrace LLC
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#      https://www.apache.org/licenses/LICENSE-2.0
+
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+name: cloudfront
+
+# File Name format:  <optional prefix>/<distribution ID>.YYYY-MM-DD-HH.unique-ID.gz
+# File Name example: example/E1SFLUZKKLSP61.2023-02-16-14.e519cdee.gz
+# Random string is 11 uppercase chars?
+known_key_path_pattern: '^.*?{cloudfront_distribution_id_pattern}\.{year_pattern}-{month_pattern}-{day_pattern}-{hour_pattern}\.[a-fA-F0-9]{{8}}\.gz$'
+
+source: aws
+
+log_format: text
+
+annotations:
+  cloud.provider: aws
+  aws.service: cloudfront
+  aws.region: global
+
+attribute_extraction_from_key_name:
+  aws.resource.id: '{cloudfront_distribution_id_pattern}(?=\.{year_pattern}-{month_pattern}-{day_pattern})'
+
+attribute_extraction_grok_expression: "%{CLOUDFRONTTIMESTAMP:timestamp_to_transform}"
+
+skip_header_lines: 2

@@ -60,3 +60,4 @@ attribute_extraction_grok_expression: "%{TIMESTAMP_ISO8601:timestamp} %{NOTSPACE
 
 attribute_extraction_jmespath_expression:
    severity: "((elb_status_code.to_number(@) >= `400` && elb_status_code.to_number(@) < `500`) && 'WARN') || (elb_status_code.to_number(@) >= `500` && 'ERROR') || 'INFO'"
+   aws.resource.id: elb

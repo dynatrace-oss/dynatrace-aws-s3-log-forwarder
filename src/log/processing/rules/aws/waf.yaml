@@ -1,0 +1,43 @@
+# Copyright 2023 Dynatrace LLC
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#      https://www.apache.org/licenses/LICENSE-2.0
+
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+name: waf
+
+# https://docs.aws.amazon.com/waf/latest/developerguide/logging-s3.html
+# Prefix: [/prefix]/AWSLogs/(account_id)/WAFLogs/(region)/(acl-name)/yyyy/mm/dd/HH/MM/(account_id)_waflogs_(region)_(acl_name)_yymmddTHHMMZ_hash.log.gz
+# File Name example: AWSLogs/012345678910/WAFLogs/us-east-1/my-acl/2022/11/11/18/30/012345678910_waflogs_us-east-1_my-acl_20221111T1830Z_8e0a6094.log.gz
+# Hash string is 8 chars?
+
+known_key_path_pattern: '^.*?{aws_logs_prefix}/{aws_account_id_pattern}/WAFLogs/{aws_region_pattern}/{aws_resource_name_pattern}/{year_pattern}/{month_pattern}/{day_pattern}/{hour_pattern}/{minutes_pattern}/{aws_account_id_pattern}_(waflogs)_{aws_region_pattern}_{aws_resource_name_pattern}_{year_pattern}{month_pattern}{day_pattern}T{hour_pattern}{minutes_pattern}Z_[a-zA-Z0-9]{{8}}(\.log\.gz)$'
+source: aws
+
+log_format: json_stream
+
+requester:
+  - delivery.logs.amazonaws.com
+
+annotations:
+  cloud.provider: aws
+  aws.service: wafv2
+
+attribute_extraction_from_key_name:
+  aws.account.id: '{aws_account_id_pattern}'
+  aws.region: '{aws_region_pattern}'
+  # Get the value before /yyyy/mm/dd/HH/MM as the waf rule name
+  aws.resource.id: '{aws_resource_name_pattern}(?=\/{year_pattern}\/{month_pattern}\/{day_pattern}\/{hour_pattern}\/{minutes_pattern})'
+
+attribute_extraction_jmespath_expression:
+  timestamp: timestamp
+  aws.arn: webaclId
+  audit.action: action

@@ -57,12 +57,7 @@ Log forwarding rules allow you to add custom annotations to your logs (e.g team:
 * log.source.aws.s3.key.name: key name of the S3 object that the log entry belongs to
 * cloud.log_forwarder: the ARN of the AWS Lambda function that forwarded the log entry (this helps if you have multiple log forwarding instances running)
 
-The `dynatrace-aws-s3-log-forwarder` automatically annotates logs and extracts relevant attributes for supported AWS services with fields like `aws.account.id`, `aws.region`... The following AWS-vended logs are supported:
-
-* CloudTrail
-* Application Load Balancer
-* Network Load Balancer
-* Classic Load Balancer
+The `dynatrace-aws-s3-log-forwarder` automatically annotates logs and extracts relevant attributes for [supported AWS services](../README.md#supported-aws-services) with fields like `aws.account.id`, `aws.region`...
 
 For any other logs you may want to ingest from S3, you can just ingest any text-based logs as `generic` logs (source: generic) and stream of JSON entries logs as `generic_json_stream` (source: generic, source_name: generic_json_stream). Then, you can [configure Dynatrace to process the logs at ingestion time](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing) to enrich them or parse them at query time with [DQL](https://www.dynatrace.com/support/help/how-to-use-dynatrace/log-monitoring/acquire-log-data/log-processing/log-processing-commands). Optionally, you can do custom processing on the Lambda function (e.g. extract log entries from a list in a JSON key) defining your own log processing rules. For more information, visit the [log_processing](log_processing.md) documentation.
 
