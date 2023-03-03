@@ -164,7 +164,7 @@ def load_forwarding_rules_from_local_folder():
                 # Get S3 Bucket name from filename
                 bucket_name = os.path.splitext(
                     os.path.basename(rule_config_file_path))[0]
-                if not bucket_name in log_forwarding_rules:
+                if bucket_name not in log_forwarding_rules:
                     log_forwarding_rules[bucket_name] = {}
 
                 # If rule content is valid, then add to forwarding rule dictionary

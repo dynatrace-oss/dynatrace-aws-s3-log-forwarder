@@ -201,23 +201,19 @@ class DynatraceSink():
         resp = self.post_logsv2(self._environment_url + LOGV2_API_URL_SUFFIX,
                                 dt_api_key, data, session=session)
 
-        success = False
         if resp.status_code == 204:
             logger.debug('%s: Successfully posted batch %d. Ingested %.2f KB of log data to Dynatrace',
                          tenant_id, batch_num, (len(data) / 1024))
-            success = True
             metrics.add_metric(name='DynatraceHTTP204Success',
                                unit=MetricUnit.Count, value=1)
         elif resp.status_code == 200:
             logger.warning(
                 '%s: Parts of batch %s were not successfully posted: %s',tenant_id, batch_num, resp.text)
-            success = True
             metrics.add_metric(
                 name='DynatraceHTTP200PartialSuccess', unit=MetricUnit.Count, value=1)
         elif resp.status_code == 400:
             logger.warning(
                 '%s: Parts of batch %s were not successfully posted: %s',tenant_id, batch_num, resp.text)
-            success = True
             metrics.add_metric(
                 name='DynatraceHTTP400InvalidLogEntries', unit=MetricUnit.Count, value=1)
         elif resp.status_code == 429:
@@ -238,9 +234,8 @@ class DynatraceSink():
                                unit=MetricUnit.Count, value=1)
             raise DynatraceIngestionException
 
-        if success:
-            metrics.add_metric(name='UncompressedLogDTPayloadSize',
-                               unit=MetricUnit.Bytes, value=sys.getsizeof(data))
+        metrics.add_metric(name='UncompressedLogDTPayloadSize',
+                           unit=MetricUnit.Bytes, value=sys.getsizeof(data))
 
         end_time = time.time()
         metrics.add_metric(name='DTIngestionTime',
