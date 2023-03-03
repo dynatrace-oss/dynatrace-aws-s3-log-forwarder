@@ -28,7 +28,6 @@ requester:
   - delivery.logs.amazonaws.com
 
 annotations:
-  log.source: aws.wafv2
   cloud.provider: aws
   aws.service: wafv2
 

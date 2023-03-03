@@ -93,7 +93,7 @@ class TestAWSAttributeInjection(unittest.TestCase):
 
     def test_vpcflowlog_attributes(self):
         expected_attributes = {
-            'log.source': 'fl-07f38b767c7cd46e3',
+            'aws.vpc.flow_log_id': 'fl-07f38b767c7cd46e3',
             'aws.account.id': '012345678910',
             'aws.region': 'us-east-1'
         }

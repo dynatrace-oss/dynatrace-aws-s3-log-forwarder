@@ -29,15 +29,13 @@ requester:
   - delivery.logs.amazonaws.com
 
 annotations:
-  #log.source: aws.vpcflowlogs
   cloud.provider: aws
   aws.service: vpc
 
 attribute_extraction_from_key_name:
   aws.account.id: '{aws_account_id_pattern}'
   aws.region: '{aws_region_pattern}'
-  # Should flow id be the log.source?
-  log.source: '{vpc_flow_id_pattern}'
+  aws.vpc.flow_log_id: '{vpc_flow_id_pattern}'
 
 # Standar log format: version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status
 attribute_extraction_grok_expression: '%{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE:timestamp} %{GREEDYDATA}'

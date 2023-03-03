@@ -27,7 +27,6 @@ requester:
   - logging.s3.amazonaws.com
 
 annotations:
-  log.source: aws.s3
   cloud.provider: aws
   aws.service: s3
 

@@ -383,12 +383,12 @@ class TestVPCDNSquerylogs(unittest.TestCase):
         }
 
     expected_attributes = {
-        "timestamp": '2023-02-15T18:33:54Z'
-        #"aws.account.id": "012345678910",
-        #"aws.region": "us-east-1",
-        #"aws.resource.id": "vpc-0123456789abcdef12",
+        "timestamp": '2023-02-15T18:33:54Z',
+        "aws.account.id": "012345678910",
+        "aws.region": "us-east-1",
+        "aws.resource.id": "vpc-0123456789abcdef12",
         #"net.host.name": "ec2messages.us-east-1.amazonaws.com.",
-        #"severity": "INFO"
+        "severity": "INFO"
     }
 
     vpcdnsquery_processing_rule = processing_rules['aws']['vpcdnsquerylogs']
