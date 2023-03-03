@@ -2,6 +2,8 @@
 
 # Settings for CloudWatch Log Export job
 PREFIX="test/${TRAVIS_BUILD_ID}/lambda-logs"
+STACK_NAME=e2e-dt-aws-s3-log-forwarder-${TRAVIS_BUILD_ID}
+E2E_TESTING_BUCKET_NAME=dynatrace-aws-s3-log-forwarder-e2e-testing
 LAMBDA_FUNCTION_NAME=$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} --query \
                          'Stacks[].Outputs[?OutputKey==`QueueProcessingFunction`].OutputValue' \
                          --output text | cut -d':' -f7)

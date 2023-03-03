@@ -403,7 +403,7 @@ Resources:
   AppConfigDeploymentStrategy:
     Type: AWS::AppConfig::DeploymentStrategy
     Properties:
-      Name: !Sub ${AWS::StackName}-AllAtOnce-Deployment-Strategy
+      Name: !Sub ${AWS::StackName}-AllAtOnce
       DeploymentDurationInMinutes: 0
       FinalBakeTimeInMinutes: 0
       GrowthFactor: 100
