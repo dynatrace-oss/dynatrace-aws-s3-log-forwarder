@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import os
+import yaml
 
 ENCODING = 'utf-8'
 
@@ -55,74 +57,23 @@ def get_string_found(params,name):
 
     return ''
 
+def load_cloudwatch_logs_attribute_mappings() -> dict:
+    '''
+    Loads the YAML file with attribute mappings for CloudWatch Logs services
+    '''
+
+    file = os.path.dirname(__file__) + "/config/cloudwatch_logs_attribute_map.yaml"
+
+    with open(file, encoding=ENCODING) as mappings_file:
+        cwl_mappings = yaml.load(mappings_file,Loader=yaml.loader.SafeLoader)
+
+    return cwl_mappings
+
 def get_attributes_from_cloudwatch_logs_data(log_group_name,log_stream_name):
     '''
     Extracts AWS attributes given a CloudWatch Logs Log Group and Log Stream names
     '''
-    aws_service_cw_logs_attribute_map = {
-        "eks": {
-            # /aws/eks/cluster-name/cluster
-            "log_group_name": {
-                "aws.resource.id": {
-                    "operation": "split",
-                    "parameters": {
-                        "delimiter" :"/",
-                        "attribute_index": 3
-                    }
-                }
-            },
-            # kube-api-server
-            "log_stream_name": {
-                "log.source": {
-                    "operation": "find_strings",
-                    "parameters": {
-                        "strings": [
-                            "kube-apiserver-audit",
-                            "kube-apiserver",
-                            "authenticator",
-                            "kube-controller-manager",
-                            "kube-scheduler",
-                            "cloud-controller-manager"
-                        ]
-                    }
-                }
-
-            }
-        },
-        "lambda": {
-            "log_group_name": {
-                "aws.resource.id": {
-                    "operation": "split",
-                    "parameters": {
-                        "delimiter" :"/",
-                        "attribute_index": 3
-                    }
-                }
-            },
-            "log_stream_name": {}
-        },
-        # CloudWatch Log Group is user defined. For the forwarder to pick it up must be 
-        # /aws/route53/...
-        "route53": {
-            "log_group_name": {},
-            "log_stream_name": {
-                "aws.resource.id": {
-                    "operation": "split",
-                    "parameters": {
-                        "delimiter": "/",
-                        "attribute_index": 0
-                    }
-                },
-                "aws.edge_location": {
-                    "operation": "split",
-                    "parameters": {
-                        "delimiter": "/",
-                        "attribute_index": 1
-                    }
-                }
-            }
-        }
-    }
+    aws_service_cw_logs_attribute_map = load_cloudwatch_logs_attribute_mappings()
 
     options = {
         "split": get_split_member,
