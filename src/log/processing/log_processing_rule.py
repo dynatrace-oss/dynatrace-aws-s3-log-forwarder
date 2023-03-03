@@ -213,7 +213,7 @@ class LogProcessingRule:
             attributes_dict.pop('timestamp_to_transform')
         
         # Check if aws.log_group exists to extract aws.service and aws.resource.id
-        if "aws.log_group" and "aws.log_stream" in json_message:
+        if "aws.log_group" in json_message and "aws.log_stream" in json_message:
             attributes_dict.update(get_attributes_from_cloudwatch_logs_data(
                 json_message['aws.log_group'], json_message['aws.log_stream']
             ))
