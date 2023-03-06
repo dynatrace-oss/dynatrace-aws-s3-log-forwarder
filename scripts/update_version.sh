@@ -8,13 +8,13 @@ echo  "Travis commit:  ${TRAVIS_COMMIT}"
 if [ -n $TRAVIS_TAG ]
 then
     # remove "v from vx.y.z in the tag"
-    VERSION="${TRAVIS_TAG:1}"
+    export VERSION="${TRAVIS_TAG:1}"
 elif [ -n $TRAVIS_COMMIT ]
 then
-    VERSION="${TRAVIS_COMMIT:0:7}"
+    export VERSION="${TRAVIS_COMMIT:0:7}"
 else
     echo "This is not a travis build. Defaulting to VERSION=dev"
-    VERSION="dev"
+    export VERSION="dev"
 fi
 
 # Update version.py

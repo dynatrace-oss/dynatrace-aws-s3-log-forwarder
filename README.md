@@ -88,7 +88,7 @@ To deploy the `dynatrace-aws-s3-log-forwarder` using the provided container imag
     # Get the latest version
     export VERSION_TAG=$(curl -s https://api.github.com/repos/dynatrace-oss/dynatrace-aws-s3-log-forwarder/releases/latest | grep tag_name | cut -d'"' -f4)
     # Get private repo URI
-    export REPOSITORY_URI=$(aws ecr describe-repositories --repository-names dynatrace-aws-s3-log-forwarder --query 'repositories[0].repositoryUri')
+    export REPOSITORY_URI=$(aws ecr describe-repositories --repository-names dynatrace-aws-s3-log-forwarder --query 'repositories[0].repositoryUri' --output text)
 
     # Pull the image
     docker pull public.ecr.aws/dynatrace-oss/dynatrace-aws-s3-log-forwarder:${VERSION_TAG}-x86_64
@@ -113,7 +113,7 @@ To deploy the `dynatrace-aws-s3-log-forwarder` using the provided container imag
     aws cloudformation deploy --stack-name ${STACK_NAME} --parameter-overrides \
                 DynatraceEnvironment1URL="https://$DYNATRACE_TENANT_UUID.live.dynatrace.com" \
                 DynatraceEnvironment1ApiKeyParameter=$PARAMETER_NAME \
-                ContainerImageUri=${REPOSITORI_URI}/dynatrace-aws-s3-log-forwarder:${VERSION_TAG}-x86_64 \
+                ContainerImageUri=${REPOSITORY_URI}:${VERSION_TAG}-x86_64 \
                 --template-file template.yaml --capabilities CAPABILITY_IAM 
     ```
 
