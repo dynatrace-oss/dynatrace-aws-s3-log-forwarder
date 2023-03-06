@@ -25,14 +25,9 @@ It's possible to define your own log-processing-rules by adding them to the log-
 
 ### AWS-vended logs to Amazon S3
 
-The solution currently supports log processing for:
+The list of supported AWS services is maintained [here](../README.md#supported-aws-services).
 
-* Amazon CloudTrail
-* Amazon Classic Elastic Load Balancer
-* Amazon Application Load Balancer
-* Amazon Network Load Balancer
-
-The processing rules for these logs are defined in `src/log/processing/rules`.
+The processing rules for these services' logs are defined in `src/log/processing/rules`.
 
 ### Generic log ingestion
 
