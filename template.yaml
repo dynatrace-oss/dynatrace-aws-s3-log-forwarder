@@ -374,7 +374,7 @@ Resources:
             "events:source": "aws.s3"
           ArnEquals:
             "aws:SourceArn": 
-              - !Sub arn:aws:events:*:*:rule/default/dt-fwd-s3-object-created-to-${AWS::AccountId}-*
+              - !Sub arn:aws:events:*:*:rule/dt-fwd-s3-object-created-to-${AWS::AccountId}-*
 
   AppConfigApplication:
     Type: AWS::AppConfig::Application
