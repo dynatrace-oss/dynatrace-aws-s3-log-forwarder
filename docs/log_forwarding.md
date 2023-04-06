@@ -106,7 +106,7 @@ The SAM template deploys the forwarder with the following default parameters tha
 
 It's possible to centralize log forwarding from S3 buckets on different AWS regions on a single `dynatrace-aws-s3-log-forwarder` deployment on a specific AWS region to avoid the overhead of deploying and managing multiple S3 log forwarders.
 
-In this case, you will need to configure Amazon EventBridge rules on the AWS region where your S3 bucket is to forward S3 Object Created notifications fto a dedicated event bus on the AWS region where you have deployed the `dynatrace-aws-s3-log-forwarder`. Before proceeding, make sure you have deployed the `dynatrace-aws-s3-log-forwarder` setting the `EnableCrossRegionCrossAccountForwarding` parameter to "true", so a dedicated Event Bus is created to receive cross-region notifications. If you didn't set this parameter when you deployed the forwarder, you can simply update the log forwarder CloudFormation stack to enable it.
+In this case, you will need to configure Amazon EventBridge rules on the AWS region where your S3 bucket is to forward S3 Object Created notifications to a dedicated event bus on the AWS region where you have deployed the `dynatrace-aws-s3-log-forwarder`. Before proceeding, make sure you have deployed the `dynatrace-aws-s3-log-forwarder` setting the `EnableCrossRegionCrossAccountForwarding` parameter to "true", so a dedicated Event Bus is created to receive cross-region notifications. If you didn't set this parameter when you deployed the forwarder, you can simply update the log forwarder CloudFormation stack to enable it.
 
 ```bash
 aws cloudformation deploy --stack-name $STACK_NAME --parameter-overrides \
@@ -120,7 +120,7 @@ The diagram below showcases what needs to be deployed to enable cross-region log
 
 For each S3 bucket located in a different AWS region than where the log forwarder is, that you want to forward logs from to Dynatrace, follow the below steps:
 
-1. Deploy the `eventbridge-cross-region-forward-rules.yaml` CloudFormation template on the region where your S3 bucket is. This template will deploy an Amazon EventBridge rule to forward S3 Object Created notifications for the bucket and optional prefixes defined, as well as a required IAM role for EventBridge to forward the notifications to the destination region.
+1. Deploy the `eventbridge-cross-region-or-account-forward-rules.yaml` CloudFormation template on the region where your S3 bucket is. This template will deploy an Amazon EventBridge rule to forward S3 Object Created notifications for the bucket and optional prefixes defined, as well as a required IAM role for EventBridge to forward the notifications to the destination region.
 
     To deploy the template replace the placeholder values:
 
@@ -140,7 +140,7 @@ For each S3 bucket located in a different AWS region than where the log forwarde
     if [ ! -z $EVENT_BUS_ARN ]
     then
       aws cloudformation deploy \
-        --template-file eventbridge-cross-region-forward-rules.yaml \
+        --template-file eventbridge-cross-region-or-account-forward-rules.yaml \
         --stack-name dynatrace-aws-s3-log-forwarder-cross-region-notifications-$BUCKET_NAME \
         --parameter-overrides CrossRegionCrossAccountEventBusArn=$EVENT_BUS_ARN \
             LogsBucketName=$BUCKET_NAME \
@@ -183,7 +183,7 @@ aws cloudformation deploy --stack-name $STACK_NAME --parameter-overrides \
     --template-file template.yaml --capabilities CAPABILITY_IAM 
 ```
 
-**IMPORTANT NOTE:** If you had already some AWS accounts configured on the AwsAccountsToReceiveLogsFrom parameter, make sure to add them to the list on the above command, as it overwrites the previous content of the parameter. If you run `sam deploy --guided` you can see the current value and copy-paste from there adding new accounts.
+**IMPORTANT NOTE:** If you had already some AWS accounts configured on the AwsAccountsToReceiveLogsFrom parameter, make sure to add them to the list on the above command, as it overwrites the previous content of the parameter.
 
 The diagram below showcases what you need to deploy in order to have the `dynatrace-aws-s3-log-forwarder` forwarding logs from an S3 bucket in a different AWS:
 
@@ -242,16 +242,17 @@ For each S3 bucket located in a different AWS account that you want to forward l
                                           --stack-name $STACK_NAME \
                                           --query 'Stacks[].Outputs[?OutputKey==`CrossRegionCrossAccountEventBus`].OutputValue' \
                                           --output text \
-                                          --profile {aws_cli_credentials_profile_of_log_forwarder_aws_account})
+                                          --profile {aws_cli_credentials_profile_of_log_forwarder_aws_account} \
+                                          --region {region_where_the_log_forwarder_is_deployed} )
 
     aws cloudformation deploy \
-    --template-file eventbridge-cross-account-forward-rules.yaml \
-    --stack-name dynatrace-aws-s3-log-forwarder-cross-account-notifications-$BUCKET_NAME \
-    --parameter-overrides CrossRegionCrossAccountEventBusArn=$EVENT_BUS_ARN \
-        LogsBucketName=$BUCKET_NAME \
-    --capabilities CAPABILITY_IAM \
-    --region {region_of_your_s3-bucket}
-    --profile {aws_cli_credentials_profile_for_s3_bucket_aws_account}
+        --template-file eventbridge-cross-region-or-account-forward-rules.yaml \
+        --stack-name dynatrace-aws-s3-log-forwarder-cross-account-notifications-$BUCKET_NAME \
+        --parameter-overrides CrossRegionCrossAccountEventBusArn=$EVENT_BUS_ARN \
+            LogsBucketName=$BUCKET_NAME \
+        --capabilities CAPABILITY_IAM \
+        --profile {aws_cli_credentials_profile_for_s3_bucket_aws_account} \
+        --region {region_of_your_s3-bucket} 
     ```
 
 1. Now, on the AWS account and region where the `dynatrace-aws-s3-log-forwarder` is running, deploy the `dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml` CloudFormation template to configure the local EventBridge rule to forward notifications to SQS for the log forwarder to pick them up. Make sure the `S3BucketIsCrossRegionOrCrossAccount` parameter is set to true.
@@ -264,7 +265,8 @@ For each S3 bucket located in a different AWS account that you want to forward l
             LogsBucketName=$BUCKET_NAME \
             S3BucketIsCrossRegionOrCrossAccount=true \
         --capabilities CAPABILITY_IAM \
-        --profile {aws_cli_credentials_profile_of_log_forwarder_aws_account}
+        --profile {aws_cli_credentials_profile_of_log_forwarder_aws_account} \
+        --region {region_where_the_log_forwarder_is_deployed}
     ```
 
 1. Define an explicit log-forwarding-rule for this S3 bucket on the log-forwarding-rules AWS AppConfig configuration profile and deploy it. Unless you have a default rule defined, logs from this bucket won't be forwarded until you deploy an explicit rule updating and deploying the `dynatrace-aws-s3-log-forwarder-configuration.yaml` CloudFormation stack.
