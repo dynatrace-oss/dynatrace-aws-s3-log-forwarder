@@ -183,7 +183,7 @@ aws cloudformation deploy --stack-name $STACK_NAME --parameter-overrides \
     --template-file template.yaml --capabilities CAPABILITY_IAM 
 ```
 
-**IMPORTANT NOTE:** If you had already some AWS accounts configured on the AwsAccountsToReceiveLogsFrom parameter, make sure to add them to the list on the above command, as it overwrites the previous content of the parameter. If you run `sam deploy --guided` you can see the current value and copy-paste from there adding new accounts.
+**IMPORTANT NOTE:** If you had already some AWS accounts configured on the AwsAccountsToReceiveLogsFrom parameter, make sure to add them to the list on the above command, as it overwrites the previous content of the parameter.
 
 The diagram below showcases what you need to deploy in order to have the `dynatrace-aws-s3-log-forwarder` forwarding logs from an S3 bucket in a different AWS:
 
