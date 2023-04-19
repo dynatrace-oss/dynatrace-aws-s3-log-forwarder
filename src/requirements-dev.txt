@@ -1,2 +1,2 @@
 moto==4.1.7
-responses==0.21.0
+responses==0.23.1
