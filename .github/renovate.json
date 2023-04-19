@@ -8,7 +8,7 @@
   "rebaseWhen": "conflicted",
   "pip_requirements": {
     "fileMatch": [
-      "(^|/)([\\w-]*)requirements(?\\-dev)\\.(txt|pip)$"
+      "(^|/)([\\w-]*)requirements(-dev)?\\.(txt|pip)$"
     ]
   },
   "packageRules": [
