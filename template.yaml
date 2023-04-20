@@ -158,9 +158,9 @@ Mappings:
     # Mappings only support alphanumeric chars, '-' and '.', so name can't be x86_64
     # That means to resolve the image tag we need !If [ ArchIsArm , !FindInMap arm, !FindInMap x86]
     x86: 
-      Tag: '3.9.2023.04.04.12-x86_64'
+      Tag: '3.9.2023.04.17.20-x86_64'
     arm64:
-      Tag: '3.9.2023.04.04.12-arm64'
+      Tag: '3.9.2023.04.17.20-arm64'
 
 Resources:
   QueueProcessingFunction:
