@@ -24,7 +24,7 @@ from requests.packages.urllib3.util.retry import Retry
 import responses
 import boto3
 from moto import mock_ssm
-from urllib3.exceptions import MaxRetryError
+from requests.packages.urllib3.exceptions import MaxRetryError
 import log.sinks.dynatrace as dynatrace
 
 logging.getLogger().setLevel(logging.INFO)
