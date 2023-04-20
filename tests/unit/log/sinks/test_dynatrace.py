@@ -110,7 +110,7 @@ class TestDynatraceSink(unittest.TestCase):
         session = requests.Session()
         session.mount("https://", adapter)
 
-        self.assertRaises(MaxRetryError,dynatrace_sink.ingest_logs,test_log_entries,session=session)
+        self.assertRaises(requests.exceptions.RetryError,dynatrace_sink.ingest_logs,test_log_entries,session=session)
 
 if __name__ == '__main__':
     unittest.main()
