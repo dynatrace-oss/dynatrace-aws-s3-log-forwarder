@@ -24,7 +24,7 @@ from requests.packages.urllib3.util.retry import Retry
 import responses
 import boto3
 from moto import mock_ssm
-from urllib3.exceptions import MaxRetryError
+from requests.packages.urllib3.exceptions import MaxRetryError
 import log.sinks.dynatrace as dynatrace
 
 logging.getLogger().setLevel(logging.INFO)
@@ -110,7 +110,7 @@ class TestDynatraceSink(unittest.TestCase):
         session = requests.Session()
         session.mount("https://", adapter)
 
-        self.assertRaises(MaxRetryError,dynatrace_sink.ingest_logs,test_log_entries,session=session)
+        self.assertRaises(requests.exceptions.RetryError,dynatrace_sink.ingest_logs,test_log_entries,session=session)
 
 if __name__ == '__main__':
     unittest.main()
