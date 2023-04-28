@@ -115,7 +115,7 @@ def load_s3_test_data_from_disk():
                         s3.put_object(Bucket=bucket, Key=key, Body=data)
 
                         event_records.append('{"messageId": "' + hashlib.md5(key.encode('utf-8')).hexdigest() +
-                                        '","body": "{\\"detail\\":{\\"bucket\\":{\\"name\\":\\"' + bucket + '\\"},\\"object\\":{\\"key\\":\\"' + key + '\\"},\\"requester\\":\\"' + requester + '\\"}}"}')
+                                        '","body": "{\\"region\\":\\"us-east-1\\",\\"detail\\":{\\"bucket\\":{\\"name\\":\\"' + bucket + '\\"},\\"object\\":{\\"key\\":\\"' + key + '\\"},\\"requester\\":\\"' + requester + '\\"}}"}')
                 except:
                     logger.exception('an unforseen issue occured')
    
@@ -139,7 +139,7 @@ if os.environ['AWS_SAM_LOCAL'] == 'True':
             self.invoked_function_arn = 'test'
 
         def get_remaining_time_in_millis(self):
-            return(2500)
+            return(25000)
 
     @mock_s3
     @mock_ssm
