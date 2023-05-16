@@ -60,7 +60,7 @@ class LogProcessingRule:
     attribute_extraction_jmespath_expression: Optional[dict]
     # if json_stream with log entry list, we may want to inherit attributes from top level json
     attribute_extraction_from_top_level_json: Optional[dict]
-    attribute_extraction_regexp_expression: Optional[dict]
+    attribute_mapping_from_top_level_json: Optional[dict]
     known_key_path_pattern_regex: re.Pattern = field(init=False)
     attribute_extraction_from_key_name_regex: re.Pattern = field(init=False)
     attribute_extraction_grok_object: Grok = field(init=False)
@@ -87,9 +87,13 @@ class LogProcessingRule:
         for i in [self.annotations, self.attribute_extraction_from_key_name,
                   self.attribute_extraction_jmespath_expression,
                   self.attribute_extraction_from_top_level_json,
-                  self.attribute_extraction_regexp_expression]:
+                  self.attribute_mapping_from_top_level_json]:
             if not (isinstance(i, dict) or i is None):
                 raise ValueError(f"{i} is not a dict.")
+        if self.attribute_mapping_from_top_level_json is not None:
+            if not ('include' in self.attribute_mapping_from_top_level_json ^ \
+                    'exclude' in self.attribute_mapping_from_top_level_json):
+                raise ValueError(f"{self.attribute_mapping_from_top_level_json} should not define exactly one of 'include' or 'exclude'")
 
         # validate attribute extraction from top level json
         if (self.attribute_extraction_from_top_level_json and self.log_format != "json_stream" and
@@ -208,30 +212,18 @@ class LogProcessingRule:
                 else:
                     logger.warning('No matches for JMESPATH expression %s', v)
 
-        if self.attribute_extraction_regexp_expression is not None:
-            # first we determine if we can limit the scope of JSON message that we would like to map
-            rx_excluded = re.compile(self.attribute_extraction_regexp_expression.get('exclude!', '')) \
-                          if 'exclude!' in self.attribute_extraction_regexp_expression \
-                          else None
-            if rx_excluded:
-                logger.debug("Found exclusion rule: %s", rx_excluded.pattern)
+        if self.attribute_mapping_from_top_level_json is not None:
 
-            allowed_data: dict = { k: v for k, v in json_message.items() if not rx_excluded.fullmatch(k) } if rx_excluded else json_message
+            _prefix = self.attribute_mapping_from_top_level_json['prefix']
+            _postfix = self.attribute_mapping_from_top_level_json['postfix']
 
-            if allowed_data:
-                # if there is anything to be mapped to attributes - let's precompile the key patterns
-                rx_mapping: dict = { pa: re.compile(pk) for pa, pk in self.attribute_extraction_regexp_expression.items() if pa != 'exclude!' }
-
-                for attr_template, attr_pattern in rx_mapping.items():
-                    # for every key pattern -> attribute template pair provided
-                    # get match objects for matching keys
-                    _with_match_keys = { attr_pattern.fullmatch(k): v for k, v in allowed_data.items() }
-                    # get sub-dictionary with new keys based on templates provided
-                    _attributes_dict = { k.expand(attr_template): v for k, v in _with_match_keys.items() if k is not None }
-
-                    logger.debug("Mapped %d keys matching rule %s to attributes with pattern %s", len(_attributes_dict), attr_pattern.pattern, attr_template)
-
-                    attributes_dict.update(_attributes_dict)
+            _attributes_dict = {
+                _prefix + k + _postfix: v for k, v in json_message.items() \
+                if ('include' in self.attribute_mapping_from_top_level_json and k in self.attribute_mapping_from_top_level_json['include']) or \
+                   ('exclude' in self.attribute_mapping_from_top_level_json and not (k in self.attribute_mapping_from_top_level_json['exclude']))
+            }
+            
+            attributes_dict.update(_attributes_dict)
 
         # Check if timestamp needs to be translated to ISO format
         if "timestamp_to_transform" in attributes_dict:
