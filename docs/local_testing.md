@@ -4,7 +4,7 @@ You may want to perform local testing of the Lambda function when creating log F
 
 As we're using Docker to build a Lambda container image, you can use the following steps to test locally:
 
-1. Create a file with the required configuration environment variables for the Lambda function to work:
+1. Create a file `dev/env_vars.cfg` with the required configuration environment variables for the Lambda function to work:
 
    ```bash
    AWS_SAM_LOCAL=True

@@ -255,5 +255,6 @@ samconfig.toml
 config
 .dev
 .tmp
+dev/env_vars.cfg
 
 tests/test_data/*

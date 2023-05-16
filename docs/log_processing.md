@@ -2,7 +2,7 @@
 
 Once a log S3 Object is marked to be forwarded to Dynatrace, its content is then pulled and processed before sending it to Dynatrace according to the defined log processing rules. Log processing rules, define attribute extraction and log enrichment directives.
 
-The `dynatrace-aws-s3-log-forwarder` supports processing plain text and JSON logs (stream of JSON objects). It's possible to process gzipped logs, but the log file extension must be `.gz`.
+The `dynatrace-aws-s3-log-forwarder` supports processing plain text and JSON logs (stream of JSON objects). It's possible to process gzipped logs, but the log file extension must be `.gz` or the S3 object needs to have `Content-Encoding` metadata set to `gzip`.
 
 For all processed logs, the forwarder enriches the entries with the following contextual attributes:
 
