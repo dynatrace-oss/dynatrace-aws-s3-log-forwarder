@@ -96,7 +96,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
 
     logger.debug("s3://%s/%s Object size: %i KB",bucket,key,log_obj_http_response['ContentLength']/1024)
 
-    if key.endswith('.gz') or 'gzip' == log_obj_http_response_content_encoding:
+    if key.endswith('.gz') or log_obj_http_response_content_encoding == 'gzip':
         log_stream = gzip.GzipFile(
             mode='rb', fileobj=log_obj_http_response_body)
     else:
