@@ -106,8 +106,18 @@ attribute_extraction_jmespath_expression: Optional[dict] # --> JMESPATH expressi
                                                          #     Example to map the 'eventTime' value in a JSON log, to 'timestamp' 
                                                          #     (recognized field in Dynatrace for event timestamp):
                                                          #       - timestamp: eventTime 
-ttribute_extraction_from_top_level_json: Optional[dict]  # --> valid only for json_stream processing with array of log entries inside. Adds as attributes the defined JSON keys to 
+attribute_extraction_from_top_level_json: Optional[dict] # --> valid only for json_stream processing with array of log entries inside. Adds as attributes the defined JSON keys to 
                                                          #     all the log entries
+attribute_extraction_regexp_expression: Optional[dict]   # --> Regular Expressions to map top-level JSON keys into attributes
+                                                         #     if defined, regexp expressions are applied after grok expressions.
+                                                         #     This is similar to attribute_extraction_from_top_level_json but gives more flexibility, 
+                                                         #     especially useful when processing rule is use for different JSON schemas
+                                                         #
+                                                         #     Example to map the values of all '*Time' top-level keys, e.g., 'startTime', 'endTime', in a JSON log, 
+                                                         #     to attributes matching 'my.*_time' pattern (my.start_time and my.end_time accordingly), 
+                                                         #     but skipping 'execTime' and 'processTime':
+                                                         #       - "my.\1_time": "(.+)Time" 
+                                                         #       - "exclude!"  : "(exec|process)Time"
 ```
 
 You can find an example custom processing rule under `config/log-processing-rules.yaml` used to process [VPC DNS Query logs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-query-logs.html) from AWS.
