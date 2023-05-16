@@ -220,7 +220,7 @@ class LogProcessingRule:
             _attributes_dict = {
                 _prefix + k + _postfix: v for k, v in json_message.items() \
                 if ('include' in self.attribute_mapping_from_top_level_json and k in self.attribute_mapping_from_top_level_json['include']) or \
-                   ('exclude' in self.attribute_mapping_from_top_level_json and not (k in self.attribute_mapping_from_top_level_json['exclude']))
+                   ('exclude' in self.attribute_mapping_from_top_level_json and k not in self.attribute_mapping_from_top_level_json['exclude'])
             }
             
             attributes_dict.update(_attributes_dict)
