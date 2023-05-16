@@ -94,7 +94,8 @@ def create_log_processing_rule(rule_dict):
             attribute_mapping_from_top_level_json={
                 'prefix':'',
                 'postfix':'',
-                **rule_dict['attribute_mapping_from_top_level_json']},
+                **rule_dict['attribute_mapping_from_top_level_json']} \
+                if rule_dict.get('attribute_mapping_from_top_level_json') else None,
             skip_header_lines=rule_dict.get('skip_header_lines',0)
         )
     except ValueError as ex:

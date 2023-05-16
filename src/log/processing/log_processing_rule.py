@@ -91,8 +91,8 @@ class LogProcessingRule:
             if not (isinstance(i, dict) or i is None):
                 raise ValueError(f"{i} is not a dict.")
         if self.attribute_mapping_from_top_level_json is not None:
-            if not ('include' in self.attribute_mapping_from_top_level_json ^ \
-                    'exclude' in self.attribute_mapping_from_top_level_json):
+            if not (('include' in self.attribute_mapping_from_top_level_json) ^ \
+                    ('exclude' in self.attribute_mapping_from_top_level_json)):
                 raise ValueError(f"{self.attribute_mapping_from_top_level_json} should not define exactly one of 'include' or 'exclude'")
 
         # validate attribute extraction from top level json
