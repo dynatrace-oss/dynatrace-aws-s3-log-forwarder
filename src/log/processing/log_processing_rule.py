@@ -216,11 +216,13 @@ class LogProcessingRule:
 
             _prefix = self.attribute_mapping_from_top_level_json['prefix']
             _postfix = self.attribute_mapping_from_top_level_json['postfix']
+            _include = self.attribute_mapping_from_top_level_json.get('include')
+            _exclude = self.attribute_mapping_from_top_level_json.get('exclude')
 
             _attributes_dict = {
                 _prefix + k + _postfix: v for k, v in json_message.items() \
-                if ('include' in self.attribute_mapping_from_top_level_json and k in self.attribute_mapping_from_top_level_json['include']) or \
-                   ('exclude' in self.attribute_mapping_from_top_level_json and k not in self.attribute_mapping_from_top_level_json['exclude'])
+                if (_include and k in _include) or \
+                   (_exclude and k not in _exclude)
             }
             
             attributes_dict.update(_attributes_dict)
