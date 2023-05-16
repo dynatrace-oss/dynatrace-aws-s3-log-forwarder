@@ -213,6 +213,9 @@ class LogProcessingRule:
             rx_excluded = re.compile(self.attribute_extraction_regexp_expression.get('exclude!', '')) \
                           if 'exclude!' in self.attribute_extraction_regexp_expression \
                           else None
+            if rx_excluded:
+                logger.debug("Found exclusion rule: %s", rx_excluded.pattern)
+
             allowed_data: dict = { k: v for k, v in json_message.items() if not rx_excluded.fullmatch(k) } if rx_excluded else json_message
 
             if allowed_data:
@@ -225,6 +228,8 @@ class LogProcessingRule:
                     _with_match_keys = { attr_pattern.fullmatch(k): v for k, v in allowed_data.items() }
                     # get sub-dictionary with new keys based on templates provided
                     _attributes_dict = { k.expand(attr_template): v for k, v in _with_match_keys.items() if k is not None }
+
+                    logger.debug("Mapped %d keys matching rule %s to attributes with pattern %s", len(_attributes_dict), attr_pattern.pattern, attr_template)
 
                     attributes_dict.update(_attributes_dict)
 

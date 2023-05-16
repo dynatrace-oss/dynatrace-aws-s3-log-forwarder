@@ -116,7 +116,7 @@ attribute_extraction_regexp_expression: Optional[dict]   # --> Regular Expressio
                                                          #     Example to map the values of all '*Time' top-level keys, e.g., 'startTime', 'endTime', in a JSON log, 
                                                          #     to attributes matching 'my.*_time' pattern (my.start_time and my.end_time accordingly), 
                                                          #     but skipping 'execTime' and 'processTime':
-                                                         #       - "my.\1_time": "(.+)Time" 
+                                                         #       - "my.\\1_time": "(.+)Time" 
                                                          #       - "exclude!"  : "(exec|process)Time"
 ```
 
