@@ -37,12 +37,16 @@ RUN unzip /tmp/aws_appconfig_extension.zip -d /opt \
 # Install the function's dependencies using file requirements.txt
 # from your project folder. If enabled, install Lambda Insights
 COPY src/requirements.txt src/requirements-dev.txt ${LAMBDA_TASK_ROOT}/
-RUN pip install --no-cache-dir --upgrade pip \
-    # jsonslicer and pygrok have no wheel, add --use-pep517 https://github.com/pypa/pip/issues/8559
-    # https://github.com/AMDmi3/jsonslicer/issues/56
-    pip install --no-cache-dir -r requirements.txt --target "${LAMBDA_TASK_ROOT}" --use-pep517 \
-    # if dev, install development dependencies
-    && if [[ ${ENV} == "DEV" ]]; then pip install --no-cache-dir -r requirements-dev.txt --target "${LAMBDA_TASK_ROOT}"; fi \
+
+# jsonslicer and pygrok have no wheel, add --use-pep517 https://github.com/pypa/pip/issues/8559
+# https://github.com/AMDmi3/jsonslicer/issues/56
+# if dev, install development dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    if [[ ${ENV} == "DEV" ]]; then \
+        pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt --target "${LAMBDA_TASK_ROOT}" --use-pep517; \
+    else \
+        pip install --no-cache-dir -r requirements.txt --target "${LAMBDA_TASK_ROOT}" --use-pep517; \
+    fi \
     && yum remove -y gcc gcc-c++ 
 
 # Copy function code
