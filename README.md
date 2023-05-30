@@ -2,9 +2,6 @@
 
 This project deploys a Serverless architecture to forward logs from Amazon S3 to Dynatrace.
 
-> **Note**
-> This product is not officially supported by Dynatrace but maintained on a best effort basis
-
 ![Architecture](docs/images/architecture.jpg)
 
 ## Supported AWS Services
