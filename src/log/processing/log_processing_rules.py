@@ -59,7 +59,7 @@ def create_log_processing_rule(rule_dict):
                            'attribute_extraction_from_key_name', 'attribute_extraction_grok_expression',
                            'attribute_extraction_jmespath_expression', 'filter_json_objects_key',
                            'filter_json_objects_value', 'attribute_extraction_from_top_level_json',
-                           'attribute_mapping_from_top_level_json']
+                           'attribute_mapping_from_json_keys']
 
     for attribute in required_attributes:
         if attribute not in rule_dict:
@@ -91,12 +91,13 @@ def create_log_processing_rule(rule_dict):
                 'attribute_extraction_jmespath_expression'],
             attribute_extraction_from_top_level_json=rule_dict[
                 'attribute_extraction_from_top_level_json'],
-            attribute_mapping_from_top_level_json={
-                'prefix':'',
-                'postfix':'',
-                **rule_dict['attribute_mapping_from_top_level_json']} \
-                if rule_dict.get('attribute_mapping_from_top_level_json') else None,
-            skip_header_lines=rule_dict.get('skip_header_lines',0)
+            attribute_mapping_from_json_keys={
+                'prefix': '',
+                'postfix': '',
+                **rule_dict['attribute_mapping_from_json_keys']
+            }
+            if rule_dict.get('attribute_mapping_from_json_keys') else None,
+            skip_header_lines=rule_dict.get('skip_header_lines', 0)
         )
     except ValueError as ex:
         raise InvalidLogProcessingRuleFile(
@@ -197,7 +198,7 @@ def load_custom_rules_from_aws_appconfig():
 
 def load_custom_rules_from_local_file():
     '''
-    Loads custom log processing rules from a local file config/log-processing-rules.yaml. Returns a tuple 
+    Loads custom log processing rules from a local file config/log-processing-rules.yaml. Returns a tuple
     containing a dict with the rules and the Configuration-Version number.
     '''
 
@@ -227,7 +228,7 @@ class InvalidLogProcessingRuleFile(Exception):
 
 def load_built_in_rules():
     '''
-    Load built-in log processing rules. 
+    Load built-in log processing rules.
     '''
     return load_rules_from_dir(BUILT_IN_PROCESSING_RULES_PATH)
 

@@ -108,21 +108,25 @@ attribute_extraction_jmespath_expression: Optional[dict] # --> JMESPATH expressi
                                                          #       - timestamp: eventTime 
 attribute_extraction_from_top_level_json: Optional[dict] # --> valid only for json_stream processing with array of log entries inside. Adds as attributes the defined JSON keys to 
                                                          #     all the log entries
-attribute_mapping_from_top_level_json: Optional[dict]    # --> Rules to map top-level JSON keys into attributes
-                                                         #     if defined, they are applied after grok expressions.
-                                                         #     This is similar to attribute_extraction_from_top_level_json but gives more flexibility, 
-                                                         #     especially useful when processing rule is use for different JSON schemas
+attribute_mapping_from_json_keys: Optional[dict]         # --> (Experimental) Allows to define which original JSON keys should be converted into log attributes 
+                                                         #     and whether a custom prefix/postfix should be appended to them.
+                                                         #     It is especially useful when processing rule is used for different JSON schemas.
                                                          #
-                                                         #     Example to map the values of all keys in a JSON log, 
-                                                         #     to attributes matching 'my.*_time_mapped' pattern (my.start_time_mapped and my.end_time_mapped accordingly), 
-                                                         #     but skipping 'exec_time' and 'process_time':
-                                                         # 
-                                                         #     attribute_mapping_from_top_level_json:
-                                                         #       # include: start_time, end_time - use either include or exclude 
-                                                         #       exclude: exec_time, process_time
-                                                         #       prefix: my.
-                                                         #       posfix: _mapped
-
+                                                         #     Set of JSON keys for further processing is configured by either one of the mandatory keys 'include'/'exclude'
+                                                         #     Adding prefix or postfix to the keys is optional and can be configured by corresponding keys 'prefix'/'postfix'
+                                                         #
+                                                         #     Notes:
+                                                         #     - As of now only top level attributes of JSON could be selected for the mapping.
+                                                         #     - If defined, logic is applied after grok expressions.
+                                                         #
+                                                         #     Example:
+                                                         #     Map the values of all keys except for 'exec_time' and 'process_time' in a JSON log. 
+                                                         #     Additionally add custom prefix and postfix so that final attributes would match pattern 'my.*_mapped'
+                                                         #
+                                                         #     attribute_mapping_from_json_keys:
+                                                         #        exclude: ['exec_time', 'process_time']
+                                                         #        prefix: 'my.'
+                                                         #        postfix: '_mapped'
 ```
 
 You can find an example custom processing rule under `config/log-processing-rules.yaml` used to process [VPC DNS Query logs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-query-logs.html) from AWS.
