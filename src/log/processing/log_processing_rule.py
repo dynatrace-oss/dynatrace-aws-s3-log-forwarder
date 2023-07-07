@@ -41,6 +41,7 @@ def parse_date_from_string(date_string: str):
 
     return datetime
 
+
 @dataclass(frozen=True)
 class LogProcessingRule:
     name: str
@@ -49,17 +50,18 @@ class LogProcessingRule:
     log_format: str
     # if json_stream, we may want to filter out specific objects from a string
     # containing a specific key/value pair
-    filter_json_objects_key: Optional[str]
-    filter_json_objects_value: Optional[str]
+    filter_json_objects_key: Optional[str] = None
+    filter_json_objects_value: Optional[str] = None
     # if json or json_stream, a key may contain the list of log entries
-    log_entries_key: Optional[str]
-    annotations: Optional[dict]
-    requester: Optional[List[str]]
-    attribute_extraction_from_key_name: Optional[dict]
-    attribute_extraction_grok_expression: Optional[str]
-    attribute_extraction_jmespath_expression: Optional[dict]
+    log_entries_key: Optional[str] = None
+    annotations: Optional[dict] = None
+    requester: Optional[List[str]] = None
+    attribute_extraction_from_key_name: Optional[dict] = None
+    attribute_extraction_grok_expression: Optional[str] = None
+    attribute_extraction_jmespath_expression: Optional[dict] = None
     # if json_stream with log entry list, we may want to inherit attributes from top level json
-    attribute_extraction_from_top_level_json: Optional[dict]
+    attribute_extraction_from_top_level_json: Optional[dict] = None
+    attribute_mapping_from_json_keys: Optional[dict] = None
     known_key_path_pattern_regex: re.Pattern = field(init=False)
     attribute_extraction_from_key_name_regex: re.Pattern = field(init=False)
     attribute_extraction_grok_object: Grok = field(init=False)
@@ -85,9 +87,14 @@ class LogProcessingRule:
         # validate optional dicts
         for i in [self.annotations, self.attribute_extraction_from_key_name,
                   self.attribute_extraction_jmespath_expression,
-                  self.attribute_extraction_from_top_level_json]:
+                  self.attribute_extraction_from_top_level_json,
+                  self.attribute_mapping_from_json_keys]:
             if not (isinstance(i, dict) or i is None):
                 raise ValueError(f"{i} is not a dict.")
+        if self.attribute_mapping_from_json_keys is not None:
+            if not (('include' in self.attribute_mapping_from_json_keys) ^
+                    ('exclude' in self.attribute_mapping_from_json_keys)):
+                raise ValueError(f"{self.attribute_mapping_from_json_keys} should define exactly one of 'include' or 'exclude'")
 
         # validate attribute extraction from top level json
         if (self.attribute_extraction_from_top_level_json and self.log_format != "json_stream" and
@@ -206,12 +213,26 @@ class LogProcessingRule:
                 else:
                     logger.warning('No matches for JMESPATH expression %s', v)
 
+        if self.attribute_mapping_from_json_keys is not None:
+            _prefix = self.attribute_mapping_from_json_keys.get('prefix')
+            _postfix = self.attribute_mapping_from_json_keys.get('postfix')
+            _include = self.attribute_mapping_from_json_keys.get('include')
+            _exclude = self.attribute_mapping_from_json_keys.get('exclude')
+
+            _attributes_dict = {
+                _prefix + k + _postfix: v for k, v in json_message.items()
+                if (_include and k in _include) or
+                   (_exclude and k not in _exclude)
+            }
+
+            attributes_dict.update(_attributes_dict)
+
         # Check if timestamp needs to be translated to ISO format
         if "timestamp_to_transform" in attributes_dict:
             attributes_dict['timestamp'] = parse_date_from_string(
                                             attributes_dict['timestamp_to_transform'])
             attributes_dict.pop('timestamp_to_transform')
-        
+
         # Check if aws.log_group exists to extract aws.service and aws.resource.id
         if "aws.log_group" in json_message and "aws.log_stream" in json_message:
             attributes_dict.update(get_attributes_from_cloudwatch_logs_data(

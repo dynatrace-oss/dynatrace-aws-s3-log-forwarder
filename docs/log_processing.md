@@ -106,8 +106,27 @@ attribute_extraction_jmespath_expression: Optional[dict] # --> JMESPATH expressi
                                                          #     Example to map the 'eventTime' value in a JSON log, to 'timestamp' 
                                                          #     (recognized field in Dynatrace for event timestamp):
                                                          #       - timestamp: eventTime 
-ttribute_extraction_from_top_level_json: Optional[dict]  # --> valid only for json_stream processing with array of log entries inside. Adds as attributes the defined JSON keys to 
+attribute_extraction_from_top_level_json: Optional[dict] # --> valid only for json_stream processing with array of log entries inside. Adds as attributes the defined JSON keys to 
                                                          #     all the log entries
+attribute_mapping_from_json_keys: Optional[dict]         # --> (Experimental) Allows to define which original JSON keys should be converted into log attributes 
+                                                         #     and whether a custom prefix/postfix should be appended to them.
+                                                         #     It is especially useful when processing rule is used for different JSON schemas.
+                                                         #
+                                                         #     Set of JSON keys for further processing is configured by either one of the mandatory keys 'include'/'exclude'
+                                                         #     Adding prefix or postfix to the keys is optional and can be configured by corresponding keys 'prefix'/'postfix'
+                                                         #
+                                                         #     Notes:
+                                                         #     - As of now only top level attributes of JSON could be selected for the mapping.
+                                                         #     - If defined, logic is applied after grok expressions.
+                                                         #
+                                                         #     Example:
+                                                         #     Map the values of all keys except for 'exec_time' and 'process_time' in a JSON log. 
+                                                         #     Additionally add custom prefix and postfix so that final attributes would match pattern 'my.*_mapped'
+                                                         #
+                                                         #     attribute_mapping_from_json_keys:
+                                                         #        exclude: ['exec_time', 'process_time']
+                                                         #        prefix: 'my.'
+                                                         #        postfix: '_mapped'
 ```
 
 You can find an example custom processing rule under `config/log-processing-rules.yaml` used to process [VPC DNS Query logs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-query-logs.html) from AWS.
