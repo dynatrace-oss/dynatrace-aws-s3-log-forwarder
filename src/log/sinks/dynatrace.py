@@ -94,8 +94,11 @@ class DynatraceSink():
     def push(self, message: dict):
         # Validate that the message size doesn't reach DT limits. If so,
         # truncate the "content" field.
-               
-        self.check_log_message_size_and_truncate(message)
+
+        if self.skip_content_attribute: 
+            del message['content']
+        else:
+            self.check_log_message_size_and_truncate(message)
 
         # Check if we'd be exceeding limits before appending the message
         new_num_of_buffered_messages = self.get_num_of_buffered_messages() +1
@@ -108,7 +111,7 @@ class DynatraceSink():
              new_approx_size_of_buffered_messages > DYNATRACE_LOG_INGEST_PAYLOAD_MAX_SIZE ):
             self.flush()
             self._batch_num += 1
-        
+
         # buffer log messages
         self._messages.append(message)
         self._approx_buffered_messages_size += sys.getsizeof(

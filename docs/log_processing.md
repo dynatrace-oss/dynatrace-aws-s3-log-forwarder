@@ -133,6 +133,7 @@ attribute_mapping_from_json_keys: Optional[dict]         # --> (Experimental) Al
                                                          #            keys: ['from_time', 'to_time']
                                                          #        prefix: 'my.'
                                                          #        postfix: '_mapped'
+skip_content_attribute: Optional[bool]                   # --> (Experimental) if set to 'true', log forwarder will not copy original log line as 'content' attribute; defaults to 'false'
 ```
 
 You can find an example custom processing rule under `config/log-processing-rules.yaml` used to process [VPC DNS Query logs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-query-logs.html) from AWS.

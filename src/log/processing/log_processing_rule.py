@@ -66,6 +66,7 @@ class LogProcessingRule:
     attribute_extraction_from_key_name_regex: re.Pattern = field(init=False)
     attribute_extraction_grok_object: Grok = field(init=False)
     skip_header_lines: Optional[int] = None
+    skip_content_attribute: Optional[bool] = False
 
     def validate(self):
         '''
