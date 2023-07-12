@@ -92,9 +92,13 @@ class LogProcessingRule:
             if not (isinstance(i, dict) or i is None):
                 raise ValueError(f"{i} is not a dict.")
         if self.attribute_mapping_from_json_keys is not None:
-            if not (('include' in self.attribute_mapping_from_json_keys) ^
-                    ('exclude' in self.attribute_mapping_from_json_keys)):
-                raise ValueError(f"{self.attribute_mapping_from_json_keys} should define exactly one of 'include' or 'exclude'")
+            if not (('include' in self.attribute_mapping_from_json_keys or 'include_in_context' in self.attribute_mapping_from_json_keys) ^
+                    ('exclude' in self.attribute_mapping_from_json_keys or 'exclude_in_context' in self.attribute_mapping_from_json_keys)):
+                raise ValueError(f"{self.attribute_mapping_from_json_keys} should define exactly one of 'include*' or 'exclude*'")
+            for context_scope in ['include_in_context', 'exclude_in_context']:
+                for rule in self.attribute_mapping_from_json_keys.get(context_scope):
+                    if not ('context_key' in rule and 'context_value' in rule and rule.get('keys')):
+                        raise ValueError(f"{self.attribute_mapping_from_json_keys} should contain {context_scope} rules with 'context_key', 'context_value', and 'keys' (non-empty list) provided")
 
         # validate attribute extraction from top level json
         if (self.attribute_extraction_from_top_level_json and self.log_format != "json_stream" and
@@ -167,7 +171,7 @@ class LogProcessingRule:
                     injected_attributes.update({dt_attribute: attrib.group()})
         return injected_attributes
 
-    def get_extracted_log_attributes(self, message, context: dict) -> dict:
+    def get_extracted_log_attributes(self, message, context: dict = {}) -> dict:
         '''
         Receives the log message (dict or str) and extracts attributes.
         Text log: apply grok expression if it exists; then apply jmespath expression if it exists to calculate additional fields.
