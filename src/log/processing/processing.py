@@ -193,7 +193,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
                     # add cwl attributes to subentry for additional extraction
                     sub_entry.update(top_level_json_attributes)
                     dt_log_message.update(
-                        log_processing_rule.get_extracted_log_attributes(sub_entry))
+                        log_processing_rule.get_extracted_log_attributes(sub_entry, dt_log_message))
 
                     # if the aws.region is not found, infer region from bucket
                     if "aws.region" not in dt_log_message:
@@ -255,7 +255,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
 
         # Add extracted attributes and log annotations from log processing rule
         dt_log_message.update(
-            log_processing_rule.get_extracted_log_attributes(log_entry))
+            log_processing_rule.get_extracted_log_attributes(log_entry, dt_log_message))
 
         # if the aws.region is not found, infer region from bucket
         if "aws.region" not in dt_log_message:

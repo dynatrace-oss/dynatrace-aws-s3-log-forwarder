@@ -167,7 +167,7 @@ class LogProcessingRule:
                     injected_attributes.update({dt_attribute: attrib.group()})
         return injected_attributes
 
-    def get_extracted_log_attributes(self, message) -> dict:
+    def get_extracted_log_attributes(self, message, context: dict) -> dict:
         '''
         Receives the log message (dict or str) and extracts attributes.
         Text log: apply grok expression if it exists; then apply jmespath expression if it exists to calculate additional fields.
@@ -216,8 +216,11 @@ class LogProcessingRule:
         if self.attribute_mapping_from_json_keys is not None:
             _prefix = self.attribute_mapping_from_json_keys.get('prefix')
             _postfix = self.attribute_mapping_from_json_keys.get('postfix')
-            _include = self.attribute_mapping_from_json_keys.get('include')
-            _exclude = self.attribute_mapping_from_json_keys.get('exclude')
+            _include = self.attribute_mapping_from_json_keys.get('include', [])
+            _exclude = self.attribute_mapping_from_json_keys.get('exclude', [])
+
+            _include = self._extend_in_context('include_in_context', context, _include)
+            _exclude = self._extend_in_context('exclude_in_context', context, _exclude)
 
             _attributes_dict = {
                 _prefix + k + _postfix: v for k, v in json_message.items()
@@ -244,6 +247,17 @@ class LogProcessingRule:
 
         return clean_attributes_dict
 
+    def _extend_in_context(self, scope:str, context:dict, keys:list) -> set:
+        """
+        Unpacks the rules for include or exclude certain keys within given context, by matching given key and value of existing context.
+        The first rule matched is used to extend provided list of keys whith those associated with the rule
+        """
+        for _rule_in_context in self.attribute_mapping_from_json_keys.get(scope, []):
+            if context.get(_rule_in_context.get('context_key', '-')) == _rule_in_context.get('context_value', ''):
+                keys = set([*keys, *_rule_in_context.get('keys', [])])
+                break
+        return keys
+
     def get_processing_log_annotations(self):
         attributes = {}
         if self.annotations is not None:
@@ -262,7 +276,7 @@ class LogProcessingRule:
         attributes = {}
 
         attributes.update(self.get_attributes_from_s3_key_name(s3_key_name))
-        attributes.update(self.get_extracted_log_attributes(message))
+        attributes.update(self.get_extracted_log_attributes(message, attributes))
         attributes.update(self.get_processing_log_annotations())
 
         return attributes
