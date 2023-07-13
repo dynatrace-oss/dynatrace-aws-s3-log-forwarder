@@ -258,3 +258,7 @@ config
 dev/env_vars.cfg
 
 tests/test_data/*
+
+
+# Dynatrace monitoring
+DynatraceOneAgentExtension
