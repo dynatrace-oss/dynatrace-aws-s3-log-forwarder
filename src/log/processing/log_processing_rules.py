@@ -98,8 +98,11 @@ def create_log_processing_rule(rule_dict):
                 **rule_dict['attribute_mapping_from_json_keys']
             } if rule_dict.get('attribute_mapping_from_json_keys') else None,
             skip_header_lines=rule_dict.get('skip_header_lines', 0),
-            skip_content_attribute=rule_dict.get('skip_content_attribute', 'false').lower() == 'true'
+            skip_content_attribute=rule_dict.get('skip_content_attribute') or False
         )
+    except AttributeError as ae:
+        raise InvalidLogProcessingRuleFile(
+            f"Error parsing log processing rule: {rule_dict}") from ae
     except ValueError as ex:
         raise InvalidLogProcessingRuleFile(
             "Error parsing log processing rule.") from ex

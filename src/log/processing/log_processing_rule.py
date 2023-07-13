@@ -97,7 +97,7 @@ class LogProcessingRule:
                     ('exclude' in self.attribute_mapping_from_json_keys or 'exclude_in_context' in self.attribute_mapping_from_json_keys)):
                 raise ValueError(f"{self.attribute_mapping_from_json_keys} should define exactly one of 'include*' or 'exclude*'")
             for context_scope in ['include_in_context', 'exclude_in_context']:
-                for rule in self.attribute_mapping_from_json_keys.get(context_scope):
+                for rule in self.attribute_mapping_from_json_keys.get(context_scope) or []:
                     if not ('context_key' in rule and 'context_value' in rule and rule.get('keys')):
                         raise ValueError(f"{self.attribute_mapping_from_json_keys} should contain {context_scope} rules with 'context_key', 'context_value', and 'keys' (non-empty list) provided")
 

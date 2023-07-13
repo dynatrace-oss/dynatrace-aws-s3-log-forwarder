@@ -44,6 +44,20 @@ def _get_context_log_attributes(bucket: str, key: str):
         'cloud.log_forwarder': environ['FORWARDER_FUNCTION_ARN']
     }
 
+def _push_to_sinks(dt_log_message: dict, log_sinks: list, skip_content_attribute: bool):
+    '''
+    Helper method to push given log message to given log sinks, 
+    taking into account whether or not to skip the content attribute
+    '''
+    def __without_content(log_message: dict) -> dict:
+        clone_log_message = log_message.copy()
+        clone_log_message['content'] = {}
+        return clone_log_message
+
+    log_message =  __without_content(dt_log_message) if skip_content_attribute else dt_log_message
+    
+    for log_sink in log_sinks:
+        log_sink.push(log_message)
 
 def get_jsonslicer_path_prefix_from_jmespath_path(jmespath_expr: str):
     '''
@@ -200,8 +214,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
                         dt_log_message['aws.region'] = bucket_region
 
                     # Push to destination sink(s)
-                    for log_sink in log_sinks:
-                        log_sink.push(dt_log_message)
+                    _push_to_sinks(dt_log_message, log_sinks, log_processing_rule.skip_content_attribute)
 
                     num_log_entries += 1
             else:
@@ -262,8 +275,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
             dt_log_message['aws.region'] = bucket_region
 
         # Push to destination sink(s)
-        for log_sink in log_sinks:
-            log_sink.push(dt_log_message)
+        _push_to_sinks(dt_log_message, log_sinks, log_processing_rule.skip_content_attribute)
 
         num_log_entries += 1
 

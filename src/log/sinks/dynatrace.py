@@ -95,10 +95,7 @@ class DynatraceSink():
         # Validate that the message size doesn't reach DT limits. If so,
         # truncate the "content" field.
 
-        if self.skip_content_attribute: 
-            del message['content']
-        else:
-            self.check_log_message_size_and_truncate(message)
+        self.check_log_message_size_and_truncate(message)
 
         # Check if we'd be exceeding limits before appending the message
         new_num_of_buffered_messages = self.get_num_of_buffered_messages() +1
