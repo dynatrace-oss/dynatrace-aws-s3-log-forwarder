@@ -28,7 +28,7 @@ Metadata:
 
 Parameters:
   DynatraceEnvironment1URL:
-    Description: URL of your Dynatrace environment.
+    Description: URL of your Dynatrace environment. If you're deploying to Dynatrace Managed tenant, enter here the URL of your tenant AG without the trailing API endpoint, e.g. https://{your-activegate-domain}:9999/e/{your-environment-id}
     Type: String
   DynatraceEnvironment1ApiKeyParameter:
     Description: Name of the SecureString Parameter in AWS Parameter Store storing the Dynatrace API Key.
@@ -42,6 +42,13 @@ Parameters:
     Description: "[Optional]: Name of the SecureString Parameter in AWS Parameter Store storing the Dynatrace Environment 2 API Key.[This feature is experimental and may change in the future]"
     Type: String
     Default: ""
+  VerifyLogEndpointSSLCerts:
+    Description: Leave the default value unless you're ingesting logs via an Environment Active Gate with a self-signed SSL certificate, then set this to false to disable SSL certificate verification
+    Type: String
+    AllowedValues: 
+      - "true"
+      - "false"
+    Default: "true"
   NotificationsEmail:
     Description: E-mail address to send alarm notifications to.
     Type: String
@@ -59,6 +66,14 @@ Parameters:
     Default: 256
     MinValue: 128
     MaxValue: 10240
+  LambdaSubnetIds:
+    Description: "If you're ingesting logs into a Dynatrace Managed cluster with no internet-facing Active Gates, specify a list of Subnet Ids of a VPC with network connectivity to the AGs where the AWS Lambda function needs to be deployed (for HA purposes select at least 2 subnets on different Availability Zones)."
+    Type: CommaDelimitedList
+    Default: ""
+  LambdaSecurityGroupId:
+    Description: "If you're ingesting logs into a Dynatrace Managed cluster with no internet-facing Active Gates, specify a security group id to assign to your Lambda function. This security group should allow network access to the Environment Active Gates. This parameter is required if Lambda is deployed on a VPC (LambdaSubnetIds is specified)."
+    Type: String
+    Default: ""
   LambdaLoggingLevel:
     Description: Logging verbosity of the Lambda function
     Type: String
@@ -144,6 +159,8 @@ Conditions:
   IsEmailConfigured: !Not [!Equals [ !Ref NotificationsEmail, "" ]]
   ContainerImageUriIsDefined: !Not [!Equals [ !Ref ContainerImageUri, "" ]]
   ArchIsArm: !Equals [ !Ref ProcessorArchitecture, "arm64"]
+  LambdaVpcConfigSpecified: !Not [!Equals [ !Join [ "", !Ref LambdaSubnetIds ], "" ]]
+  LambdaVpcSecurityGroupSpecified: !Not [!Equals [!Ref LambdaSecurityGroupId, ""]]
 
 Globals:
   Function:
@@ -187,6 +204,7 @@ Resources:
           LOGGING_LEVEL: !Ref LambdaLoggingLevel
           AWS_APPCONFIG_EXTENSION_PREFETCH_LIST: !Sub "/applications/${AWS::StackName}-app-config/environments/${AWS::StackName}/configurations/log-forwarding-rules,/applications/${AWS::StackName}-app-config/environments/${AWS::StackName}/configurations/log-processing-rules"
           LOG_FORWARDER_CONFIGURATION_LOCATION: !Ref LogForwarderConfigurationLocation
+          VERIFY_DT_SSL_CERT: !Ref VerifyLogEndpointSSLCerts
       Architectures:
         - !Ref ProcessorArchitecture
       Events:
@@ -214,6 +232,10 @@ Resources:
               - appconfig:StartConfigurationSession
               - appconfig:GetLatestConfiguration
       ReservedConcurrentExecutions: !Ref MaximumLambdaConcurrency
+      VpcConfig:
+        SecurityGroupIds:
+          - !If [ LambdaVpcSecurityGroupSpecified, !Ref LambdaSecurityGroupId, !Ref "AWS::NoValue" ]
+        SubnetIds: !If [ LambdaVpcConfigSpecified, !Ref LambdaSubnetIds, !Ref "AWS::NoValue" ]
 
   S3NotificationsQueue:
     Type: AWS::SQS::Queue
