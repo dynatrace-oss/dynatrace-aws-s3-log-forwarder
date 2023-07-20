@@ -65,7 +65,6 @@ class DynatraceSink():
         self._approx_buffered_messages_size = 0
         self._messages = []
         self._batch_num = 1
-        self._verify_ssl = verify_ssl
 
         retry_strategy = Retry(
             total = 3,
@@ -78,6 +77,7 @@ class DynatraceSink():
         adapter = HTTPAdapter(max_retries=retry_strategy)
 
         self.session = requests.Session()
+        self.session.verify = verify_ssl
         self.session.mount("https://", adapter)
 
     def get_num_of_buffered_messages(self):
@@ -165,7 +165,7 @@ class DynatraceSink():
 
         try:
             resp = session.post(dt_url, data=request_data, headers=headers,
-                                timeout=(DYNATRACE_CONNECT_TIMEOUT,DYNATRACE_READ_TIMEOUT), verify=self._verify_ssl)
+                                timeout=(DYNATRACE_CONNECT_TIMEOUT, DYNATRACE_READ_TIMEOUT))
         except Exception:
             logger.exception('Error pushing logs to Dynatrace')
             raise
