@@ -32,6 +32,7 @@ from version import get_version
 logger = logging.getLogger()
 
 LOGV2_API_URL_SUFFIX = '/api/v2/logs/ingest'
+ENVIRONMENT_AG_URL_PART = '/e/'
 
 # Related documentation
 # https://www.dynatrace.com/support/help/dynatrace-api/environment-api/log-monitoring-v2/post-ingest-logs
@@ -184,10 +185,9 @@ class DynatraceSink():
         dt_api_key = parameters.get_parameter(
             self._api_key_parameter, max_age=120, decrypt=True)
 
-        # Find tenant ID in URL
-        tenant_id = self._environment_url[ self._environment_url.find("//") + 2: self._environment_url.find(".") ]
+        tenant_id = extract_tenant_id_from_url(self._environment_url)
 
-        logger.debug('Preparing log batches to post to Dynatrace: %s',tenant_id)
+        logger.debug('Preparing log batches to post to Dynatrace: %s', tenant_id)
 
         # Create a session to re-use connections
         if session is None:
@@ -275,6 +275,15 @@ def empty_sinks(sinks:list):
     '''
     for _ , sink in sinks.items():
         sink.empty_sink()
+
+
+def extract_tenant_id_from_url(environment_url: str):
+    env_prefix_index = environment_url.find(ENVIRONMENT_AG_URL_PART)
+    if env_prefix_index != -1:
+        offset = len(ENVIRONMENT_AG_URL_PART)
+        return environment_url[env_prefix_index + offset: environment_url.find("/", env_prefix_index + offset)]
+    else:
+        return environment_url[environment_url.find("//") + 2: environment_url.find(".")]
 
 
 class DynatraceThrottlingException(Exception):
