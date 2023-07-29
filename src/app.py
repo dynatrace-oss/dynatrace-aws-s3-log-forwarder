@@ -23,7 +23,7 @@ from log.processing import log_processing_rules
 from log.processing import processing
 from log.forwarding import log_forwarding_rules
 from log.sinks import dynatrace
-from utils import aws_appconfig_extension_helpers as aws_appconfig_helpers
+# from utils import aws_appconfig_extension_helpers as aws_appconfig_helpers
 from version import get_version
 
 
@@ -68,29 +68,29 @@ def generate_execution_timeout_batch_item_failures(index: int, batch_item_failur
     return batch_item_failures
 
 
-def reload_rules(rules_type: str):
+# def reload_rules(rules_type: str):
 
-    if os.environ['LOG_FORWARDER_CONFIGURATION_LOCATION'] == "aws-appconfig":
-        # load globals
-        glob = globals()
+#     if os.environ['LOG_FORWARDER_CONFIGURATION_LOCATION'] == "aws-appconfig":
+#         # load globals
+#         glob = globals()
 
-        try:
-            # Check if we need to reload log forwarding rules
-            rules_configuration_profile = aws_appconfig_helpers.get_configuration_from_aws_appconfig(
-                f"log-{rules_type}-rules")
+#         try:
+#             # Check if we need to reload log forwarding rules
+#             rules_configuration_profile = aws_appconfig_helpers.get_configuration_from_aws_appconfig(
+#                 f"log-{rules_type}-rules")
 
-            if rules_configuration_profile['Configuration-Version'] != glob[f"current_log_{rules_type}_rules_version"]:
-                logger.info("New log-%s-rules configuration version found. Loading version %s ...",
-                            str(rules_configuration_profile['Configuration-Version']), rules_type)
-                glob[f"defined_log_{rules_type}_rules"], glob[f"current_log_{rules_type}_rules_version"] = glob[f"log_{rules_type}_rules"].load(
-                )
-                return True
+#             if rules_configuration_profile['Configuration-Version'] != glob[f"current_log_{rules_type}_rules_version"]:
+#                 logger.info("New log-%s-rules configuration version found. Loading version %s ...",
+#                             str(rules_configuration_profile['Configuration-Version']), rules_type)
+#                 glob[f"defined_log_{rules_type}_rules"], glob[f"current_log_{rules_type}_rules_version"] = glob[f"log_{rules_type}_rules"].load(
+#                 )
+#                 return True
 
-        except aws_appconfig_helpers.ErrorAccessingAppConfig:
-            logger.exception(
-                "Unable to reload log-%s-rules from AWS AppConfig", rules_type)
+#         except aws_appconfig_helpers.ErrorAccessingAppConfig:
+#             logger.exception(
+#                 "Unable to reload log-%s-rules from AWS AppConfig", rules_type)
 
-    return False
+#     return False
 
 
 @metrics.log_metrics
@@ -99,8 +99,8 @@ def lambda_handler(event, context):
     logging.info("dynatrace-aws-s3-log-forwarder version: %s", get_version())
 
     # If we're using AWS AppConfig and there's a new config version available, reload
-    reload_rules('forwarding')
-    reload_rules('processing')
+    # reload_rules('forwarding')
+    # reload_rules('processing')
 
     logger.debug(json.dumps(event, indent=2))
 
@@ -124,12 +124,12 @@ def lambda_handler(event, context):
                 'Dropping message %s, body is not valid JSON', exception.doc)
             continue
 
-        bucket_name = s3_notification['detail']['bucket']['name']
-        key_name = s3_notification['detail']['object']['key']
+        bucket_name = s3_notification['s3']['bucket']['name']
+        key_name = s3_notification['s3']['object']['key']
 
         logger.info(
             'Processing object s3://%s/%s; posted by %s',
-            bucket_name, key_name, s3_notification['detail']['requester'])
+            bucket_name, key_name, s3_notification['userIdentity']['principalId'])
 
         # Catch all exception. If anything fails, add messageId to batchItemFailures
         try:
@@ -177,7 +177,7 @@ def lambda_handler(event, context):
                     continue
 
                 processing.process_log_object(
-                    matched_log_processing_rule, bucket_name, key_name, s3_notification['region'],
+                    matched_log_processing_rule, bucket_name, key_name, s3_notification['awsRegion'],
                     log_object_destination_sinks, context,
                     user_defined_annotations=user_defined_log_annotations,
                     session=boto3_session

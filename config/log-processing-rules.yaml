@@ -14,14 +14,14 @@
 
 # You can define your custom log processing rules here if you need them
 ---
-name: vpcdnsquerylogs
+name: pegacloudlogs
 known_key_path_pattern: '^.*'
 source: custom
 
 log_format: json_stream
 
 annotations:
-  log.source: aws.vpcdnsquerylogs
+  log.source: pega-saas-cloud
   cloud.provider: aws
 
 

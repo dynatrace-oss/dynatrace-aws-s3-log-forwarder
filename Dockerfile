@@ -28,9 +28,9 @@ RUN yum update -y \
     && rm -rf /var/cache/yum
 
 # Install the AWS AppConfig extension (needs to be downloaded beforehand with get-required-lambda-layers.sh)
-COPY .tmp/${ARCH}/aws_appconfig_extension.zip /tmp/
-RUN unzip /tmp/aws_appconfig_extension.zip -d /opt \
-    && rm -f /tmp/aws_appconfig_extension.zip
+# COPY .tmp/${ARCH}/aws_appconfig_extension.zip /tmp/
+# RUN unzip /tmp/aws_appconfig_extension.zip -d /opt \
+#     && rm -f /tmp/aws_appconfig_extension.zip
 
 #WORKDIR ${LAMBDA_TASK_ROOT} 
 

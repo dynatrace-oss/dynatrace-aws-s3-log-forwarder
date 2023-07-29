@@ -19,40 +19,11 @@
 # a notification for. It's meant to help getting started, and also enable a way to define a rule
 # to apply without having to explicitly create rules for each and every S3 bucket you want to send
 # logs from. You may delete it if you want to forward logs only for those buckets explicitly configured
-# in this file.
-bucket_name: default
+# in this file.w1 .
+bucket_name: pega-cloud-logs-poc
 log_forwarding_rules:
   - name: forward_all
     # Match any file in your bucket
     prefix: ".*"
     # Process as AWS-vended log (automatic fallback to generic text log ingestion if log is not recognized)
     source: aws
----
-# sample log forwarding rules for a bucket named 'my-example-bucket'
-bucket_name: my-example-bucket-with-logs
-log_forwarding_rules:
-  - name: fwd_dev_elb_logs
-    # Match any ELB logs for any AWS account in this bucket with prefix 'dev/'
-    prefix: "^dev/AWSLogs/.*/elasticloadbalancing/.*"
-    source: aws
-    annotations: 
-      environment: dev
-      team: networking
-  - name: fwd_prod_elb_logs
-    prefix: "^prod/AWSLogs/.*/elasticloadbalancing/.*"
-    source: aws
-    annotations: 
-      environment: production
-      team: networking
-  - name: fwd_cloudtrail_logs
-    prefix: "^AWSLogs/.*/CloudTrail/.*"
-    source: aws
-    annotations: 
-      team: security
-  - name: fwd_nginx_logs
-    prefix: "^nginx/.*(\\.log)$"
-    source: generic
-    annotations:
-      # you can use log source in the Dynatrace Log Processing Pipeline
-      # to capture these logs and do attribute extraction in Dynatrace
-      log.source: nginx
