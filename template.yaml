@@ -30,7 +30,7 @@ Parameters:
   DynatraceEnvironment1URL:
     Description: URL of your Dynatrace environment. If you're deploying to Dynatrace Managed tenant, enter here the URL of your tenant AG without the trailing API endpoint, e.g. https://{your-activegate-domain}:9999/e/{your-environment-id}
     Type: String
-    AllowedPattern: "^https:\\/\\/[a-zA-Z0-9-]{2,}(\\.[a-zA-Z0-9-]{2,})(\\.[a-zA-Z0-9-]{2,})?(:9999\\/e\\/.[a-z0-9-]*)?$"
+    AllowedPattern: "^https:\\/\\/[a-zA-Z0-9-]{2,}(\\.[a-zA-Z0-9-]{2,})(\\.[a-zA-Z0-9-]{2,})*(:9999\\/e\\/.[a-z0-9-]*)?$"
   DynatraceEnvironment1ApiKeyParameter:
     Description: Name of the SecureString Parameter in AWS Parameter Store storing the Dynatrace API Key.
     Type: String
