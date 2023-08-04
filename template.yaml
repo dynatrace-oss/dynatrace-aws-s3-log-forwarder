@@ -39,7 +39,7 @@ Parameters:
     Description: "[Optional]: URL of an additional Dynatrace environment you want to forward logs to. If none, leave this empy. [This feature is experimental and may change in the future]"
     Type: String
     Default: ""
-    AllowedPattern: "(^https:\\/\\/[a-zA-Z0-9-]{2,}(\\.[a-zA-Z0-9-]{2,})(\\.[a-zA-Z0-9-]{2,})?(:9999\\/e\\/.[a-z0-9-]*)?$)?"
+    AllowedPattern: "^https:\\/\\/[a-zA-Z0-9-]{2,}(\\.[a-zA-Z0-9-]{2,})(\\.[a-zA-Z0-9-]{2,})*(:9999\\/e\\/.[a-z0-9-]*)?$"
   DynatraceEnvironment2ApiKeyParameter:
     Description: "[Optional]: Name of the SecureString Parameter in AWS Parameter Store storing the Dynatrace Environment 2 API Key.[This feature is experimental and may change in the future]"
     Type: String
