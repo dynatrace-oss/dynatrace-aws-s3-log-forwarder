@@ -32,6 +32,7 @@ from version import get_version
 logger = logging.getLogger()
 
 LOGV2_API_URL_SUFFIX = '/api/v2/logs/ingest'
+ENVIRONMENT_AG_URL_PART = '/e/'
 
 # Related documentation
 # https://www.dynatrace.com/support/help/dynatrace-api/environment-api/log-monitoring-v2/post-ingest-logs
@@ -59,7 +60,7 @@ default_headers = {
 }
 
 class DynatraceSink():
-    def __init__(self, dt_url: str, dt_api_key_parameter: str):
+    def __init__(self, dt_url: str, dt_api_key_parameter: str, verify_ssl: bool = True):
         self._environment_url = dt_url
         self._api_key_parameter = dt_api_key_parameter
         self._approx_buffered_messages_size = 0
@@ -75,8 +76,9 @@ class DynatraceSink():
         )
 
         adapter = HTTPAdapter(max_retries=retry_strategy)
-        
+
         self.session = requests.Session()
+        self.session.verify = verify_ssl
         self.session.mount("https://", adapter)
 
     def get_num_of_buffered_messages(self):
@@ -94,7 +96,7 @@ class DynatraceSink():
     def push(self, message: dict):
         # Validate that the message size doesn't reach DT limits. If so,
         # truncate the "content" field.
-               
+
         self.check_log_message_size_and_truncate(message)
 
         # Check if we'd be exceeding limits before appending the message
@@ -103,12 +105,12 @@ class DynatraceSink():
                                                  sys.getsizeof(json.dumps(message).encode(ENCODING))
                                                )
 
-        # If we'd exceed limits, flush before buffering 
+        # If we'd exceed limits, flush before buffering
         if ( new_num_of_buffered_messages > DYNATRACE_LOG_INGEST_MAX_ENTRIES_COUNT or
              new_approx_size_of_buffered_messages > DYNATRACE_LOG_INGEST_PAYLOAD_MAX_SIZE ):
             self.flush()
             self._batch_num += 1
-        
+
         # buffer log messages
         self._messages.append(message)
         self._approx_buffered_messages_size += sys.getsizeof(
@@ -119,7 +121,7 @@ class DynatraceSink():
             self.ingest_logs(self._messages, batch_num=self._batch_num,session=self.session)
         self._messages = []
         self._approx_buffered_messages_size = 0
-    
+
     def empty_sink(self):
         self._messages = []
         self._approx_buffered_messages_size = 0
@@ -154,7 +156,7 @@ class DynatraceSink():
             'Authorization': f'Api-Token {dt_api_key}',
             'Content-Type': 'application/json; charset=utf-8'
         })
-        
+
 
         request_data = data
 
@@ -163,8 +165,8 @@ class DynatraceSink():
             headers['Content-Encoding'] = 'gzip'
 
         try:
-            resp = session.post(dt_url, data=request_data, headers=headers, 
-                                timeout=(DYNATRACE_CONNECT_TIMEOUT,DYNATRACE_READ_TIMEOUT))
+            resp = session.post(dt_url, data=request_data, headers=headers,
+                                timeout=(DYNATRACE_CONNECT_TIMEOUT, DYNATRACE_READ_TIMEOUT))
         except Exception:
             logger.exception('Error pushing logs to Dynatrace')
             raise
@@ -182,11 +184,10 @@ class DynatraceSink():
         # Pull API Key from SSM / Cache for 2 mins
         dt_api_key = parameters.get_parameter(
             self._api_key_parameter, max_age=120, decrypt=True)
-        
-        # Find tenant ID in URL
-        tenant_id = self._environment_url[ self._environment_url.find("//") + 2: self._environment_url.find(".") ]
 
-        logger.debug('Preparing log batches to post to Dynatrace: %s',tenant_id)
+        tenant_id = extract_tenant_id_from_url(self._environment_url)
+
+        logger.debug('Preparing log batches to post to Dynatrace: %s', tenant_id)
 
         # Create a session to re-use connections
         if session is None:
@@ -254,16 +255,18 @@ def load_sinks():
     regex = r'^DYNATRACE_[A-Z0-9][A-Z0-9]*_ENV_URL$'
     sinks = {}
 
-    for k,v in os.environ.items():
-        if re.match(regex,k):
+    verify_ssl = False if os.environ['VERIFY_DT_SSL_CERT'] == "false" else True
+
+    for k, v in os.environ.items():
+        if re.match(regex, k):
             sink_id = k.split('_')[1]
             if os.environ.get(f'DYNATRACE_{sink_id}_API_KEY_PARAM'):
                 dt_url = v
                 dt_api_key_parameter = os.environ[f'DYNATRACE_{sink_id}_API_KEY_PARAM']
-                sinks[sink_id] = DynatraceSink(dt_url,dt_api_key_parameter)
+                sinks[sink_id] = DynatraceSink(dt_url, dt_api_key_parameter, verify_ssl)
             else:
                 logging.warning("No API key configured for sink id %s", sink_id)
-    
+
     return sinks
 
 def empty_sinks(sinks:list):
@@ -272,6 +275,15 @@ def empty_sinks(sinks:list):
     '''
     for _ , sink in sinks.items():
         sink.empty_sink()
+
+
+def extract_tenant_id_from_url(environment_url: str):
+    env_prefix_index = environment_url.find(ENVIRONMENT_AG_URL_PART)
+    if env_prefix_index != -1:
+        offset = len(ENVIRONMENT_AG_URL_PART)
+        return environment_url[env_prefix_index + offset: environment_url.find("/", env_prefix_index + offset)]
+    else:
+        return environment_url[environment_url.find("//") + 2: environment_url.find(".")]
 
 
 class DynatraceThrottlingException(Exception):
