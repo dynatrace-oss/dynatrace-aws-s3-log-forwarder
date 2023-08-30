@@ -51,7 +51,7 @@ def _push_to_sinks(dt_log_message: dict, log_sinks: list, skip_content_attribute
     '''
     def __without_content(log_message: dict) -> dict:
         clone_log_message = log_message.copy()
-        clone_log_message['content'] = {}
+        clone_log_message['content'] = 'skipped content attribute'
         return clone_log_message
 
     log_message =  __without_content(dt_log_message) if skip_content_attribute else dt_log_message
