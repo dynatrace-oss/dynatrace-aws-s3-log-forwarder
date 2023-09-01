@@ -67,11 +67,13 @@ class TestDynatraceSink(unittest.TestCase):
     def test_exceed_payload_size(self):
         dynatrace_sink = dynatrace.DynatraceSink(mock_dt_url,mock_dt_key_parameter)
 
-        log_message = {'content': 'a' * (dynatrace.DYNATRACE_LOG_INGEST_CONTENT_MAX_LENGTH - 100) }
+        log_message = {'content': 'a' * (dynatrace.DYNATRACE_LOG_INGEST_CONTENT_MAX_LENGTH - 100)}
 
-        log_message_size = sys.getsizeof(json.dumps(log_message).encode(dynatrace.ENCODING))
+        log_message_size = sys.getsizeof(
+            json.dumps(log_message).encode(dynatrace.ENCODING)) + dynatrace.COMMA_SEPARATOR_LENGTH
 
-        num_messages_to_push = ceil(dynatrace.DYNATRACE_LOG_INGEST_PAYLOAD_MAX_SIZE / log_message_size) + 1
+        num_messages_to_push = ceil(
+            (dynatrace.DYNATRACE_LOG_INGEST_PAYLOAD_MAX_SIZE - dynatrace.LIST_BRACKETS_LENGTH) / log_message_size) + 1
         
         responses.add(responses.POST, dynatrace_sink.get_environment_url() + dynatrace.LOGV2_API_URL_SUFFIX,
                       body=json.dumps({'details': {'message': 'Success','code': 204}}).encode(dynatrace.ENCODING),
@@ -81,7 +83,8 @@ class TestDynatraceSink(unittest.TestCase):
         for _ in range(1,num_messages_to_push):
             dynatrace_sink.push(log_message)
 
-        self.assertEqual(log_message_size,dynatrace_sink.get_size_of_buffered_messages())
+        self.assertEqual(dynatrace.LIST_BRACKETS_LENGTH + log_message_size,
+                         dynatrace_sink.get_size_of_buffered_messages())
 
     @responses.activate
     @mock_ssm
