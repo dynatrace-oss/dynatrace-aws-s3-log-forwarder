@@ -261,7 +261,7 @@ def load_sinks():
     regex = r'^DYNATRACE_[A-Z0-9][A-Z0-9]*_ENV_URL$'
     sinks = {}
 
-    verify_ssl = False if os.environ['VERIFY_DT_SSL_CERT'] == "false" else True
+    verify_ssl = not (os.environ.get('VERIFY_DT_SSL_CERT', "true") == "false")
 
     for k, v in os.environ.items():
         if re.match(regex, k):
