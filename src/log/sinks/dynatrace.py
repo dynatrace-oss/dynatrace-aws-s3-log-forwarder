@@ -50,6 +50,9 @@ DYNATRACE_LOG_INGEST_MAX_ENTRIES_COUNT = 5000
 
 DYNATRACE_LOG_MESSAGE_MAX_ATTRIBUTES = 50
 
+COMMA_SEPARATOR_LENGTH = 1
+LIST_BRACKETS_LENGTH = 2
+
 DYNATRACE_CONNECT_TIMEOUT = 3
 DYNATRACE_READ_TIMEOUT = 12
 
@@ -63,7 +66,7 @@ class DynatraceSink():
     def __init__(self, dt_url: str, dt_api_key_parameter: str, verify_ssl: bool = True):
         self._environment_url = dt_url
         self._api_key_parameter = dt_api_key_parameter
-        self._approx_buffered_messages_size = 0
+        self._approx_buffered_messages_size = LIST_BRACKETS_LENGTH
         self._messages = []
         self._batch_num = 1
 
@@ -100,10 +103,10 @@ class DynatraceSink():
         self.check_log_message_size_and_truncate(message)
 
         # Check if we'd be exceeding limits before appending the message
-        new_num_of_buffered_messages = self.get_num_of_buffered_messages() +1
-        new_approx_size_of_buffered_messages = ( self._approx_buffered_messages_size +
-                                                 sys.getsizeof(json.dumps(message).encode(ENCODING))
-                                               )
+        new_message_size = sys.getsizeof(json.dumps(message).encode(ENCODING))
+        new_num_of_buffered_messages = self.get_num_of_buffered_messages() + 1
+        new_approx_size_of_buffered_messages = (
+                    self._approx_buffered_messages_size + new_message_size + COMMA_SEPARATOR_LENGTH)
 
         # If we'd exceed limits, flush before buffering
         if ( new_num_of_buffered_messages > DYNATRACE_LOG_INGEST_MAX_ENTRIES_COUNT or
@@ -113,18 +116,17 @@ class DynatraceSink():
 
         # buffer log messages
         self._messages.append(message)
-        self._approx_buffered_messages_size += sys.getsizeof(
-            json.dumps(message).encode(ENCODING))
+        self._approx_buffered_messages_size += new_message_size + COMMA_SEPARATOR_LENGTH
 
     def flush(self):
         if not self.is_empty():
             self.ingest_logs(self._messages, batch_num=self._batch_num,session=self.session)
         self._messages = []
-        self._approx_buffered_messages_size = 0
+        self._approx_buffered_messages_size = LIST_BRACKETS_LENGTH
 
     def empty_sink(self):
         self._messages = []
-        self._approx_buffered_messages_size = 0
+        self._approx_buffered_messages_size = LIST_BRACKETS_LENGTH
         self._batch_num = 1
 
     def check_log_message_size_and_truncate(self, message: dict):
