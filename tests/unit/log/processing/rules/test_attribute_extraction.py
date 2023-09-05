@@ -118,7 +118,7 @@ class TestALBAttributeExtraction(unittest.TestCase):
     alb_processing_rule = processing_rules['aws']['ALB']
 
     def test_alb_attribute_extraction(self):
-        extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(self.alb_test_entry, extracted_attributes)
+        extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(self.alb_test_entry)
         self.assertEqual(self.expected_attributes,extracted_attributes)
     
     def test_alb_attribute_extraction_http(self):
@@ -154,7 +154,7 @@ class TestALBAttributeExtraction(unittest.TestCase):
                                 'aws.resource.id': 'app/my-loadbalancer/50dc6c495c0c9188'
                             }
 
-        extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry, extracted_attributes)
+        extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry)
         self.assertEqual(expected_attributes,extracted_attributes)
 
     def test_alb_attribute_extraction_https(self):
@@ -193,7 +193,7 @@ class TestALBAttributeExtraction(unittest.TestCase):
                                 'severity': 'INFO',
                                 'aws.resource.id': 'app/my-loadbalancer/50dc6c495c0c9188'
                             }
-        extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry, extracted_attributes)
+        extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry)
         self.assertEqual(expected_attributes,extracted_attributes)
 
     def test_alb_attribute_extraction_http2(self):
@@ -230,7 +230,7 @@ class TestALBAttributeExtraction(unittest.TestCase):
                                 'target_status_code_list': '200',
                                 'severity': 'INFO',
                                 'aws.resource.id': 'app/my-loadbalancer/50dc6c495c0c9188' }
-        extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry, extracted_attributes)
+        extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry)
         self.assertEqual(expected_attributes,extracted_attributes)
     
     def test_alb_attribute_extraction_ws(self):
@@ -265,7 +265,7 @@ class TestALBAttributeExtraction(unittest.TestCase):
                                 'severity': 'INFO',
                                 'aws.resource.id': 'app/my-loadbalancer/50dc6c495c0c9188'
                             }
-        extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry, extracted_attributes)
+        extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry)
         self.assertEqual(expected_attributes,extracted_attributes)
 
 class TestClassicELBAttributeExtraction(unittest.TestCase):
@@ -297,7 +297,7 @@ class TestClassicELBAttributeExtraction(unittest.TestCase):
     classic_elb_processing_rule = processing_rules['aws']['Classic-ELB']
 
     def test_classic_elb_attribute_extraction(self):
-        extracted_attributes = self.classic_elb_processing_rule.get_extracted_log_attributes(self.classic_elb_test_entry, extracted_attributes)
+        extracted_attributes = self.classic_elb_processing_rule.get_extracted_log_attributes(self.classic_elb_test_entry)
         self.assertEqual(self.expected_attributes,extracted_attributes)
 
 
@@ -324,7 +324,7 @@ class TestNLBAttributeExtraction(unittest.TestCase):
     nlb_processing_rule = processing_rules['aws']['NLB']
 
     def test_nlb_attribute_extraction(self):
-        extracted_attributes = self.nlb_processing_rule.get_extracted_log_attributes(self.nlb_test_entry, extracted_attributes)
+        extracted_attributes = self.nlb_processing_rule.get_extracted_log_attributes(self.nlb_test_entry)
         self.assertEqual(self.expected_attributes,extracted_attributes)
 
 class TestS3AccessLogsAttributeExtraction(unittest.TestCase):
@@ -338,7 +338,7 @@ class TestS3AccessLogsAttributeExtraction(unittest.TestCase):
     s3_processing_rule = processing_rules['aws']['s3']
 
     def test_s3_attribute_extraction(self):
-        extracted_attributes = self.s3_processing_rule.get_extracted_log_attributes(self.s3_access_log_entry, extracted_attributes)
+        extracted_attributes = self.s3_processing_rule.get_extracted_log_attributes(self.s3_access_log_entry)
         self.assertEqual(self.expected_attributes,extracted_attributes)
 
 class TestWAFLogAttributeExtraction(unittest.TestCase):
@@ -353,7 +353,7 @@ class TestWAFLogAttributeExtraction(unittest.TestCase):
     waf_processing_rule = processing_rules['aws']['waf']
 
     def test_waf_attribute_extraction(self):
-        extracted_attributes = self.waf_processing_rule.get_extracted_log_attributes(self.waf_log_entry, extracted_attributes)
+        extracted_attributes = self.waf_processing_rule.get_extracted_log_attributes(self.waf_log_entry)
         self.assertEqual(extracted_attributes, self.expected_attributes)
 
 class TestVPCDNSquerylogs(unittest.TestCase):
@@ -394,7 +394,7 @@ class TestVPCDNSquerylogs(unittest.TestCase):
     vpcdnsquery_processing_rule = processing_rules['aws']['vpcdnsquerylogs']
 
     def test_vpcdnsquerylogs_attribute_extraction(self):
-        extracted_attributes = self.vpcdnsquery_processing_rule.get_extracted_log_attributes(self.log_entry, extracted_attributes)
+        extracted_attributes = self.vpcdnsquery_processing_rule.get_extracted_log_attributes(self.log_entry)
         self.assertEqual(extracted_attributes, self.expected_attributes)
 
 class testCloudFrontLogs(unittest.TestCase):
@@ -407,7 +407,7 @@ class testCloudFrontLogs(unittest.TestCase):
     cloudfront_processing_rule = processing_rules['aws']['cloudfront']
 
     def test_cloudfrontlogs_attribute_extraction(self):
-        extracted_attributes = self.cloudfront_processing_rule.get_extracted_log_attributes(self.log_entry, extracted_attributes)
+        extracted_attributes = self.cloudfront_processing_rule.get_extracted_log_attributes(self.log_entry)
         self.assertEqual(extracted_attributes, self.expected_attributes)
 
 class testMSKLogs(unittest.TestCase):
@@ -421,7 +421,7 @@ class testMSKLogs(unittest.TestCase):
     msk_processing_rule = processing_rules['aws']['msk']
 
     def test_msk_logs(self):
-        extracted_attributes = self.msk_processing_rule.get_extracted_log_attributes(self.log_entry, extracted_attributes)
+        extracted_attributes = self.msk_processing_rule.get_extracted_log_attributes(self.log_entry)
         self.assertEqual(extracted_attributes,self.expected_attributes)
 
 class testGlobalAcceleratorLogs(unittest.TestCase):
@@ -434,7 +434,7 @@ class testGlobalAcceleratorLogs(unittest.TestCase):
     global_accelerator_processing_rule = processing_rules['aws']['global-accelerator']
 
     def test_global_accelerator_logs(self):
-        extracted_attributes = self.global_accelerator_processing_rule.get_extracted_log_attributes(self.log_entry, extracted_attributes)
+        extracted_attributes = self.global_accelerator_processing_rule.get_extracted_log_attributes(self.log_entry)
         self.assertEqual(extracted_attributes,self.expected_attributes)
 
 class testVpcFlowLogs(unittest.TestCase):
@@ -447,7 +447,7 @@ class testVpcFlowLogs(unittest.TestCase):
     vpc_flow_logs_processing_rule = processing_rules['aws']['vpcflowlogs']
 
     def test_vpc_flow_logs(self):
-        extracted_attributes = self.vpc_flow_logs_processing_rule.get_extracted_log_attributes(self.log_entry, extracted_attributes)
+        extracted_attributes = self.vpc_flow_logs_processing_rule.get_extracted_log_attributes(self.log_entry)
         self.assertEqual(extracted_attributes,self.expected_attributes)
 
 class testCWLtoFirehoseLogs(unittest.TestCase):
