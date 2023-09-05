@@ -229,8 +229,8 @@ class LogProcessingRule:
 
             _attributes_dict = {
                 _prefix + k + _postfix: v for k, v in json_message.items()
-                if (_include and k in _include) or
-                   (_exclude and k not in _exclude)
+                if (_include and k.lower() in _include) or
+                   (_exclude and k.lower() not in _exclude)
             }
 
             attributes_dict.update(_attributes_dict)

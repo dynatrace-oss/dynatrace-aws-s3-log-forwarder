@@ -6,9 +6,9 @@ from log.processing import LogProcessingRule
 class TestAttributeMappingFromJsonProcessingRule(unittest.TestCase):
     input_message = {
         'test_attribute_1': 'test_value_1',
-        'test_attribute_2': 'test_value_2',
+        'TEST_ATTRIBUTE_2': 'test_value_2',
         'test_attribute_3': 'test_value_3',
-        'test_attribute_4': 'test_value_4',
+        'TEST_ATTRIBUTE_4': 'test_value_4',
     }
 
     def test_include_parameter(self):
@@ -31,8 +31,8 @@ class TestAttributeMappingFromJsonProcessingRule(unittest.TestCase):
         })
 
         self.assertEqual(processing_rule.get_extracted_log_attributes(self.input_message), {
-            'my_test_attribute_2_mapped': 'test_value_2',
-            'my_test_attribute_4_mapped': 'test_value_4'
+            'my_TEST_ATTRIBUTE_2_mapped': 'test_value_2',
+            'my_TEST_ATTRIBUTE_4_mapped': 'test_value_4'
         })
 
     def test_include_parameter_in_context(self):
@@ -63,8 +63,8 @@ class TestAttributeMappingFromJsonProcessingRule(unittest.TestCase):
         })
 
         self.assertEqual(processing_rule.get_extracted_log_attributes(self.input_message, {'my_context': 'value1'}), {
-            'my_test_attribute_2_mapped': 'test_value_2',
-            'my_test_attribute_4_mapped': 'test_value_4'
+            'my_TEST_ATTRIBUTE_2_mapped': 'test_value_2',
+            'my_TEST_ATTRIBUTE_4_mapped': 'test_value_4'
         })
 
     def test_rule_validation(self):
