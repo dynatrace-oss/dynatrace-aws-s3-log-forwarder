@@ -122,7 +122,7 @@ Parameters:
   MaximumLambdaConcurrency:
     Description: Maximum number of Lambda functions running concurrently. The concurrency is reserved for the queue processing function, so it's guaranteed. 
     Type: Number
-    Default: 10
+    Default: 30
   LambdaSQSMessageBatchSize:
     Type: Number
     Description: Maximum number of messages to batch per each Queue Processing Lambda function execution
