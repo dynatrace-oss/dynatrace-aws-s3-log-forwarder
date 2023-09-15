@@ -219,6 +219,8 @@ Resources:
             Queue: !GetAtt S3NotificationsQueue.Arn
             FunctionResponseTypes:
               - ReportBatchItemFailures
+            ScalingConfig:
+               MaximumConcurrency: !Ref MaximumLambdaConcurrency
       Policies:
         - SQSPollerPolicy:
             QueueName: !GetAtt S3NotificationsQueue.QueueName
