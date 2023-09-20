@@ -13,17 +13,18 @@
 #  limitations under the License.
 
 
+import gzip
+import json
 import logging
-from os import environ
 import sys
 import time
-import json
-import gzip
+from os import environ
+
 import boto3
 import jmespath
+import jsonslicer
 from aws_lambda_powertools import Metrics
 from aws_lambda_powertools.metrics import MetricUnit
-import jsonslicer
 
 from log.processing.log_processing_rule import LogProcessingRule
 from utils.helpers import ENCODING
@@ -51,7 +52,7 @@ def _push_to_sinks(dt_log_message: dict, log_sinks: list, skip_content_attribute
     '''
     def __without_content(log_message: dict) -> dict:
         clone_log_message = log_message.copy()
-        clone_log_message['content'] = 'skipped content attribute'
+        clone_log_message['content'] = f'c.h={hash(frozenset(log_message.items()))}'
         return clone_log_message
 
     log_message =  __without_content(dt_log_message) if skip_content_attribute else dt_log_message
