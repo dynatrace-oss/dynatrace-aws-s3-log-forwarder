@@ -227,9 +227,12 @@ class LogProcessingRule:
             _include = self._extend_in_context('include_in_context', context, _include)
             _exclude = self._extend_in_context('exclude_in_context', context, _exclude)
 
+            _accept_all = not _exclude and not _include
+
             _attributes_dict = {
                 _prefix + k + _postfix: v for k, v in json_message.items()
-                if (_include and k.lower() in _include) or
+                if _accept_all or
+                   (_include and k.lower() in _include) or
                    (_exclude and k.lower() not in _exclude)
             }
 
@@ -256,6 +259,8 @@ class LogProcessingRule:
         """
         Unpacks the rules for include or exclude certain keys within given context, by matching given key and value of existing context.
         The first rule matched is used to extend provided list of keys whith those associated with the rule
+
+        :param scope will be 'exclude_in_context' or 'include_in_context'
         """
         for _rule_in_context in self.attribute_mapping_from_json_keys.get(scope, []):
             if context.get(_rule_in_context.get('context_key', '-')) == _rule_in_context.get('context_value', ''):

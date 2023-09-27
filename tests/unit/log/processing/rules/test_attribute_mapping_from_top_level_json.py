@@ -67,6 +67,39 @@ class TestAttributeMappingFromJsonProcessingRule(unittest.TestCase):
             'my_TEST_ATTRIBUTE_4_mapped': 'test_value_4'
         })
 
+    def test_exclude_parameter_in_context_only(self):
+        processing_rule = create_log_processing_rule({
+            'exclude_in_context': [
+                {'context_key': 'my_context', 'context_value': 'value1', 'keys': ['test_attribute_1']},
+                {'context_key': 'my_context', 'context_value': 'value2', 'keys': ['test_attribute_4']}
+            ],
+            'postfix': '_mapped',
+            'prefix': 'my_'
+        })
+
+        self.assertEqual(processing_rule.get_extracted_log_attributes(self.input_message, {'my_context': 'value1'}), {
+            'my_TEST_ATTRIBUTE_2_mapped': 'test_value_2',
+            'my_test_attribute_3_mapped': 'test_value_3',
+            'my_TEST_ATTRIBUTE_4_mapped': 'test_value_4'
+        })
+
+    def test_exclude_parameter_in_context_only_none_matching(self):
+        processing_rule = create_log_processing_rule({
+            'exclude_in_context': [
+                {'context_key': 'my_context', 'context_value': 'value1', 'keys': ['test_attribute_1']},
+                {'context_key': 'my_context', 'context_value': 'value2', 'keys': ['test_attribute_4']}
+            ],
+            'postfix': '_mapped',
+            'prefix': 'my_'
+        })
+
+        self.assertEqual(processing_rule.get_extracted_log_attributes(self.input_message, {'my_context': 'value_not_matching'}), {
+            'my_test_attribute_1_mapped': 'test_value_1',
+            'my_TEST_ATTRIBUTE_2_mapped': 'test_value_2',
+            'my_test_attribute_3_mapped': 'test_value_3',
+            'my_TEST_ATTRIBUTE_4_mapped': 'test_value_4'
+        })
+
     def test_rule_validation(self):
         with self.assertRaises(ValueError):
             create_log_processing_rule(
