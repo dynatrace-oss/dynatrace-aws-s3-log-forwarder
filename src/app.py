@@ -26,7 +26,6 @@ from log.sinks import dynatrace
 from utils import aws_appconfig_extension_helpers as aws_appconfig_helpers
 from version import get_version
 
-
 logger = logging.getLogger()
 logger.setLevel(os.getenv("LOGGING_LEVEL", "INFO"))
 
@@ -69,7 +68,6 @@ def generate_execution_timeout_batch_item_failures(index: int, batch_item_failur
 
 
 def reload_rules(rules_type: str):
-
     if os.environ['LOG_FORWARDER_CONFIGURATION_LOCATION'] == "aws-appconfig":
         # load globals
         glob = globals()
@@ -82,7 +80,8 @@ def reload_rules(rules_type: str):
             if rules_configuration_profile['Configuration-Version'] != glob[f"current_log_{rules_type}_rules_version"]:
                 logger.info("New log-%s-rules configuration version found. Loading version %s ...",
                             str(rules_configuration_profile['Configuration-Version']), rules_type)
-                glob[f"defined_log_{rules_type}_rules"], glob[f"current_log_{rules_type}_rules_version"] = glob[f"log_{rules_type}_rules"].load(
+                glob[f"defined_log_{rules_type}_rules"], glob[f"current_log_{rules_type}_rules_version"] = glob[
+                    f"log_{rules_type}_rules"].load(
                 )
                 return True
 
@@ -95,7 +94,6 @@ def reload_rules(rules_type: str):
 
 @metrics.log_metrics
 def lambda_handler(event, context):
-
     logging.info("dynatrace-aws-s3-log-forwarder version: %s", get_version())
 
     # If we're using AWS AppConfig and there's a new config version available, reload
@@ -198,22 +196,44 @@ def lambda_handler(event, context):
 
         except UnicodeDecodeError:
             logger.exception(
-                'Error decoding log object. Log contains non-UTF-8 characters. Dropping object s3://%s/%s', bucket_name, key_name
+                'Error decoding log object. Log contains non-UTF-8 characters. Dropping object s3://%s/%s', bucket_name,
+                key_name
             )
             metrics.add_metric(
                 name='DroppedObjectsDecodingErrors', unit=MetricUnit.Count, value=1)
 
-        except processing.NotEnoughExecutionTimeRemaining:
+        except processing.NotEnoughExecutionTimeRemaining as neetr:
+            # Put currently processed file to queue with line to restart from information
+            # re-add currently processed file to queue
+            event_to_retry = s3_notification['Records'][index]
+            event_to_retry['restart_at_index'] = neetr.next_message_index
+            if event_to_retry['retry']:
+                event_to_retry['retry'] += 1
+            else:
+                event_to_retry['retry'] = 1
+
+            if event_to_retry['retry'] < 6:
+                sqs_client = boto3_session.create_client('sqs')
+                sqs_client.send_message(
+                    QueueUrl=os.environ.get('QUEUE_URL'),
+                    MessageBody=(json.dumps(event_to_retry))
+                )
+            else:
+                logger.error(f'Exceeded retries limit for s3://{bucket_name}/{key_name}')
+
+            # return not started files from batch to queue
+            file_not_started_index = index + 1
+
             logger.exception(
-                'Unable to process log file s3://%s/%s with remaining Lambda execution time. %s total non-processed log files in batch',
-                bucket_name, key_name, (len(event['Records']) - index)
+                'Unable to finish processing log file s3://%s/%s with remaining Lambda execution time. %s total not-started log files in batch',
+                bucket_name, key_name, (len(event['Records']) - file_not_started_index)
             )
 
             metrics.add_metric(
                 name='NotEnoughExecutionTimeRemainingErrors', unit=MetricUnit.Count, value=1)
 
             total_batch_item_failures = generate_execution_timeout_batch_item_failures(
-                index, batch_item_failures, event['Records'])
+                file_not_started_index, batch_item_failures, event['Records'])
 
             metrics.add_metric(name='LogProcessingFailures', unit=MetricUnit.Count, value=len(
                 total_batch_item_failures['batchItemFailures']))

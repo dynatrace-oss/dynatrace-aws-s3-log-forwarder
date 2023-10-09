@@ -203,6 +203,7 @@ Resources:
           DYNATRACE_2_ENV_URL: !If [ SecondDTEnvironmentSpecified, !Ref DynatraceEnvironment2URL, !Ref "AWS::NoValue"]
           DYNATRACE_2_API_KEY_PARAM: !If [ SecondDTEnvironmentSpecified, !Ref DynatraceEnvironment2ApiKeyParameter, !Ref "AWS::NoValue"]
           QueueName: !GetAtt S3NotificationsQueue.QueueName
+          QUEUE_URL: !Ref S3NotificationsQueue
           LOGGING_LEVEL: !Ref LambdaLoggingLevel
           AWS_APPCONFIG_EXTENSION_PREFETCH_LIST: !Sub "/applications/${AWS::StackName}-app-config/environments/${AWS::StackName}/configurations/log-forwarding-rules,/applications/${AWS::StackName}-app-config/environments/${AWS::StackName}/configurations/log-processing-rules"
           LOG_FORWARDER_CONFIGURATION_LOCATION: !Ref LogForwarderConfigurationLocation
@@ -223,6 +224,8 @@ Resources:
                MaximumConcurrency: !Ref MaximumLambdaConcurrency
       Policies:
         - SQSPollerPolicy:
+            QueueName: !GetAtt S3NotificationsQueue.QueueName
+        - SQSSendMessagePolicy:
             QueueName: !GetAtt S3NotificationsQueue.QueueName
         - SSMParameterReadPolicy:
             ParameterName: !Sub dynatrace/s3-log-forwarder/${AWS::StackName}/*
