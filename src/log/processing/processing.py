@@ -71,7 +71,7 @@ def get_log_entry_size(log_entry):
     return size
 
 
-def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key: str, bucket_region: str,
+def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key: str, bucket_region: str, restart_at_index: int,
                        log_sinks: list,
                        lambda_context, user_defined_annotations: dict = None, session: boto3.Session = None):
     '''
@@ -157,6 +157,10 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
     decompressed_log_object_size = 0
 
     for log_entry in log_entries:
+
+        if restart_at_index > num_log_entries:
+            num_log_entries += 1
+            continue
 
         dt_log_message = {}
 

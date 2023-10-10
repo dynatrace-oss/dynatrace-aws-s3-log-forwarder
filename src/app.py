@@ -174,8 +174,9 @@ def lambda_handler(event, context):
                                        unit=MetricUnit.Count, value=1)
                     continue
 
+                restart_at_index = int(s3_notification.get('restart_at_index', 0))
                 processing.process_log_object(
-                    matched_log_processing_rule, bucket_name, key_name, s3_notification['region'],
+                    matched_log_processing_rule, bucket_name, key_name, s3_notification['region'], restart_at_index,
                     log_object_destination_sinks, context,
                     user_defined_annotations=user_defined_log_annotations,
                     session=boto3_session
