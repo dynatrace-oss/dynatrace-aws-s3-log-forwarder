@@ -47,7 +47,7 @@ Parameters:
   VerifyLogEndpointSSLCerts:
     Description: Leave the default value unless you're ingesting logs via an Environment Active Gate with a self-signed SSL certificate, then set this to false to disable SSL certificate verification
     Type: String
-    AllowedValues: 
+    AllowedValues:
       - "true"
       - "false"
     Default: "true"
@@ -120,7 +120,7 @@ Parameters:
       - "false"
     Default: "false"
   MaximumLambdaConcurrency:
-    Description: Maximum number of Lambda functions running concurrently. The concurrency is reserved for the queue processing function, so it's guaranteed. 
+    Description: Maximum number of Lambda functions running concurrently. The concurrency is reserved for the queue processing function, so it's guaranteed.
     Type: Number
     Default: 30
   LambdaSQSMessageBatchSize:
@@ -152,17 +152,17 @@ Parameters:
     Default: ""
 
 Conditions:
-  SecondDTEnvironmentSpecified: !Not [!Equals [!Ref DynatraceEnvironment2URL, "" ]]
+  SecondDTEnvironmentSpecified: !Not [ !Equals [ !Ref DynatraceEnvironment2URL, "" ] ]
   LambdaInsightsEnabled: !Equals [ !Ref EnableLambdaInsights, "true" ]
   CrossRegionCrossAccountForwardingIsEnabled: !Equals [ !Ref EnableCrossRegionCrossAccountForwarding, "true" ]
-  AwsAccountListIsNotEmpty: !Not [ !Equals [!Join ["", !Ref AwsAccountsToReceiveLogsFrom ], ""] ]
+  AwsAccountListIsNotEmpty: !Not [ !Equals [ !Join [ "", !Ref AwsAccountsToReceiveLogsFrom ], "" ] ]
   CreateEventBridgePolicy: !And [ !Condition AwsAccountListIsNotEmpty , !Condition CrossRegionCrossAccountForwardingIsEnabled ]
   DeployMonitoringDashboard: !Equals [ !Ref DeployCloudWatchMonitoringDashboard, "true" ]
-  IsEmailConfigured: !Not [!Equals [ !Ref NotificationsEmail, "" ]]
-  ContainerImageUriIsDefined: !Not [!Equals [ !Ref ContainerImageUri, "" ]]
-  ArchIsArm: !Equals [ !Ref ProcessorArchitecture, "arm64"]
-  LambdaVpcConfigSpecified: !Not [!Equals [ !Join [ "", !Ref LambdaSubnetIds ], "" ]]
-  LambdaVpcSecurityGroupSpecified: !Not [!Equals [!Ref LambdaSecurityGroupId, ""]]
+  IsEmailConfigured: !Not [ !Equals [ !Ref NotificationsEmail, "" ] ]
+  ContainerImageUriIsDefined: !Not [ !Equals [ !Ref ContainerImageUri, "" ] ]
+  ArchIsArm: !Equals [ !Ref ProcessorArchitecture, "arm64" ]
+  LambdaVpcConfigSpecified: !Not [ !Equals [ !Join [ "", !Ref LambdaSubnetIds ], "" ] ]
+  LambdaVpcSecurityGroupSpecified: !Not [ !Equals [ !Ref LambdaSecurityGroupId, "" ] ]
 
 Globals:
   Function:
@@ -176,7 +176,7 @@ Mappings:
   LambdaBaseImageMap:
     # Mappings only support alphanumeric chars, '-' and '.', so name can't be x86_64
     # That means to resolve the image tag we need !If [ ArchIsArm , !FindInMap arm, !FindInMap x86]
-    x86: 
+    x86:
       Tag: '3.9.2023.08.22.07-x86_64'
     arm64:
       Tag: '3.9.2023.08.22.07-arm64'
@@ -191,7 +191,7 @@ Resources:
       DockerBuildArgs:
         ARCH: !Ref ProcessorArchitecture
         ENABLE_LAMBDA_INSIGHTS: !Ref EnableLambdaInsights
-        LAMBDA_BASE_IMAGE_TAG: !If [ ArchIsArm, !FindInMap [ LambdaBaseImageMap, "arm64", 'Tag' ], !FindInMap [ LambdaBaseImageMap, "x86", 'Tag'] ]
+        LAMBDA_BASE_IMAGE_TAG: !If [ ArchIsArm, !FindInMap [ LambdaBaseImageMap, "arm64", 'Tag' ], !FindInMap [ LambdaBaseImageMap, "x86", 'Tag' ] ]
     Properties:
       PackageType: Image
       ImageUri: !If [ ContainerImageUriIsDefined, !Ref ContainerImageUri, !Ref AWS::NoValue ]
@@ -200,10 +200,9 @@ Resources:
         Variables:
           DYNATRACE_1_ENV_URL: !Ref DynatraceEnvironment1URL
           DYNATRACE_1_API_KEY_PARAM: !Ref DynatraceEnvironment1ApiKeyParameter
-          DYNATRACE_2_ENV_URL: !If [ SecondDTEnvironmentSpecified, !Ref DynatraceEnvironment2URL, !Ref "AWS::NoValue"]
-          DYNATRACE_2_API_KEY_PARAM: !If [ SecondDTEnvironmentSpecified, !Ref DynatraceEnvironment2ApiKeyParameter, !Ref "AWS::NoValue"]
+          DYNATRACE_2_ENV_URL: !If [ SecondDTEnvironmentSpecified, !Ref DynatraceEnvironment2URL, !Ref "AWS::NoValue" ]
+          DYNATRACE_2_API_KEY_PARAM: !If [ SecondDTEnvironmentSpecified, !Ref DynatraceEnvironment2ApiKeyParameter, !Ref "AWS::NoValue" ]
           QueueName: !GetAtt S3NotificationsQueue.QueueName
-          QUEUE_URL: !Ref S3NotificationsQueue
           LOGGING_LEVEL: !Ref LambdaLoggingLevel
           AWS_APPCONFIG_EXTENSION_PREFETCH_LIST: !Sub "/applications/${AWS::StackName}-app-config/environments/${AWS::StackName}/configurations/log-forwarding-rules,/applications/${AWS::StackName}-app-config/environments/${AWS::StackName}/configurations/log-processing-rules"
           LOG_FORWARDER_CONFIGURATION_LOCATION: !Ref LogForwarderConfigurationLocation
@@ -221,7 +220,7 @@ Resources:
             FunctionResponseTypes:
               - ReportBatchItemFailures
             ScalingConfig:
-               MaximumConcurrency: !Ref MaximumLambdaConcurrency
+              MaximumConcurrency: !Ref MaximumLambdaConcurrency
       Policies:
         - SQSPollerPolicy:
             QueueName: !GetAtt S3NotificationsQueue.QueueName
@@ -229,15 +228,21 @@ Resources:
             QueueName: !GetAtt S3NotificationsQueue.QueueName
         - SSMParameterReadPolicy:
             ParameterName: !Sub dynatrace/s3-log-forwarder/${AWS::StackName}/*
-        - !If [ LambdaInsightsEnabled, "arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy" , !Ref "AWS::NoValue"] 
+        - !If [ LambdaInsightsEnabled, "arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy" , !Ref "AWS::NoValue" ]
         - Statement:
-          - Effect: Allow
-            Resource:
-              - !Sub 'arn:aws:appconfig:${AWS::Region}:${AWS::AccountId}:application/${AppConfigApplication}'
-              - !Sub 'arn:aws:appconfig:${AWS::Region}:${AWS::AccountId}:application/${AppConfigApplication}/environment/${AppConfigEnvironment}/*'
-            Action:
-              - appconfig:StartConfigurationSession
-              - appconfig:GetLatestConfiguration
+            - Effect: Allow
+              Resource:
+                - !Sub 'arn:aws:appconfig:${AWS::Region}:${AWS::AccountId}:application/${AppConfigApplication}'
+                - !Sub 'arn:aws:appconfig:${AWS::Region}:${AWS::AccountId}:application/${AppConfigApplication}/environment/${AppConfigEnvironment}/*'
+              Action:
+                - appconfig:StartConfigurationSession
+                - appconfig:GetLatestConfiguration
+            - Effect: Allow
+              Resource:
+                - !Sub 'arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:application/${S3NotificationsQueue.QueueName}'
+              Action:
+                - sqs:GetQueueUrl
+
       ReservedConcurrentExecutions: !Ref MaximumLambdaConcurrency
       VpcConfig:
         SecurityGroupIds:
@@ -299,7 +304,7 @@ Resources:
     Type: AWS::SNS::Topic
     Properties:
       TopicName: !Sub ${AWS::StackName}-Alarms
-  
+
   AlarmsEmailSubscription:
     Type: AWS::SNS::Subscription
     Condition: IsEmailConfigured
@@ -373,12 +378,12 @@ Resources:
     Condition: CrossRegionCrossAccountForwardingIsEnabled
     Type: AWS::Events::EventBus
     Properties:
-      Name: 
+      Name:
         !Join
-          - "-"
-          - - !Sub ${AWS::StackName}
-            - cross-region-cross-account-s3-events
-  
+        - "-"
+        - - !Sub ${AWS::StackName}
+          - cross-region-cross-account-s3-events
+
   CrossAccountEventBusPolicy:
     Condition: CreateEventBridgePolicy
     Type: AWS::Events::EventBusPolicy
@@ -387,14 +392,14 @@ Resources:
       StatementId: AllowCrossAccountS3Notifications
       Statement:
         Effect: Allow
-        Principal: 
-          AWS: !Split 
+        Principal:
+          AWS: !Split
             - ","
-            - !Sub 
+            - !Sub
               - arn:aws:iam::${ACCOUNTS}:root
               - ACCOUNTS: !Join
-                - ':root,arn:aws:iam::'
-                - !Ref AwsAccountsToReceiveLogsFrom
+                  - ':root,arn:aws:iam::'
+                  - !Ref AwsAccountsToReceiveLogsFrom
         Action: "events:PutEvents"
         Resource: !GetAtt CrossRegionCrossAccountEventBus.Arn
         Condition:
@@ -402,7 +407,7 @@ Resources:
             "events:detail-type": "Object Created"
             "events:source": "aws.s3"
           ArnEquals:
-            "aws:SourceArn": 
+            "aws:SourceArn":
               - !Sub arn:aws:events:*:*:rule/dt-s3-log-fwd-to-${AWS::AccountId}-*
 
   AppConfigApplication:
@@ -410,7 +415,7 @@ Resources:
     Properties:
       Description: "dynatrace-aws-s3-log-forwarder application configuration"
       Name: !Sub ${AWS::StackName}-app-config
-  
+
   LogForwardingConfigurationProfile:
     Type: AWS::AppConfig::ConfigurationProfile
     Properties:
@@ -419,7 +424,7 @@ Resources:
       LocationUri: hosted
       Name: log-forwarding-rules
       Type: AWS.Freeform
-  
+
   LogProcessingConfigurationProfile:
     Type: AWS::AppConfig::ConfigurationProfile
     Properties:
@@ -437,19 +442,19 @@ Resources:
       FinalBakeTimeInMinutes: 0
       GrowthFactor: 100
       ReplicateTo: NONE
-  
+
   AppConfigEnvironment:
     Type: AWS::AppConfig::Environment
     Properties:
       Name: !Sub ${AWS::StackName}
       ApplicationId: !Ref AppConfigApplication
-  
+
   CloudWatchDashboard:
     Condition: DeployMonitoringDashboard
     Type: AWS::CloudWatch::Dashboard
     Properties:
       DashboardName: !Sub ${AWS::StackName}-monitoring-dashboard
-      DashboardBody: 
+      DashboardBody:
         !Sub >
           {
             "widgets": [
@@ -945,12 +950,12 @@ Outputs:
   QueueProcessingFunctionIamRole:
     Description: "Implicit IAM Role created for QueueProcessingFunction"
     Value: !Ref QueueProcessingFunctionRole
-    Export: 
+    Export:
       Name: !Sub "${AWS::StackName}:QueueProcessingFunctionIamRole"
   SQSProcessingQueue:
     Description: "SQS Queue for Lambda to consume notifications from."
     Value: !GetAtt S3NotificationsQueue.Arn
-    Export: 
+    Export:
       Name: !Sub "${AWS::StackName}:S3NotificationsQueueArn"
   SQSDeadLetterQueue:
     Description: "Dead letter queue for failed messages."
@@ -968,7 +973,7 @@ Outputs:
     Condition: DeployMonitoringDashboard
     Description: "URL for the CloudWatch Dashboard to monitor the dynatrace-aws-s3-log-forwarder"
     Value: !Sub |
-              https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home#dashboards:name=${CloudWatchDashboard}
+      https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home#dashboards:name=${CloudWatchDashboard}
   AppConfigApplicationId:
     Description: AppConfig configuration application id
     Value: !Ref AppConfigApplication
@@ -984,7 +989,7 @@ Outputs:
     Value: !Ref LogForwardingConfigurationProfile
     Export:
       Name: !Sub ${AWS::StackName}:LogForwardingConfigurationProfileId
-  LogProcessingConfigurationProfile: 
+  LogProcessingConfigurationProfile:
     Description: AppConfig Configuration Profile for log forwarding rules
     Value: !Ref LogProcessingConfigurationProfile
     Export:
@@ -992,6 +997,6 @@ Outputs:
   AppConfigAllAtOnceDeploymentStrategy:
     Description: Deployment strategy for AWS AppConfig to deploy the log forwarding and processing configuration
     Value: !Ref AppConfigDeploymentStrategy
-    Export: 
+    Export:
       Name: !Sub ${AWS::StackName}:AppConfigDeploymentStrategyId
-  
+

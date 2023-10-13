@@ -17,6 +17,7 @@ import logging
 import os
 import json
 import boto3
+import copy
 from aws_lambda_powertools import Metrics
 from aws_lambda_powertools.metrics import MetricUnit
 from log.processing import log_processing_rules
@@ -25,6 +26,8 @@ from log.forwarding import log_forwarding_rules
 from log.sinks import dynatrace
 from utils import aws_appconfig_extension_helpers as aws_appconfig_helpers
 from version import get_version
+
+DEFAULT_RETRY_COUNT = 5
 
 logger = logging.getLogger()
 logger.setLevel(os.getenv("LOGGING_LEVEL", "INFO"))
@@ -68,6 +71,7 @@ def generate_execution_timeout_batch_item_failures(index: int, batch_item_failur
 
 
 def reload_rules(rules_type: str):
+
     if os.environ['LOG_FORWARDER_CONFIGURATION_LOCATION'] == "aws-appconfig":
         # load globals
         glob = globals()
@@ -80,8 +84,7 @@ def reload_rules(rules_type: str):
             if rules_configuration_profile['Configuration-Version'] != glob[f"current_log_{rules_type}_rules_version"]:
                 logger.info("New log-%s-rules configuration version found. Loading version %s ...",
                             str(rules_configuration_profile['Configuration-Version']), rules_type)
-                glob[f"defined_log_{rules_type}_rules"], glob[f"current_log_{rules_type}_rules_version"] = glob[
-                    f"log_{rules_type}_rules"].load(
+                glob[f"defined_log_{rules_type}_rules"], glob[f"current_log_{rules_type}_rules_version"] = glob[f"log_{rules_type}_rules"].load(
                 )
                 return True
 
@@ -94,6 +97,7 @@ def reload_rules(rules_type: str):
 
 @metrics.log_metrics
 def lambda_handler(event, context):
+
     logging.info("dynatrace-aws-s3-log-forwarder version: %s", get_version())
 
     # If we're using AWS AppConfig and there's a new config version available, reload
@@ -174,9 +178,9 @@ def lambda_handler(event, context):
                                        unit=MetricUnit.Count, value=1)
                     continue
 
-                restart_at_index = int(s3_notification.get('restart_at_index', 0))
+                start_line = int(s3_notification.get('start_line', 0))
                 processing.process_log_object(
-                    matched_log_processing_rule, bucket_name, key_name, s3_notification['region'], restart_at_index,
+                    matched_log_processing_rule, bucket_name, key_name, s3_notification['region'], start_line,
                     log_object_destination_sinks, context,
                     user_defined_annotations=user_defined_log_annotations,
                     session=boto3_session
@@ -197,30 +201,14 @@ def lambda_handler(event, context):
 
         except UnicodeDecodeError:
             logger.exception(
-                'Error decoding log object. Log contains non-UTF-8 characters. Dropping object s3://%s/%s', bucket_name,
-                key_name
+                'Error decoding log object. Log contains non-UTF-8 characters. Dropping object s3://%s/%s', bucket_name, key_name
             )
             metrics.add_metric(
                 name='DroppedObjectsDecodingErrors', unit=MetricUnit.Count, value=1)
 
-        except processing.NotEnoughExecutionTimeRemaining as neetr:
-            # Put currently processed file to queue with line to restart from information
-            # re-add currently processed file to queue
-            event_to_retry = s3_notification['Records'][index]
-            event_to_retry['restart_at_index'] = neetr.next_message_index
-            if event_to_retry['retry']:
-                event_to_retry['retry'] += 1
-            else:
-                event_to_retry['retry'] = 1
-
-            if event_to_retry['retry'] < 6:
-                sqs_client = boto3_session.create_client('sqs')
-                sqs_client.send_message(
-                    QueueUrl=os.environ.get('QUEUE_URL'),
-                    MessageBody=(json.dumps(event_to_retry))
-                )
-            else:
-                logger.error(f'Exceeded retries limit for s3://{bucket_name}/{key_name}')
+        except processing.NotEnoughExecutionTimeRemaining as exception:
+            # put currently processed file back to queue with a retry information
+            send_retry_event(bucket_name, exception, key_name, s3_notification)
 
             # return not started files from batch to queue
             file_not_started_index = index + 1
@@ -256,3 +244,22 @@ def lambda_handler(event, context):
         batch_item_failures['batchItemFailures']))
 
     return batch_item_failures
+
+
+def send_retry_event(bucket_name, exception, key_name, s3_notification):
+    retry_event = copy.deepcopy(s3_notification)
+    retry_count = int(s3_notification.get('retry_count', 0))
+    if retry_count >= DEFAULT_RETRY_COUNT:
+        logger.error(f'Exceeded retries limit for s3://{bucket_name}/{key_name}')
+        return
+
+    retry_event['start_line'] = exception.next_message_index
+    retry_event['retry_count'] = retry_count + 1
+
+    sqs = boto3_session.resource('sqs')
+    queue = sqs.get_queue_by_name(QueueName=os.environ.get('QueueName'))
+    message_body = json.dumps(retry_event)
+    logger.debug("Sending retry message on queue url %s: %s", queue.url, message_body)
+
+    response = queue.send_message(MessageBody=message_body)
+    logger.debug("Received response from sqs: %s", response)

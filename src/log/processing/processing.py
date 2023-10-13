@@ -55,14 +55,13 @@ def get_jsonslicer_path_prefix_from_jmespath_path(jmespath_expr: str):
 
     return jsonslicer_tuple
 
-
 def get_log_entry_size(log_entry):
     '''
     Gets a log entry instance of type dict or bytes and returns its raw size
     '''
-    if isinstance(log_entry, dict):
+    if isinstance(log_entry,dict):
         size = sys.getsizeof(json.dumps(log_entry).encode(ENCODING))
-    elif isinstance(log_entry, bytes):
+    elif isinstance(log_entry,bytes):
         size = sys.getsizeof(log_entry)
     else:
         logger.warning("Can't determine the size of the log entry")
@@ -71,9 +70,8 @@ def get_log_entry_size(log_entry):
     return size
 
 
-def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key: str, bucket_region: str, restart_at_index: int,
-                       log_sinks: list,
-                       lambda_context, user_defined_annotations: dict = None, session: boto3.Session = None):
+def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key: str, bucket_region: str, start_line: int,
+                       log_sinks: list, lambda_context, user_defined_annotations: dict = None, session: boto3.Session = None):
     '''
     Downloads a log from S3, decompresses and reads log messages within it and transforms the messages to Dynatrace LogV2 API format.
     Can read JSON logs (list of dicts) or text line by line (both gzipped or plain).
@@ -97,7 +95,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
     log_obj_http_response_body = log_obj_http_response['Body']
     log_obj_http_response_content_encoding = log_obj_http_response.get('ContentEncoding', '').lower()
 
-    logger.debug("s3://%s/%s Object size: %i KB", bucket, key, log_obj_http_response['ContentLength'] / 1024)
+    logger.debug("s3://%s/%s Object size: %i KB",bucket,key,log_obj_http_response['ContentLength']/1024)
 
     if key.endswith('.gz') or log_obj_http_response_content_encoding == 'gzip':
         log_stream = gzip.GzipFile(
@@ -113,7 +111,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
             json_slicer_path_prefix = get_jsonslicer_path_prefix_from_jmespath_path(
                 log_processing_rule.log_entries_key)
         else:
-            json_slicer_path_prefix = (None,)
+            json_slicer_path_prefix = (None, )
         log_entries = jsonslicer.JsonSlicer(
             log_stream, json_slicer_path_prefix)
 
@@ -158,7 +156,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
 
     for log_entry in log_entries:
 
-        if restart_at_index > num_log_entries:
+        if start_line > num_log_entries:
             num_log_entries += 1
             continue
 
@@ -174,8 +172,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
             if isinstance(log_entry, dict):
                 # check if we need to process this entry, or not
                 if log_processing_rule.filter_json_objects_key is not None:
-                    if log_entry[
-                        log_processing_rule.filter_json_objects_key] != log_processing_rule.filter_json_objects_value:
+                    if log_entry[log_processing_rule.filter_json_objects_key] != log_processing_rule.filter_json_objects_value:
                         continue
 
                 # check if we need to inherit attributes from top level object
@@ -232,8 +229,8 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
         # if log is text, json list or json stream
         elif log_processing_rule.log_format == 'text':
             # check if we need to skip header lines
-            if num_log_entries + 1 <= log_processing_rule.skip_header_lines:
-                num_log_entries += 1
+            if num_log_entries+1 <= log_processing_rule.skip_header_lines:
+                num_log_entries +=1
                 continue
             if isinstance(log_entry, bytes):
                 log_entry = log_entry.decode(ENCODING)
