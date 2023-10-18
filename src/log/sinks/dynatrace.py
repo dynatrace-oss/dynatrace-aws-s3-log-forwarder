@@ -231,8 +231,12 @@ class DynatraceSink():
             raise DynatraceThrottlingException
         else:
             logger.error(
-                "%s: There was a HTTP %d error posting batch %d to Dynatrace. %s",
-                tenant_id,resp.status_code, batch_num, resp.text)
+                "%s: There was a HTTP %d error posting batch %d to Dynatrace (URL=%s, key-name=%s, key~=%s). %s",
+                tenant_id, resp.status_code, batch_num, 
+                self._environment_url + LOGV2_API_URL_SUFFIX,
+                self._api_key_parameter,
+                dt_api_key[10:]+'...'+dt_api_key[-10:],
+                resp.text)
             metrics.add_metric(name='DynatraceHTTPErrors',
                                unit=MetricUnit.Count, value=1)
             raise DynatraceIngestionException
@@ -257,7 +261,7 @@ def load_sinks():
     regex = r'^DYNATRACE_[A-Z0-9][A-Z0-9]*_ENV_URL$'
     sinks = {}
 
-    verify_ssl = False if os.environ['VERIFY_DT_SSL_CERT'] == "false" else True
+    verify_ssl = not (os.environ.get('VERIFY_DT_SSL_CERT', "true") == "false")
 
     for k, v in os.environ.items():
         if re.match(regex, k):

@@ -112,21 +112,28 @@ attribute_mapping_from_json_keys: Optional[dict]         # --> (Experimental) Al
                                                          #     and whether a custom prefix/postfix should be appended to them.
                                                          #     It is especially useful when processing rule is used for different JSON schemas.
                                                          #
-                                                         #     Set of JSON keys for further processing is configured by either one of the mandatory keys 'include'/'exclude'
-                                                         #     Adding prefix or postfix to the keys is optional and can be configured by corresponding keys 'prefix'/'postfix'
+                                                         #     Set of JSON keys for further processing is configured with the mandatory keys: either 'include'/'include_in_context' or 'exclude'/'exclude_in_context'.
+                                                         #     Adding prefix or postfix to the keys is optional and can be configured by corresponding keys 'prefix'/'postfix'.
                                                          #
                                                          #     Notes:
                                                          #     - As of now only top level attributes of JSON could be selected for the mapping.
                                                          #     - If defined, logic is applied after grok expressions.
+                                                         #     - '*_in_context' rules apply to log message content already set by processing definitions above
                                                          #
                                                          #     Example:
                                                          #     Map the values of all keys except for 'exec_time' and 'process_time' in a JSON log. 
+                                                         #     Plus, in case 'log.source' is 'dummy', *also* exclude keys 'from_time' and 'to_time' from mapping into a JSON log.
                                                          #     Additionally add custom prefix and postfix so that final attributes would match pattern 'my.*_mapped'
                                                          #
                                                          #     attribute_mapping_from_json_keys:
                                                          #        exclude: ['exec_time', 'process_time']
+                                                         #        exclude_in_context:
+                                                         #          - context_key: log.source
+                                                         #            context_value: dummy
+                                                         #            keys: ['from_time', 'to_time']
                                                          #        prefix: 'my.'
                                                          #        postfix: '_mapped'
+skip_content_attribute: Optional[bool]                   # --> (Experimental) if set to 'true', log forwarder will not copy original log line as 'content' attribute; defaults to 'false'
 ```
 
 You can find an example custom processing rule under `config/log-processing-rules.yaml` used to process [VPC DNS Query logs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-query-logs.html) from AWS.
