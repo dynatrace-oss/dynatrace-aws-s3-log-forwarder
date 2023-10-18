@@ -84,8 +84,9 @@ def get_log_entry_size(log_entry):
 
     return size
 
-def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key: str, bucket_region: str, log_sinks: list,
-                       lambda_context, user_defined_annotations: dict = None, session: boto3.Session = None):
+
+def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key: str, bucket_region: str, start_line: int,
+                       log_sinks: list, lambda_context, user_defined_annotations: dict = None, session: boto3.Session = None):
     '''
     Downloads a log from S3, decompresses and reads log messages within it and transforms the messages to Dynatrace LogV2 API format.
     Can read JSON logs (list of dicts) or text line by line (both gzipped or plain).
@@ -170,6 +171,10 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
 
     for log_entry in log_entries:
 
+        if start_line > num_log_entries:
+            num_log_entries += 1
+            continue
+
         dt_log_message = {}
 
         # calculate raw log entry size
@@ -231,7 +236,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
                 logger.debug("Processed %s entries", str(num_log_entries))
                 # Check remaining execution time for Lambda function
                 if lambda_context.get_remaining_time_in_millis() <= EXECUTION_REMAINING_TIME_LIMIT:
-                    raise NotEnoughExecutionTimeRemaining
+                    raise NotEnoughExecutionTimeRemaining(num_log_entries)
             # continue to next JSON object in stream
             continue
 
@@ -285,7 +290,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
             logger.debug("Processed %s entries", str(num_log_entries))
             # Check remaining execution time for Lambda function
             if lambda_context.get_remaining_time_in_millis() <= EXECUTION_REMAINING_TIME_LIMIT:
-                raise NotEnoughExecutionTimeRemaining
+                raise NotEnoughExecutionTimeRemaining(num_log_entries)
 
     logger.info("Total log entries processed: %s", str(num_log_entries))
 
@@ -303,4 +308,6 @@ class NotEnoughExecutionTimeRemaining(Exception):
     '''
     Exception for running out of Lambda execution time
     '''
-    pass
+
+    def __init__(self, next_message_index):
+        self.next_message_index = next_message_index
