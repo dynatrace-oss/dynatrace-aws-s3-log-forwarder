@@ -17,6 +17,7 @@ import logging
 import os
 import json
 import boto3
+import copy
 from aws_lambda_powertools import Metrics
 from aws_lambda_powertools.metrics import MetricUnit
 from log.processing import log_processing_rules
@@ -26,6 +27,7 @@ from log.sinks import dynatrace
 from utils import aws_appconfig_extension_helpers as aws_appconfig_helpers
 from version import get_version
 
+DEFAULT_RETRY_COUNT = 5
 
 logger = logging.getLogger()
 logger.setLevel(os.getenv("LOGGING_LEVEL", "INFO"))
@@ -176,8 +178,9 @@ def lambda_handler(event, context):
                                        unit=MetricUnit.Count, value=1)
                     continue
 
+                start_line = int(s3_notification.get('start_line', 0))
                 processing.process_log_object(
-                    matched_log_processing_rule, bucket_name, key_name, s3_notification['region'],
+                    matched_log_processing_rule, bucket_name, key_name, s3_notification['region'], start_line,
                     log_object_destination_sinks, context,
                     user_defined_annotations=user_defined_log_annotations,
                     session=boto3_session
@@ -203,17 +206,23 @@ def lambda_handler(event, context):
             metrics.add_metric(
                 name='DroppedObjectsDecodingErrors', unit=MetricUnit.Count, value=1)
 
-        except processing.NotEnoughExecutionTimeRemaining:
+        except processing.NotEnoughExecutionTimeRemaining as exception:
+            # put currently processed file back to queue with a retry information
+            send_retry_event(bucket_name, exception, key_name, s3_notification)
+
+            # return not started files from batch to queue
+            file_not_started_index = index + 1
+
             logger.exception(
-                'Unable to process log file s3://%s/%s with remaining Lambda execution time. %s total non-processed log files in batch',
-                bucket_name, key_name, (len(event['Records']) - index)
+                'Unable to finish processing log file s3://%s/%s with remaining Lambda execution time. %s total not-started log files in batch',
+                bucket_name, key_name, (len(event['Records']) - file_not_started_index)
             )
 
             metrics.add_metric(
                 name='NotEnoughExecutionTimeRemainingErrors', unit=MetricUnit.Count, value=1)
 
             total_batch_item_failures = generate_execution_timeout_batch_item_failures(
-                index, batch_item_failures, event['Records'])
+                file_not_started_index, batch_item_failures, event['Records'])
 
             metrics.add_metric(name='LogProcessingFailures', unit=MetricUnit.Count, value=len(
                 total_batch_item_failures['batchItemFailures']))
@@ -235,3 +244,22 @@ def lambda_handler(event, context):
         batch_item_failures['batchItemFailures']))
 
     return batch_item_failures
+
+
+def send_retry_event(bucket_name, exception, key_name, s3_notification):
+    retry_event = copy.deepcopy(s3_notification)
+    retry_count = int(s3_notification.get('retry_count', 0))
+    if retry_count >= DEFAULT_RETRY_COUNT:
+        logger.error(f'Exceeded retries limit for s3://{bucket_name}/{key_name}')
+        return
+
+    retry_event['start_line'] = exception.next_message_index
+    retry_event['retry_count'] = retry_count + 1
+
+    sqs = boto3_session.resource('sqs')
+    queue = sqs.get_queue_by_name(QueueName=os.environ.get('QueueName'))
+    message_body = json.dumps(retry_event)
+    logger.debug("Sending retry message on queue url %s: %s", queue.url, message_body)
+
+    response = queue.send_message(MessageBody=message_body)
+    logger.debug("Received response from sqs: %s", response)
