@@ -42,7 +42,7 @@ before_install:
     # CloudFormation Mappings don't support "_" in names, so we need to match mapping name x86
     export MAPPING=$(if [[ $LAMBDA_ARCH == "x86_64" ]];then echo "x86"; else echo $LAMBDA_ARCH; fi )
     export LAMBDA_BASE_IMAGE_TAG=$(cat template.yaml | yq ".Mappings.LambdaBaseImageMap.${MAPPING}.Tag")
-    
+
 jobs:
   include:
   - stage: validate-cfn-templates
@@ -58,6 +58,7 @@ jobs:
     services:
     - docker
     script:
+      - docker --version
       # Build container image with dev dependencies
       - |
         docker build --progress=plain -t queueprocessingfunction:test --build-arg ARCH=$LAMBDA_ARCH  \
@@ -77,11 +78,11 @@ jobs:
                      --build-arg ENABLE_LAMBDA_INSIGHTS="false" --build-arg LAMBDA_BASE_IMAGE_TAG=${LAMBDA_BASE_IMAGE_TAG}
       # Log in to ECR
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
-        
+
       # Push image
       - docker tag dynatrace-aws-s3-log-forwarder:${COMMIT}-${LAMBDA_ARCH} ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${COMMIT}-${LAMBDA_ARCH}
       - docker push ${ECR_REPOSITORY_URL}/dynatrace-aws-s3-log-forwarder:${COMMIT}-${LAMBDA_ARCH}
-  
+
   - stage: end-to-end-test
     name: End-to-end deployment test
     if: fork = false AND ( branch == main OR type == pull_request )
@@ -95,13 +96,13 @@ jobs:
         echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] E2E testing validation log entry" > ${TRAVIS_BUILD_ID}.log
         aws s3 cp ${TRAVIS_BUILD_ID}.log s3://${E2E_TESTING_BUCKET_NAME}/test/${TRAVIS_BUILD_ID}/validation/test_log.log
         sleep 120
-      
+
       # Validate log entry
       - ./tests/e2e/validate_logs_exist.py --bucket ${E2E_TESTING_BUCKET_NAME} --key test/${TRAVIS_BUILD_ID}/validation/test_log.log
-    
-    after_script: 
+
+    after_script:
       - ./tests/e2e/clean_up_resources.sh
-  
+
   - stage: release-container-image
     name: Release Container Image
     if: tag =~ /^v.*$/
