@@ -16,7 +16,7 @@ import yaml
 
 ENCODING = 'utf-8'
 
-# Collection of helper regular expressions to describe log key name patterns 
+# Collection of helper regular expressions to describe log key name patterns
 # and extract attributes from it
 
 helper_regexes = {
@@ -38,7 +38,8 @@ helper_regexes = {
     'cloudfront_distribution_id_pattern': r'E[A-Z0-9]{13}',
     'vpc_flow_id_pattern': r'fl-[0-9a-f]{8}(?:[0-9a-f]{9})?',
     'aws_global_accelerator_id_pattern': r'[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}',
-    'redshift_cluster_name_pattern': r'[a-z][a-z0-9-]{1,61}[a-z0-9]?'
+    'redshift_cluster_name_pattern': r'[a-z][a-z0-9-]{1,61}[a-z0-9]?',
+    'organization_id_pattern': r'o-[a-z0-9]{10,32}'
 }
 
 custom_grok_expressions = {
@@ -102,7 +103,7 @@ def get_attributes_from_cloudwatch_logs_data(log_group_name,log_stream_name):
                                             extraction_details['parameters'], cwl_attributes[i])
     except IndexError:
         pass
-    
+
     return extracted_attributes
 
 def is_yaml_file(file: str):
