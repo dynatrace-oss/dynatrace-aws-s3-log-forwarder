@@ -189,7 +189,7 @@ To deploy the `dynatrace-aws-s3-log-forwarder` using the provided container imag
 
 ### Next steps
 
-At this stage, you should see logs being ingested in Dynatrace as they're written to Amazon S3. 
+At this stage, you should see logs being ingested in Dynatrace as they're written to Amazon S3.
 
 You can explore logs using the Dynatrace [Logs and events viewer](https://docs.dynatrace.com/docs/observe-and-explore/logs/log-management-and-analytics/lma-analysis/logs-and-events). You can also create metrics and alerts based on ingested logs (see [Log metrics](https://docs.dynatrace.com/docs/observe-and-explore/logs/log-management-and-analytics/lma-analysis/lma-log-metrics) and [Log events](https://docs.dynatrace.com/docs/observe-and-explore/logs/log-management-and-analytics/lma-analysis/lma-log-events) documentation).
 
