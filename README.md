@@ -209,12 +209,12 @@ fetch logs
 | filter log.source.aws.s3.bucket.name == "mybucket"
 ```
 
-#### Get number of log entries per AWS Service
+#### Get the number of log entries per AWS Service
 
 ```custom
 fetch logs
 | filter isNotNull(aws.service) 
-|  summarize {count(),alias:log_entries}, by: aws.service
+| summarize {count(),alias:log_entries}, by: aws.service
 ```
 
 To learn more about DQL, check our [DQL documentation](https://docs.dynatrace.com/docs/platform/grail/dynatrace-query-language/dql-guide). If you use Dynatrace Managed Cluster or a Dynatrace tenant without Grail enabled, check the [Log Monitoring Classic docs](https://docs.dynatrace.com/docs/observe-and-explore/logs/log-monitoring/analyze-log-data).
