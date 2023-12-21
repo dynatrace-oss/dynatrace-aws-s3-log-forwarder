@@ -32,6 +32,7 @@ vpcflowlog_key_name = 'optional_prefix/AWSLogs/012345678910/vpcflowlogs/us-east-
 network_firewall_key_name = 'random_prefix/AWSLogs/012345678910/network-firewall/flow/us-east-1/my-test-firewall/2023/02/20/16/012345678910_network-firewall_flow_us-east-1_my-test-firewall_202302201610_e5c84094.log.gz'
 msk_key_name = 'AWSLogs/012345678910/KafkaBrokerLogs/us-east-1/demo-cluster-2-043b6d76-352c-494a-9eee-fbff5cc1687d-20/2023-02-20-17/Broker-1_17-05_5b17f696.log.gz'
 global_accelerator_key_name = 'myprefix/AWSLogs/012345678910/globalaccelerator/us-west-2/2023/02/21/012345678910_globalaccelerator_f0154cf1-4ac0-451b-87a2-5b2ce89142e6_20230221T1305Z_2e13fabb.log.gz'
+appfabric_ocsf_json_key_name = 'my_random_prefix/AWSAppFabric/AuditLog/OCSF/JSON/JIRA/1b7374b9-3c6c-42da-8b09-1441a3c22fea/129c4667-01c8-47df-9af4-ed942bef13fe/20231123/AuditLog-1700743707323-7aae5b59-5fad-4d88-b387-9649474c5ffa'
 
 class TestAWSAttributeInjection(unittest.TestCase):
     def test_cloudtrail_attributes(self):
@@ -193,6 +194,9 @@ class TestS3KeyMatchingExpression(unittest.TestCase):
 
     def test_global_accelerator_s3_key(self):
         self.assertTrue(processing_rules['aws']['global-accelerator'].match_s3_key(global_accelerator_key_name))
+    
+    def test_appfabric_ocsf_json_s3_key(self):
+        self.assertTrue(processing_rules['aws']['appfabric-ocsf-json'].match_s3_key(appfabric_ocsf_json_key_name))
 
 if __name__ == '__main__':
     unittest.main()

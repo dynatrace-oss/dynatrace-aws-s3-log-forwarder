@@ -490,5 +490,72 @@ class testCWLtoFirehoseLogs(unittest.TestCase):
         extracted_attributes = processing_rules['custom']['cwl_to_fh'].get_extracted_log_attributes(log_entry)
         self.assertEqual(extracted_attributes,expected_attributes)
 
+class testAppFabricLogs(unittest.TestCase):
+
+    def test_appfabric_logs(self):
+        log_entry = {
+          "activity_id": 99,
+          "activity_name": "Update",
+          "actor": {
+            "user": {
+              "email_addr": "akua_mansa@example.com",
+              "name": "fabric test",
+              "type": "User",
+              "type_id": 1,
+              "uid": "12817214158477"
+            }
+          },
+          "category_name": "Identity & Access Management",
+          "category_uid": 3,
+          "class_name": "Account Change",
+          "class_uid": 3001,
+          "device": {
+            "ip": "52.91.153.203",
+            "type": "Unknown",
+            "type_id": 0
+          },
+          "http_request": {},
+          "message": "Started 30-day deletion",
+          "metadata": {
+            "event_code": "user_update",
+            "log_provider": "AWS AppFabric",
+            "log_version": "2023-06-27",
+            "product": {
+              "name": "Zendesk",
+              "uid": "zendesk",
+              "vendor_name": "Zendesk"
+            },
+            "profiles": [
+              "host"
+            ],
+            "uid": "17297609041293",
+            "version": "v1.0.0-rc.3"
+          },
+          "raw_data": "{\"url\":\"https://fabric5385.zendesk.com/api/v2/audit_logs/17297609041293.json\",\"id\":17297609041293,\"action_label\":\"Updated\",\"actor_id\":12817214158477,\"source_id\":17297601029773,\"source_type\":\"user\",\"source_label\":\"Customer: 5683 charlie\",\"action\":\"update\",\"change_description\":\"Started 30-day deletion\",\"ip_address\":\"52.91.153.203\",\"created_at\":\"2023-07-04T00:13:19Z\",\"actor_name\":\"fabric test\"}",
+          "severity_id": 0,
+          "status": "Success",
+          "status_id": 1,
+          "time": 1688429599000,
+          "type_name": "Account Change: Update",
+          "type_uid": 300199,
+          "user": {
+            "name": "Customer: 5683 charlie",
+            "type": "User",
+            "type_id": 1,
+            "uid": "17297601029773"
+          }
+        }
+        expected_attributes = {
+            "timestamp": 1688429599000,
+            "log.source": "zendesk",
+            "audit.identity": "akua_mansa@example.com",
+            "audit.action": "Account Change: Update"
+        }
+
+        extracted_attributes = processing_rules['aws']['appfabric-ocsf-json'].get_extracted_log_attributes(log_entry)
+        self.assertEqual(extracted_attributes,expected_attributes)
+
 if __name__ == '__main__':
     unittest.main()
+
+    
