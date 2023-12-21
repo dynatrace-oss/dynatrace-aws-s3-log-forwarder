@@ -19,8 +19,12 @@ The `dynatrace-aws-s3-log-forwarder` supports out-of-the-box parsing and forward
 * [Amazon VPC DNS query logs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-query-logs.html)
 * [Amazon VPC Flow logs](https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-s3.html) (default logs)
 * [AWS WAF](https://docs.aws.amazon.com/waf/latest/developerguide/logging-s3.html) logs
+* [AWS AppFabric](https://docs.aws.amazon.com/appfabric/latest/adminguide/getting-started-security.html) OCSF-JSON logs (Raw-JSON logs require a custom processing rule)
 
 Additionally, you can ingest any generic text and JSON logs. For more information, visit [docs/log_forwarding.md](docs/log_forwarding.md).
+
+> [!IMPORTANT]
+> Log events with timestamps older than 24 hours are dropped by Dynatrace (see [docs](https://docs.dynatrace.com/docs/dynatrace-api/environment-api/log-monitoring-v2/post-ingest-logs#request-body-objects))
 
 ## Deployment instructions
 
@@ -185,4 +189,34 @@ To deploy the `dynatrace-aws-s3-log-forwarder` using the provided container imag
 
 ### Next steps
 
-At this stage, you should see logs being ingested in Dynatrace as they're written to Amazon S3. For more detailed information and advanced configuration details, visit the documentation in the `docs` folder.
+At this stage, you should see logs being ingested in Dynatrace as they're written to Amazon S3. 
+
+You can explore logs using the Dynatrace [Logs and events viewer](https://docs.dynatrace.com/docs/observe-and-explore/logs/log-management-and-analytics/lma-analysis/logs-and-events). You can also create metrics and alerts based on ingested logs (see [Log metrics](https://docs.dynatrace.com/docs/observe-and-explore/logs/log-management-and-analytics/lma-analysis/lma-log-metrics) and [Log events](https://docs.dynatrace.com/docs/observe-and-explore/logs/log-management-and-analytics/lma-analysis/lma-log-events) documentation).
+
+You can also perform deep log analysis with [Dynatrace Notebooks](https://docs.dynatrace.com/docs/observe-and-explore/notebook) and [Dynatrace Query Langage (DQL)]((https://docs.dynatrace.com/docs/platform/grail/dynatrace-query-language/dql-guide)). See some example DQL queries below:
+
+#### Query AWS CloudTrail logs:
+
+```custom
+fetch logs
+| filter aws.service == "cloudtrail"
+```
+
+#### Query logs ingested from S3 Bucket "mybucket"
+
+```custom
+fetch logs
+| filter log.source.aws.s3.bucket.name == "mybucket"
+```
+
+#### Get number of log entries per AWS Service
+
+```custom
+fetch logs
+| filter isNotNull(aws.service) 
+|  summarize {count(),alias:log_entries}, by: aws.service
+```
+
+To learn more about DQL, check our [DQL documentation](https://docs.dynatrace.com/docs/platform/grail/dynatrace-query-language/dql-guide). If you use Dynatrace Managed Cluster or a Dynatrace tenant without Grail enabled, check the [Log Monitoring Classic docs](https://docs.dynatrace.com/docs/observe-and-explore/logs/log-monitoring/analyze-log-data).
+
+For more detailed information and advanced configuration details of the `dynatrace-aws-s3-log-forwarder`, visit the documentation in the `docs` folder.
