@@ -39,7 +39,8 @@ helper_regexes = {
     'vpc_flow_id_pattern': r'fl-[0-9a-f]{8}(?:[0-9a-f]{9})?',
     'aws_global_accelerator_id_pattern': r'[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}',
     'redshift_cluster_name_pattern': r'[a-z][a-z0-9-]{1,61}[a-z0-9]?',
-    'organization_id_pattern': r'o-[a-z0-9]{10,32}'
+    'organization_id_pattern': r'o-[a-z0-9]{10,32}',
+    'uuid_pattern': r'[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}'
 }
 
 custom_grok_expressions = {
