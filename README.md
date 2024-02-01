@@ -54,8 +54,8 @@ To deploy the `dynatrace-aws-s3-log-forwarder` using the provided container imag
 1. Define a name for your `dynatrace-aws-s3-log-forwarder` deployment (e.g. mycompany-dynatrace-s3-log-forwarder) and your dynatrace tenant UUID (e.g. `abc12345` if your Dynatrace environment url is `https://abc12345.live.dynatrace.com`) in environment variables that will be used along the deployment process.
 
     ```bash
-    export STACK_NAME=replace_with_your_log_forwarder_stack_name
-    export DYNATRACE_TENANT_UUID=replace_with_your_dynatrace_tenant_uuid
+    export STACK_NAME=<replace-with-your-log-forwarder-stack-name>
+    export DYNATRACE_TENANT_UUID=<replace-with-your-dynatrace-tenant-uuid>
     ```
 
     > **Important**
@@ -67,15 +67,15 @@ To deploy the `dynatrace-aws-s3-log-forwarder` using the provided container imag
     export PARAMETER_NAME="/dynatrace/s3-log-forwarder/$STACK_NAME/$DYNATRACE_TENANT_UUID/api-key"
     # Configure HISTCONTROL to avoid storing on the bash history the commands containing API keys
     export HISTCONTROL=ignorespace
-     export PARAMETER_VALUE=your_dynatrace_api_key_here
+     export PARAMETER_VALUE=<your_dynatrace-access-token-here>
      aws ssm put-parameter --name $PARAMETER_NAME --type SecureString --value $PARAMETER_VALUE
     ```
 
     > **Notes**
     >
     > * HISTCONTROL is set here to avoid storing commands starting with a space on bash history.
-    > * It's important that your parameter name follows the structure above, as the solution grants permissions to AWS Lambda to the hierarchy `/dynatrace/s3-log-forwarder/ your_stack_name/*`
-    > * Your API Key is stored encyrpted with the default AWS-managed key alias: `aws/ssm`. If you want to use a Customer-managed Key, you'll need to grant Decrypt permissions > to the AWS Lambda IAM Role that's deployed within the CloudFormation template.
+    > * It's important that your parameter name follows the structure above, as the solution grants permissions to AWS Lambda to the hierarchy `/dynatrace/s3-log-forwarder/your-stack-name/*`
+    > * Your API Key is stored encyrpted with the default AWS-managed key alias: `aws/ssm`. If you want to use a Customer-managed Key, you'll need to grant Decrypt permissions to the AWS Lambda IAM Role that's deployed within the CloudFormation template.
 
 1. Create an Amazon ECR repository on your AWS account.
 
@@ -195,18 +195,18 @@ You can explore logs using the Dynatrace [Logs and events viewer](https://docs.d
 
 You can also perform deep log analysis with [Dynatrace Notebooks](https://docs.dynatrace.com/docs/observe-and-explore/notebook). See some example Dynatrace Query Language (DQL) queries below:
 
-#### Query AWS CloudTrail logs:
-
-```custom
-fetch logs
-| filter aws.service == "cloudtrail"
-```
-
 #### Query logs ingested from S3 Bucket "mybucket"
 
 ```custom
 fetch logs
 | filter log.source.aws.s3.bucket.name == "mybucket"
+```
+
+#### Query AWS CloudTrail logs:
+
+```custom
+fetch logs
+| filter aws.service == "cloudtrail"
 ```
 
 #### Get the number of log entries per AWS Service
@@ -217,6 +217,24 @@ fetch logs
 | summarize {count(),alias:log_entries}, by: aws.service
 ```
 
-To learn more, check our [DQL documentation](https://docs.dynatrace.com/docs/platform/grail/dynatrace-query-language/dql-guide). If you use Dynatrace Managed Cluster or a Dynatrace tenant without Grail enabled, check the [Log Monitoring Classic docs](https://docs.dynatrace.com/docs/observe-and-explore/logs/log-monitoring/analyze-log-data).
+#### Extract attributes from JSON Logs: Add sourceInstanceId log attribute from VPC DNS Query Logs
+
+```custom
+fetch logs 
+| filter matchesValue(aws.service, "route53")
+| parse content, "JSON:record"
+| fieldsAdd record[srcids][instance], alias:sourceInstanceId
+```
+
+#### Flatten a JSON formatted log
+
+```custom
+fetch logs 
+| filter matchesValue(aws.service, "route53")
+| parse content, "JSON:record"
+| fieldsFlatten record
+```
+
+To learn more, check our [DQL documentation](https://docs.dynatrace.com/docs/platform/grail/dynatrace-query-language/dql-guide). You can also find a set of provided patterns to extract attributes for common logs in the [DPL Architect](https://docs.dynatrace.com/docs/platform/grail/dynatrace-pattern-language/dpl-architect). If you use Dynatrace Managed Cluster or a Dynatrace tenant without Grail enabled, check the [Log Monitoring Classic docs](https://docs.dynatrace.com/docs/observe-and-explore/logs/log-monitoring/analyze-log-data).
 
 For more detailed information and advanced configuration details of the `dynatrace-aws-s3-log-forwarder`, visit the documentation in the `docs` folder.
