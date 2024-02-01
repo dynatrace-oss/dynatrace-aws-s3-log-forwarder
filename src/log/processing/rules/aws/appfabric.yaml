@@ -14,7 +14,7 @@
 
 name: appfabric-ocsf-json
 # AWSAppFabric/AuditLog/OCSF/JSON/JIRA/1b7374b9-3c6c-42da-8b09-1441a3c22fea/129c4667-01c8-47df-9af4-ed942bef13fe/20231123/AuditLog-1700743707323-7aae5b59-5fad-4d88-b387-9649474c5ffa
-known_key_path_pattern: '^.*/AWSAppFabric/AuditLog/OCSF/JSON/[A-Z0-9]+/{uuid_pattern}/{uuid_pattern}/{year_pattern}{month_pattern}{day_pattern}/AuditLog-\d{{13}}-{uuid_pattern}$'
+known_key_path_pattern: '^.*?AWSAppFabric/AuditLog/OCSF/JSON/[A-Z0-9]+/{uuid_pattern}/{uuid_pattern}/{year_pattern}{month_pattern}{day_pattern}/AuditLog-\d{{13}}-{uuid_pattern}$'
 source: aws
 
 log_format: json_stream
