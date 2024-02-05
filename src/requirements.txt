@@ -5,7 +5,7 @@ PyYAML==6.0.1
 regex==2023.10.3
 # aws-lambda-powertools 1.31.0 fixes a problem where metrics were lacking dimension
 # https://github.com/awslabs/aws-lambda-powertools-python/releases/tag/v1.31.0
-aws-lambda-powertools==2.29.1
+aws-lambda-powertools==2.33.0
 jsonslicer==0.1.8
 Jinja2==3.1.2
 # botocore does not yet suport urllib3 in version 2.0.0 or higher. 
