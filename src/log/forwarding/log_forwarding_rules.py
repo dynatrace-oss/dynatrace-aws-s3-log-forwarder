@@ -275,8 +275,8 @@ def _create_log_forwarding_rule_object(rule: dict) -> LogForwardingRule:
     except KeyError as ex:
         raise IncorrectLogForwardingRuleFormat(message=f"Missing attributes on log forwarding rule {rule}: {ex.args}")
     except ValueError as ex:
-        raise IncorrectLogForwardingRuleFormat(message=f"LogForwardingRule {rule['name']} contains invalid attributes: {ex.args}") 
+        raise IncorrectLogForwardingRuleFormat(message=f"LogForwardingRule {rule} contains invalid attributes: {ex.args}") 
     except Exception as ex:
-        raise IncorrectLogForwardingRuleFormat(f"Unable to create LogForwarding rule {rule['name']}") from ex
+        raise IncorrectLogForwardingRuleFormat(f"Unable to create LogForwarding rule {rule}") from ex
 
     return log_forwarding_rule
