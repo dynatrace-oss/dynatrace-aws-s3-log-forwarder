@@ -149,6 +149,9 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
     context_log_attributes.update(
         log_processing_rule.get_processing_log_annotations())
 
+    for log_sink in log_sinks:
+        log_sink.set_s3_source(bucket, key)
+    
     # Count log entries (can't len() a stream)
     num_log_entries = 0
     decompressed_log_object_size = 0
