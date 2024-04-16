@@ -97,8 +97,8 @@ class DynatraceSink():
     def get_environment_url(self):
         return self._environment_url
 
-    def set_s3_s3_source(self, bucket: str, key: str):
-        self._s3_s3_source = f"{bucket}:{key}"
+    def set_s3_source(self, bucket: str, key: str):
+        self._s3_source = f"{bucket}/{key}"
 
     def push(self, message: dict):
         # Validate that the message size doesn't reach DT limits. If so,
