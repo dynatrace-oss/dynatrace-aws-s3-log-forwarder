@@ -216,27 +216,28 @@ class DynatraceSink():
                                unit=MetricUnit.Count, value=1)
         elif resp.status_code == 200:
             logger.warning(
-                f"{tenant_id}: Parts of batch {batch_num} were not successfully posted: {resp.text}. Source file: {self._s3_source}")
+                '%s: Parts of batch %s were not successfully posted: %s. Source file: %s',tenant_id, batch_num, resp.text, self._s3_source)
             metrics.add_metric(
                 name='DynatraceHTTP200PartialSuccess', unit=MetricUnit.Count, value=1)
         elif resp.status_code == 400:
             logger.warning(
-                f"{tenant_id}: Parts of batch {batch_num} were not successfully posted: {resp.text}. Source file: {self._s3_source}")
+                '%s: Parts of batch %s were not successfully posted: %s. Source file: %s',tenant_id, batch_num, resp.text, self._s3_source)
             metrics.add_metric(
                 name='DynatraceHTTP400InvalidLogEntries', unit=MetricUnit.Count, value=1)
         elif resp.status_code == 429:
-            logger.error(f"{tenant_id}: Throttled by Dynatrace. Exhausted retry attempts... Source file: {self._s3_source}")
+            logger.error("%s: Throttled by Dynatrace. Exhausted retry attempts... Source file: %s", tenant_id, self._s3_source)
             metrics.add_metric(name='DynatraceHTTP429Throttled',unit=MetricUnit.Count, value=1)
             metrics.add_metric(name='DynatraceHTTPErrors', unit=MetricUnit.Count, value=1)
             raise DynatraceThrottlingException
         elif resp.status_code == 503:
-            logger.error(f"{tenant_id}: Usable space limit reached. Exhausted retry attempts... Source file: {self._s3_source}")
+            logger.error("%s: Usable space limit reached. Exhausted retry attempts... Source file: %s", tenant_id, self._s3_source)
             metrics.add_metric(name='DynatraceHTTP503SpaceLimitReached',unit=MetricUnit.Count, value=1)
             metrics.add_metric(name='DynatraceHTTPErrors', unit=MetricUnit.Count, value=1)
             raise DynatraceThrottlingException
         else:
             logger.error(
-                f"{tenant_id}: There was a HTTP {resp.status_code} error posting batch {batch_num} to Dynatrace: {resp.text}.  Source file: {self._s3_source}")
+                "%s: There was a HTTP %d error posting batch %d to Dynatrace. %s. Source file: %s",
+                tenant_id,resp.status_code, batch_num, resp.text, self._s3_source)
             metrics.add_metric(name='DynatraceHTTPErrors',
                                unit=MetricUnit.Count, value=1)
             raise DynatraceIngestionException

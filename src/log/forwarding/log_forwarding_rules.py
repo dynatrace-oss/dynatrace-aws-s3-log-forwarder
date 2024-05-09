@@ -188,8 +188,8 @@ def load_forwarding_rules_from_local_folder():
                         rule_obj = _create_log_forwarding_rule_object(rule)
                         log_forwarding_rules[bucket_name][rule['name']] = rule_obj
                     except IncorrectLogForwardingRuleFormat as ex:
-                        logger.exception(
-                            f'Skipping incorrect log forwarding rule {rule} in {rule_file.name} {ex.message}')
+                        logger.warning(
+                            'Skipping incorrect log forwarding rule: %s in %s; %s', rule, rule_file.name, ex.message)
                         continue
 
         except InvalidLogForwardingRuleFile as ex:
@@ -273,10 +273,10 @@ def _create_log_forwarding_rule_object(rule: dict) -> LogForwardingRule:
                                                 annotations=rule['annotations'], 
                                                 sinks=rule['sinks'])
     except KeyError as ex:
-        raise IncorrectLogForwardingRuleFormat(message=f"Missing attributes on log forwarding rule {rule}: {ex.args}")
+        raise IncorrectLogForwardingRuleFormat(message=f"Missing attributes on log forwarding rule {rule}") from ex
     except ValueError as ex:
-        raise IncorrectLogForwardingRuleFormat(message=f"LogForwardingRule {rule} contains invalid attributes: {ex.args}") 
+        raise IncorrectLogForwardingRuleFormat(message="LogForwardingRule contains invalid attributes.") from ex
     except Exception as ex:
-        raise IncorrectLogForwardingRuleFormat(f"Unable to create LogForwarding rule {rule}") from ex
+        raise IncorrectLogForwardingRuleFormat("Unable to create LogForwarding rule.") from ex
 
     return log_forwarding_rule
