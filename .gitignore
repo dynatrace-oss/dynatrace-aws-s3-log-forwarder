@@ -253,6 +253,7 @@ samconfig.toml
 .vscode/settings.json
 
 config
+.idea
 .dev
 .tmp
 dev/env_vars.cfg

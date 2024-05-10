@@ -189,8 +189,7 @@ def load_forwarding_rules_from_local_folder():
                         log_forwarding_rules[bucket_name][rule['name']] = rule_obj
                     except IncorrectLogForwardingRuleFormat as ex:
                         logger.warning(
-                            'Skipping incorrect log forwarding rule: %s in %s', rule, rule_file.name)
-                        logger.error(ex)
+                            'Skipping incorrect log forwarding rule: %s in %s; %s', rule, rule_file.name, ex.message)
                         continue
 
         except InvalidLogForwardingRuleFile as ex:
