@@ -43,7 +43,7 @@ DYNATRACE_LOG_INGEST_CONTENT_MARK_TRIMMED = '[TRUNCATED]'
 # https://docs.aws.amazon.com/awscloudtrail/latest/userguide/WhatIsCloudTrail-Limits.html
 try:
     DYNATRACE_LOG_INGEST_CONTENT_MAX_LENGTH = int(os.getenv('DYNATRACE_LOG_INGEST_CONTENT_MAX_LENGTH'))    
-except:
+except ValueError:
     DYNATRACE_LOG_INGEST_CONTENT_MAX_LENGTH = 65536
 
 DYNATRACE_LOG_INGEST_ATTRIBUTE_MAX_LENGTH = 250
