@@ -1,4 +1,4 @@
-requests==2.31.0
+requests==2.32.2
 jmespath==1.0.1
 pygrok==1.0.0
 PyYAML==6.0.2
