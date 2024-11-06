@@ -2,7 +2,7 @@ requests==2.31.0
 jmespath==1.0.1
 pygrok==1.0.0
 PyYAML==6.0.2
-regex==2024.9.11
+regex==2024.11.6
 # aws-lambda-powertools 1.31.0 fixes a problem where metrics were lacking dimension
 # https://github.com/awslabs/aws-lambda-powertools-python/releases/tag/v1.31.0
 aws-lambda-powertools==2.43.1
