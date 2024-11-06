@@ -322,7 +322,6 @@ class TestALBAttributeExtraction(unittest.TestCase):
                                'uriproto': 'http',
                                'urihost': '10.0.0.30:80',
                                'port': '80',
-                               'uripath': '-',
                                'http_version': '-',
                                'user_agent': '-',
                                'target_group_arn': 'arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067',
@@ -338,8 +337,7 @@ class TestALBAttributeExtraction(unittest.TestCase):
         extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry)
         self.assertEqual(expected_attributes, extracted_attributes)
 
-    @unittest.skip("This is a base method for parameterized tests below")
-    def test_alb_attribute_extraction_complicated_uri_param_base_test(self, uriparam):
+    def alb_attribute_extraction_complicated_uri_param_base_test(self, uriparam):
         log_entry = f'https 2018-07-02T22:23:00.186641Z app/my-loadbalancer/50dc6c495c0c9188 10.0.0.140:40914 10.0.1.192:8010 0.001 0.003 0.000 101 101 218 587 "POST http://10.0.0.30:80/index.php?{uriparam} HTTP/1.1" "-" - - arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337364-23a8c76965a2ef7629b185e3" "-" "-" 1 2018-07-02T22:22:48.364000Z "forward" "-" "-" "10.0.1.192:8010" "101" "-" "-"'
         expected_attributes = { 'request_type': 'https',
                                 'timestamp': '2018-07-02T22:23:00.186641Z',
@@ -376,13 +374,13 @@ class TestALBAttributeExtraction(unittest.TestCase):
         self.assertEqual(expected_attributes,extracted_attributes)
 
     def test_alb_attribute_extraction_function_call_in_uri_param(self):
-        self.test_alb_attribute_extraction_complicated_uri_param_base_test("s=/index/\x5Ca\x5Capp/invokefunction&function=call_user_func_array&vars[0]=md5&vars[1][]=Hello")
+        self.alb_attribute_extraction_complicated_uri_param_base_test("s=/index/\x5Ca\x5Capp/invokefunction&function=call_user_func_array&vars[0]=md5&vars[1][]=Hello")
 
     def test_alb_attribute_extraction_code_injection_attack_in_uri_param(self):
-        self.test_alb_attribute_extraction_complicated_uri_param_base_test("lang=../../../../../../../../usr/local/lib/php/applecmd&+config-create+/&/<?echo(md5(\x23hellp\x23));?>+/tmp/index2.php")
+        self.alb_attribute_extraction_complicated_uri_param_base_test("lang=../../../../../../../../usr/local/lib/php/applecmd&+config-create+/&/<?echo(md5(\x23hellp\x23));?>+/tmp/index2.php")
 
     def test_alb_attribute_extraction_sql_injection_in_uri_param(self):
-        self.test_alb_attribute_extraction_complicated_uri_param_base_test("user=-1+union+select+1,2,3,4,5,6,7,8,9,(SELECT+group_concat(table_name)+from+information_schema.tables+where+table_schema=database())")
+        self.alb_attribute_extraction_complicated_uri_param_base_test("user=-1+union+select+1,2,3,4,5,6,7,8,9,(SELECT+group_concat(table_name)+from+information_schema.tables+where+table_schema=database())")
 
 
 class TestClassicELBAttributeExtraction(unittest.TestCase):
