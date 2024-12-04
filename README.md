@@ -4,6 +4,10 @@ This project deploys a Serverless architecture to forward logs from Amazon S3 to
 
 ![Architecture](docs/images/architecture.jpg)
 
+## Support
+
+This project is officially supported by Dynatrace. Before you create a ticket check the documentation in the `docs` folder. If you didn't find a solution please [contact Dynatrace support](https://www.dynatrace.com/support/contact-support/).
+
 ## Supported AWS Services
 
 The `dynatrace-aws-s3-log-forwarder` supports out-of-the-box parsing and forwarding of logs for the following AWS Services:
