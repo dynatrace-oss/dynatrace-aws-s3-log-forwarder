@@ -1,5 +1,5 @@
 # dynatrace-aws-s3-log-forwarder
- 
+
 This project deploys a Serverless architecture to forward logs from Amazon S3 to Dynatrace.
 
 ![Architecture](docs/images/architecture.jpg)
