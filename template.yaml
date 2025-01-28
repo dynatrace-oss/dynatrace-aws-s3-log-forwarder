@@ -183,7 +183,7 @@ Mappings:
     # Mappings only support alphanumeric chars, '-' and '.', so name can't be x86_64
     # That means to resolve the image tag we need !If [ ArchIsArm , !FindInMap arm, !FindInMap x86]
     x86: 
-      Tag: '3.13.2025.01.15.17-x86_64-x86_64'
+      Tag: '3.13.2025.01.15.17-x86_64'
     arm64:
       Tag: '3.13.2025.01.15.17-arm64'
 
