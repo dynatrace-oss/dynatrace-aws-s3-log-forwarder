@@ -41,7 +41,10 @@ ENVIRONMENT_AG_URL_PART = '/e/'
 DYNATRACE_LOG_INGEST_CONTENT_MARK_TRIMMED = '[TRUNCATED]'
 # CloudTrail messages can be up to 256KB!
 # https://docs.aws.amazon.com/awscloudtrail/latest/userguide/WhatIsCloudTrail-Limits.html
-DYNATRACE_LOG_INGEST_CONTENT_MAX_LENGTH = 8192
+try:
+    DYNATRACE_LOG_INGEST_CONTENT_MAX_LENGTH = int(os.getenv('DYNATRACE_LOG_INGEST_CONTENT_MAX_LENGTH'))    
+except (ValueError, TypeError):
+    DYNATRACE_LOG_INGEST_CONTENT_MAX_LENGTH = 65536
 
 DYNATRACE_LOG_INGEST_ATTRIBUTE_MAX_LENGTH = 250
 DYNATRACE_LOG_INGEST_PAYLOAD_MAX_SIZE = 5242880  # 5MB
@@ -69,6 +72,7 @@ class DynatraceSink():
         self._approx_buffered_messages_size = LIST_BRACKETS_LENGTH
         self._messages = []
         self._batch_num = 1
+        self._s3_source = ""
 
         retry_strategy = Retry(
             total = 3,
@@ -95,6 +99,9 @@ class DynatraceSink():
 
     def get_environment_url(self):
         return self._environment_url
+
+    def set_s3_source(self, bucket: str, key: str):
+        self._s3_source = f"{bucket}/{key}"
 
     def push(self, message: dict):
         # Validate that the message size doesn't reach DT limits. If so,
@@ -128,6 +135,7 @@ class DynatraceSink():
         self._messages = []
         self._approx_buffered_messages_size = LIST_BRACKETS_LENGTH
         self._batch_num = 1
+        self._s3_source = ""
 
     def check_log_message_size_and_truncate(self, message: dict):
         '''
@@ -211,32 +219,32 @@ class DynatraceSink():
                                unit=MetricUnit.Count, value=1)
         elif resp.status_code == 200:
             logger.warning(
-                '%s: Parts of batch %s were not successfully posted: %s',tenant_id, batch_num, resp.text)
+                '%s: Parts of batch %s were not successfully posted: %s. Source file: %s',tenant_id, batch_num, resp.text, self._s3_source)
             metrics.add_metric(
                 name='DynatraceHTTP200PartialSuccess', unit=MetricUnit.Count, value=1)
         elif resp.status_code == 400:
             logger.warning(
-                '%s: Parts of batch %s were not successfully posted: %s',tenant_id, batch_num, resp.text)
+                '%s: Parts of batch %s were not successfully posted: %s. Source file: %s',tenant_id, batch_num, resp.text, self._s3_source)
             metrics.add_metric(
                 name='DynatraceHTTP400InvalidLogEntries', unit=MetricUnit.Count, value=1)
         elif resp.status_code == 429:
-            logger.error("%s: Throttled by Dynatrace. Exhausted retry attempts...", tenant_id)
+            logger.error("%s: Throttled by Dynatrace. Exhausted retry attempts... Source file: %s", tenant_id, self._s3_source)
             metrics.add_metric(name='DynatraceHTTP429Throttled',unit=MetricUnit.Count, value=1)
             metrics.add_metric(name='DynatraceHTTPErrors', unit=MetricUnit.Count, value=1)
             raise DynatraceThrottlingException
         elif resp.status_code == 503:
-            logger.error("%s: Usable space limit reached. Exhausted retry attempts...",tenant_id)
+            logger.error("%s: Usable space limit reached. Exhausted retry attempts... Source file: %s", tenant_id, self._s3_source)
             metrics.add_metric(name='DynatraceHTTP503SpaceLimitReached',unit=MetricUnit.Count, value=1)
             metrics.add_metric(name='DynatraceHTTPErrors', unit=MetricUnit.Count, value=1)
             raise DynatraceThrottlingException
         else:
             logger.error(
-                "%s: There was a HTTP %d error posting batch %d to Dynatrace (URL=%s, key-name=%s, key~=%s). %s",
+                "%s: There was a HTTP %d error posting batch %d to Dynatrace (URL=%s, key-name=%s, key~=%s). %s. Source file: %s",
                 tenant_id, resp.status_code, batch_num, 
                 self._environment_url + LOGV2_API_URL_SUFFIX,
                 self._api_key_parameter,
                 dt_api_key[10:]+'...'+dt_api_key[-10:],
-                resp.text)
+                resp.text, self._s3_source)
             metrics.add_metric(name='DynatraceHTTPErrors',
                                unit=MetricUnit.Count, value=1)
             raise DynatraceIngestionException

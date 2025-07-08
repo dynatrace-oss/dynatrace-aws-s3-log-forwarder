@@ -16,7 +16,7 @@ import yaml
 
 ENCODING = 'utf-8'
 
-# Collection of helper regular expressions to describe log key name patterns 
+# Collection of helper regular expressions to describe log key name patterns
 # and extract attributes from it
 
 helper_regexes = {
@@ -28,7 +28,7 @@ helper_regexes = {
     'hour_pattern' : r'([0][0-9]|[1][0-9]|[2][0-3])',
     'minutes_pattern' : r'[0-5][0-9]',
     # https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html,
-    'aws_region_pattern' : r'(us(-gov)?|ap|ca|cn|eu|sa|me|af)-(central|((north(east|west)?|south(east|west)?)|(east|west)))-\d{1}',
+    'aws_region_pattern' : r'(us(-gov)?|ap|ca|cn|eu|il|sa|me|af)-(central|((north(east|west)?|south(east|west)?)|(east|west)))-\d{1}',
     'classic_load_balancer_id_pattern' : r'[a-zA-Z0-9][a-zA-Z0-9-]{0,30}[a-zA-Z0-9]',
     # ALB / NLB Load Balancer id can be up to 48 chars, and / is substituted with .,
     'elbv2_id_pattern' : r'[a-zA-Z0-9][a-zA-Z0-9-.]{0,47}[a-zA-Z0-9]',
@@ -38,7 +38,9 @@ helper_regexes = {
     'cloudfront_distribution_id_pattern': r'E[A-Z0-9]{13}',
     'vpc_flow_id_pattern': r'fl-[0-9a-f]{8}(?:[0-9a-f]{9})?',
     'aws_global_accelerator_id_pattern': r'[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}',
-    'redshift_cluster_name_pattern': r'[a-z][a-z0-9-]{1,61}[a-z0-9]?'
+    'redshift_cluster_name_pattern': r'[a-z][a-z0-9-]{1,61}[a-z0-9]?',
+    'organization_id_pattern': r'o-[a-z0-9]{10,32}',
+    'uuid_pattern': r'[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}'
 }
 
 custom_grok_expressions = {
@@ -102,7 +104,7 @@ def get_attributes_from_cloudwatch_logs_data(log_group_name,log_stream_name):
                                             extraction_details['parameters'], cwl_attributes[i])
     except IndexError:
         pass
-    
+
     return extracted_attributes
 
 def is_yaml_file(file: str):

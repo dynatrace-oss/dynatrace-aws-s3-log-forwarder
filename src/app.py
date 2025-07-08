@@ -113,7 +113,14 @@ def lambda_handler(event, context):
         'batchItemFailures': []
     }
 
-    for index, message in enumerate(event['Records']):
+
+    event_records = event.get('Records')
+    if not isinstance(event_records, list):
+        logger.error('Received invalid event (missing or invalid "Records" field)')
+        logger.error(json.dumps(event, indent=2))
+        event_records = []
+
+    for index, message in enumerate(event_records):
 
         # Empty the sinks in case some content was left due to errors and initialize
         # num_batch to 1.

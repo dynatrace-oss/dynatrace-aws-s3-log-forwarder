@@ -44,6 +44,12 @@ Parameters:
     Description: "[Optional]: Name of the SecureString Parameter in AWS Parameter Store storing the Dynatrace Environment 2 API Key.[This feature is experimental and may change in the future]"
     Type: String
     Default: ""
+  DynatraceLogIngestContentMaxLength:
+    Description: Log content maximum byte size, longer logs will be trimmed
+    Type: Number
+    Default: 65536
+    MinValue: 8192
+    MaxValue: 1048576
   VerifyLogEndpointSSLCerts:
     Description: Leave the default value unless you're ingesting logs via an Environment Active Gate with a self-signed SSL certificate, then set this to false to disable SSL certificate verification
     Type: String
@@ -176,10 +182,10 @@ Mappings:
   LambdaBaseImageMap:
     # Mappings only support alphanumeric chars, '-' and '.', so name can't be x86_64
     # That means to resolve the image tag we need !If [ ArchIsArm , !FindInMap arm, !FindInMap x86]
-    x86:
-      Tag: '3.9.2023.08.22.07-x86_64'
+    x86: 
+      Tag: '3.9.2025.05.04.05-x86_64'
     arm64:
-      Tag: '3.9.2023.08.22.07-arm64'
+      Tag: '3.9.2025.05.04.05-arm64'
 
 Resources:
   QueueProcessingFunction:
@@ -207,6 +213,7 @@ Resources:
           AWS_APPCONFIG_EXTENSION_PREFETCH_LIST: !Sub "/applications/${AWS::StackName}-app-config/environments/${AWS::StackName}/configurations/log-forwarding-rules,/applications/${AWS::StackName}-app-config/environments/${AWS::StackName}/configurations/log-processing-rules"
           LOG_FORWARDER_CONFIGURATION_LOCATION: !Ref LogForwarderConfigurationLocation
           VERIFY_DT_SSL_CERT: !Ref VerifyLogEndpointSSLCerts
+          DYNATRACE_LOG_INGEST_CONTENT_MAX_LENGTH: !Ref DynatraceLogIngestContentMaxLength
       Architectures:
         - !Ref ProcessorArchitecture
       Events:

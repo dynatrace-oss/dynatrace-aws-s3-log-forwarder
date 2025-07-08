@@ -268,6 +268,121 @@ class TestALBAttributeExtraction(unittest.TestCase):
         extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry)
         self.assertEqual(expected_attributes,extracted_attributes)
 
+    def test_alb_attribute_extraction_no_http_method(self):
+        log_entry = 'https 2018-07-02T22:23:00.186641Z app/my-loadbalancer/50dc6c495c0c9188 10.0.0.140:40914 10.0.1.192:8010 0.001 0.003 0.000 101 101 218 587 "- http://10.0.0.30:80/ HTTP/1.1" "-" - - arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337364-23a8c76965a2ef7629b185e3" "-" "-" 1 2018-07-02T22:22:48.364000Z "forward" "-" "-" "10.0.1.192:8010" "101" "-" "-"'
+        expected_attributes = { 'request_type': 'https',
+                                'timestamp': '2018-07-02T22:23:00.186641Z',
+                                'client_ip': '10.0.0.140',
+                                'client_port': 40914,
+                                'target_ip': '10.0.1.192',
+                                'target_port': 8010,
+                                'request_processing_time': 0.001,
+                                'target_processing_time': 0.003,
+                                'response_processing_time': 0.0,
+                                'elb_status_code': 101,
+                                'target_status_code': 101,
+                                'received_bytes': 218,
+                                'sent_bytes': 587,
+                                'http_method': '-',
+                                'uriproto': 'http',
+                                'urihost': '10.0.0.30:80',
+                                'port': '80',
+                                'uripath': '/',
+                                'http_version': 'HTTP/1.1',
+                                'user_agent': '-',
+                                'target_group_arn': 'arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067',
+                                'x_amzn_trace_id': 'Root=1-58337364-23a8c76965a2ef7629b185e3',
+                                'matched_rule_priority': '1',
+                                'request_creation_time': '2018-07-02T22:22:48.364000Z',
+                                'actions_executed': 'forward',
+                                'target_port_list': '10.0.1.192:8010',
+                                'target_status_code_list': '101',
+                                'severity': 'INFO',
+                                'aws.resource.id': 'app/my-loadbalancer/50dc6c495c0c9188'
+                            }
+        extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry)
+        self.assertEqual(expected_attributes,extracted_attributes)
+
+    def test_alb_attribute_extraction_dash_instead_of_path(self):
+        log_entry = 'https 2018-07-02T22:23:00.186641Z app/my-loadbalancer/50dc6c495c0c9188 10.0.0.140:40914 10.0.1.192:8010 0.001 0.003 0.000 101 101 218 587 "- http://10.0.0.30:80- -" "-" - - arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337364-23a8c76965a2ef7629b185e3" "-" "-" 1 2018-07-02T22:22:48.364000Z "forward" "-" "-" "10.0.1.192:8010" "101" "-" "-"'
+        expected_attributes = {'request_type': 'https',
+                               'timestamp': '2018-07-02T22:23:00.186641Z',
+                               'client_ip': '10.0.0.140',
+                               'client_port': 40914,
+                               'target_ip': '10.0.1.192',
+                               'target_port': 8010,
+                               'request_processing_time': 0.001,
+                               'target_processing_time': 0.003,
+                               'response_processing_time': 0.0,
+                               'elb_status_code': 101,
+                               'target_status_code': 101,
+                               'received_bytes': 218,
+                               'sent_bytes': 587,
+                               'http_method': '-',
+                               'uriproto': 'http',
+                               'urihost': '10.0.0.30:80',
+                               'port': '80',
+                               'http_version': '-',
+                               'user_agent': '-',
+                               'target_group_arn': 'arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067',
+                               'x_amzn_trace_id': 'Root=1-58337364-23a8c76965a2ef7629b185e3',
+                               'matched_rule_priority': '1',
+                               'request_creation_time': '2018-07-02T22:22:48.364000Z',
+                               'actions_executed': 'forward',
+                               'target_port_list': '10.0.1.192:8010',
+                               'target_status_code_list': '101',
+                               'severity': 'INFO',
+                               'aws.resource.id': 'app/my-loadbalancer/50dc6c495c0c9188'
+                               }
+        extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry)
+        self.assertEqual(expected_attributes, extracted_attributes)
+
+    def alb_attribute_extraction_complicated_uri_param_base_test(self, uriparam):
+        log_entry = f'https 2018-07-02T22:23:00.186641Z app/my-loadbalancer/50dc6c495c0c9188 10.0.0.140:40914 10.0.1.192:8010 0.001 0.003 0.000 101 101 218 587 "POST http://10.0.0.30:80/index.php?{uriparam} HTTP/1.1" "-" - - arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337364-23a8c76965a2ef7629b185e3" "-" "-" 1 2018-07-02T22:22:48.364000Z "forward" "-" "-" "10.0.1.192:8010" "101" "-" "-"'
+        expected_attributes = { 'request_type': 'https',
+                                'timestamp': '2018-07-02T22:23:00.186641Z',
+                                'client_ip': '10.0.0.140',
+                                'client_port': 40914,
+                                'target_ip': '10.0.1.192',
+                                'target_port': 8010,
+                                'request_processing_time': 0.001,
+                                'target_processing_time': 0.003,
+                                'response_processing_time': 0.0,
+                                'elb_status_code': 101,
+                                'target_status_code': 101,
+                                'received_bytes': 218,
+                                'sent_bytes': 587,
+                                'http_method': 'POST',
+                                'uriproto': 'http',
+                                'urihost': '10.0.0.30:80',
+                                'port': '80',
+                                'uripath': '/index.php',
+                                'uriparam': uriparam,
+                                'http_version': 'HTTP/1.1',
+                                'user_agent': '-',
+                                'target_group_arn': 'arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067',
+                                'x_amzn_trace_id': 'Root=1-58337364-23a8c76965a2ef7629b185e3',
+                                'matched_rule_priority': '1',
+                                'request_creation_time': '2018-07-02T22:22:48.364000Z',
+                                'actions_executed': 'forward',
+                                'target_port_list': '10.0.1.192:8010',
+                                'target_status_code_list': '101',
+                                'severity': 'INFO',
+                                'aws.resource.id': 'app/my-loadbalancer/50dc6c495c0c9188'
+                            }
+        extracted_attributes = self.alb_processing_rule.get_extracted_log_attributes(log_entry)
+        self.assertEqual(expected_attributes,extracted_attributes)
+
+    def test_alb_attribute_extraction_function_call_in_uri_param(self):
+        self.alb_attribute_extraction_complicated_uri_param_base_test("s=/index/\x5Ca\x5Capp/invokefunction&function=call_user_func_array&vars[0]=md5&vars[1][]=Hello")
+
+    def test_alb_attribute_extraction_code_injection_attack_in_uri_param(self):
+        self.alb_attribute_extraction_complicated_uri_param_base_test("lang=../../../../../../../../usr/local/lib/php/applecmd&+config-create+/&/<?echo(md5(\x23hellp\x23));?>+/tmp/index2.php")
+
+    def test_alb_attribute_extraction_sql_injection_in_uri_param(self):
+        self.alb_attribute_extraction_complicated_uri_param_base_test("user=-1+union+select+1,2,3,4,5,6,7,8,9,(SELECT+group_concat(table_name)+from+information_schema.tables+where+table_schema=database())")
+
+
 class TestClassicELBAttributeExtraction(unittest.TestCase):
     classic_elb_test_entry = '2022-09-27T22:48:26.330387Z a2e8277e0e09143fbb06db5dcd2a14c2 3.67.7.163:8596 192.168.18.161:32728 0.000042 0.004504 0.000036 404 404 0 1086 "GET http://a2e8277e0e09143fbb06db5dcd2a14c2-1086714162.us-east-1.elb.amazonaws.com:80/n9BxiYVakde9.php HTTP/1.1" "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0)" - -'
     expected_attributes = { "timestamp": "2022-09-27T22:48:26.330387Z",
@@ -490,5 +605,72 @@ class testCWLtoFirehoseLogs(unittest.TestCase):
         extracted_attributes = processing_rules['custom']['cwl_to_fh'].get_extracted_log_attributes(log_entry)
         self.assertEqual(extracted_attributes,expected_attributes)
 
+class testAppFabricLogs(unittest.TestCase):
+
+    def test_appfabric_logs(self):
+        log_entry = {
+          "activity_id": 99,
+          "activity_name": "Update",
+          "actor": {
+            "user": {
+              "email_addr": "akua_mansa@example.com",
+              "name": "fabric test",
+              "type": "User",
+              "type_id": 1,
+              "uid": "12817214158477"
+            }
+          },
+          "category_name": "Identity & Access Management",
+          "category_uid": 3,
+          "class_name": "Account Change",
+          "class_uid": 3001,
+          "device": {
+            "ip": "52.91.153.203",
+            "type": "Unknown",
+            "type_id": 0
+          },
+          "http_request": {},
+          "message": "Started 30-day deletion",
+          "metadata": {
+            "event_code": "user_update",
+            "log_provider": "AWS AppFabric",
+            "log_version": "2023-06-27",
+            "product": {
+              "name": "Zendesk",
+              "uid": "zendesk",
+              "vendor_name": "Zendesk"
+            },
+            "profiles": [
+              "host"
+            ],
+            "uid": "17297609041293",
+            "version": "v1.0.0-rc.3"
+          },
+          "raw_data": "{\"url\":\"https://fabric5385.zendesk.com/api/v2/audit_logs/17297609041293.json\",\"id\":17297609041293,\"action_label\":\"Updated\",\"actor_id\":12817214158477,\"source_id\":17297601029773,\"source_type\":\"user\",\"source_label\":\"Customer: 5683 charlie\",\"action\":\"update\",\"change_description\":\"Started 30-day deletion\",\"ip_address\":\"52.91.153.203\",\"created_at\":\"2023-07-04T00:13:19Z\",\"actor_name\":\"fabric test\"}",
+          "severity_id": 0,
+          "status": "Success",
+          "status_id": 1,
+          "time": 1688429599000,
+          "type_name": "Account Change: Update",
+          "type_uid": 300199,
+          "user": {
+            "name": "Customer: 5683 charlie",
+            "type": "User",
+            "type_id": 1,
+            "uid": "17297601029773"
+          }
+        }
+        expected_attributes = {
+            "timestamp": 1688429599000,
+            "log.source": "zendesk",
+            "audit.identity": "akua_mansa@example.com",
+            "audit.action": "Account Change: Update"
+        }
+
+        extracted_attributes = processing_rules['aws']['appfabric-ocsf-json'].get_extracted_log_attributes(log_entry)
+        self.assertEqual(extracted_attributes,expected_attributes)
+
 if __name__ == '__main__':
     unittest.main()
+
+    
