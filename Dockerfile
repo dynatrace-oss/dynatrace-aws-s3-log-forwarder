@@ -23,7 +23,7 @@ ARG ENV
 
 # Update and install OS dependencies
 RUN yum update -y \
-    && yum install -y yajl-devel gcc gcc-c++ unzip \
+    && yum install -y gcc gcc-c++ unzip \
     && yum clean all \
     && rm -rf /var/cache/yum
 
@@ -38,8 +38,7 @@ RUN unzip /tmp/aws_appconfig_extension.zip -d /opt \
 # from your project folder. If enabled, install Lambda Insights
 COPY src/requirements.txt src/requirements-dev.txt ${LAMBDA_TASK_ROOT}/
 
-# jsonslicer and pygrok have no wheel, add --use-pep517 https://github.com/pypa/pip/issues/8559
-# https://github.com/AMDmi3/jsonslicer/issues/56
+# pygrok has no wheel, add --use-pep517 https://github.com/pypa/pip/issues/8559
 # if dev, install development dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
     if [[ ${ENV} == "DEV" ]]; then \
