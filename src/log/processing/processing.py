@@ -23,7 +23,7 @@ import boto3
 import jmespath
 from aws_lambda_powertools import Metrics
 from aws_lambda_powertools.metrics import MetricUnit
-import jsonslicer
+import ijson
 
 from log.processing.log_processing_rule import LogProcessingRule
 from utils.helpers import ENCODING
@@ -45,15 +45,15 @@ def _get_context_log_attributes(bucket: str, key: str):
     }
 
 
-def get_jsonslicer_path_prefix_from_jmespath_path(jmespath_expr: str):
+def get_ijson_path_from_jmespath_path(jmespath_expr: str):
     '''
-    Given a jmespath entry (e.g. log.records), translates the expression into a tuple
-    for processing with JsonSlicer. (this is a basic implementation, not jmespath spec compliant)
+    Given a jmespath entry (e.g. log.records), translates the expression into a path string
+    for processing with ijson. (this is a basic implementation, not jmespath spec compliant)
     '''
-    jsonslicer_tuple = tuple(jmespath_expr.split('.'))
-    jsonslicer_tuple += (None,)
+    # ijson uses dot notation with 'item' suffix for array elements
+    ijson_path = jmespath_expr + '.item'
 
-    return jsonslicer_tuple
+    return ijson_path
 
 def get_log_entry_size(log_entry):
     '''
@@ -107,12 +107,12 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
     # if JSON (we expect either a list[dict] or a JSON obj with a list of log entries in a key)
     if log_processing_rule.log_format == 'json':
         if log_processing_rule.log_entries_key is not None:
-            json_slicer_path_prefix = get_jsonslicer_path_prefix_from_jmespath_path(
+            ijson_path = get_ijson_path_from_jmespath_path(
                 log_processing_rule.log_entries_key)
         else:
-            json_slicer_path_prefix = (None, )
-        log_entries = jsonslicer.JsonSlicer(
-            log_stream, json_slicer_path_prefix)
+            ijson_path = 'item'
+        log_entries = ijson.items(
+            log_stream, ijson_path)
 
     # if it's a stream of JSON objects, create an iterable list of dicts
     elif log_processing_rule.log_format == 'json_stream':
@@ -122,9 +122,9 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
         else:
             json_stream = log_stream
 
-        json_slicer_path_prefix = []
-        log_entries = jsonslicer.JsonSlicer(
-            json_stream, json_slicer_path_prefix, yajl_allow_multiple_values=True)
+        # For json_stream with multiple root-level objects, use empty prefix
+        log_entries = ijson.items(
+            json_stream, '')
 
     # if it's text, either iterate the GzipFile if compressed or botocore response body iter_lines() if plain text
     elif log_processing_rule.log_format == 'text':
