@@ -122,12 +122,13 @@ class LogProcessingRule:
                 "log_format must be either text, json or json_stream.")
 
         # validate skip_header_lines is int if defined, and not defined for non text log
-        if self.skip_header_lines != 0 and self.log_format != "text":
+        if self.log_format == "text":
+            if not isinstance(self.skip_header_lines, int):
+                raise ValueError(
+                    "skip_header_lines must be an int."
+                )
+        elif self.skip_header_lines and self.skip_header_lines != 0:
             raise ValueError("skip_header_lines is only valid for text log format")
-        elif not isinstance(self.skip_header_lines, int):
-            raise ValueError(
-                "skip_header_lines must be an int."
-            )
 
     def __post_init__(self):
         self.validate()
