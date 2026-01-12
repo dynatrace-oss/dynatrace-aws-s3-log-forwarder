@@ -23,7 +23,7 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 import responses
 import boto3
-from moto import mock_ssm
+from moto import mock_aws
 from requests.packages.urllib3.exceptions import MaxRetryError
 import log.sinks.dynatrace as dynatrace
 
@@ -54,8 +54,6 @@ class TestDynatraceSink(unittest.TestCase):
         test_log_messages = [{'content': 'test'}] * (dynatrace.DYNATRACE_LOG_INGEST_MAX_ENTRIES_COUNT + 1)
         
         responses.add(responses.POST, dynatrace_sink.get_environment_url() + dynatrace.LOGV2_API_URL_SUFFIX,
-                      body=json.dumps({'details': {'message': 'Success','code': 204}}).encode(dynatrace.ENCODING), 
-                      content_type="application/json",
                       status=204)
 
         for message in test_log_messages:
@@ -76,8 +74,6 @@ class TestDynatraceSink(unittest.TestCase):
             (dynatrace.DYNATRACE_LOG_INGEST_PAYLOAD_MAX_SIZE - dynatrace.LIST_BRACKETS_LENGTH) / log_message_size) + 1
         
         responses.add(responses.POST, dynatrace_sink.get_environment_url() + dynatrace.LOGV2_API_URL_SUFFIX,
-                      body=json.dumps({'details': {'message': 'Success','code': 204}}).encode(dynatrace.ENCODING),
-                      content_type="application/json",
                       status=204)
 
         for _ in range(1,num_messages_to_push):
@@ -87,7 +83,7 @@ class TestDynatraceSink(unittest.TestCase):
                          dynatrace_sink.get_size_of_buffered_messages())
 
     @responses.activate
-    @mock_ssm
+    @mock_aws
     def test_dynatrace_throttling(self):
         ssm_client = boto3.client("ssm", region_name="us-east-1")
         ssm_client.put_parameter(Name=mock_dt_key_parameter,Value="fakeapikey",Type="SecureString")
