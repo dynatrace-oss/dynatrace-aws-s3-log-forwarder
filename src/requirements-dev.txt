@@ -1,2 +1,2 @@
-moto==4.2.14
-responses==0.25.7
+moto==5.1.19
+responses==0.25.8
