@@ -1,0 +1,57 @@
+NOTICE
+======
+
+This project, "dynatrace-aws-s3-log-forwarder," is licensed under the Apache License, Version 2.0 (the "License").
+You may not use this file except in compliance with the License. You may obtain a copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+This NOTICE file is included to comply with the attribution requirements of third-party components used in this project.
+
+Third-Party Components
+----------------------
+
+This project includes third-party software components licensed under their respective licenses. The following attributions are provided:
+
+**requests**
+   - Licensed under Apache License 2.0.
+   - Copyright (c) 2013-2023, Kenneth Reitz and contributors.
+
+**aws-lambda-powertools**
+   - Licensed under MIT No Attribution.
+   - Copyright 2019 Amazon.com, Inc. or its affiliates.
+
+**regex**
+   - Licensed under Apache License 2.0 or Python Software Foundation License.
+   - Copyright (c) 2024, Matthew Barnett.
+
+**ijson**
+   - Licensed under BSD-3-Clause License.
+   - Copyright (c) 2010, Ivan Sagalaev.
+
+**yahl**
+   - Licensed under ISC License.
+   - Copyright (c) 2007-2014, Lloyd Hilaiel.
+
+**Jinja2**
+   - Licensed under BSD-3-Clause License.
+   - Copyright (c) 2007, Pallets.
+
+**jmespath**
+   - Licensed under MIT License.
+   - Copyright (c) 2013 Amazon.com, Inc. or its affiliates.
+
+**pygrok**
+   - Licensed under MIT License.
+   - Copyright (c) 2014.
+
+**PyYAML**
+   - Licensed under MIT License.
+   - Copyright (c) 2017-2021 Ingy döt Net.
+   - Copyright (c) 2006-2016 Kirill Simonov.
+
+**urllib3**
+   - Licensed under MIT License.
+   - Copyright (c) 2008-2020 Andrey Petrov and contributors.
+
+For more details, see the `THIRD_PARTY_LICENSES` file.

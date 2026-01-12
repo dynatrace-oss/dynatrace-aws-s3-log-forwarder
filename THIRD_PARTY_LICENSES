@@ -1,0 +1,110 @@
+THIRD_PARTY_LICENSES
+====================
+
+This file contains the license information and copyright notices for all third-party dependencies used in the **dynatrace-aws-s3-log-forwarder** project.
+
+---
+
+**requests**
+   - **License**: Apache License 2.0
+   - **Copyright**: Copyright (c) 2013-2023, Kenneth Reitz and contributors
+   - **Full license text**: https://www.apache.org/licenses/LICENSE-2.0
+
+---
+
+**aws-lambda-powertools**
+   - **License**: MIT No Attribution
+   - **Copyright**: Copyright 2019 Amazon.com, Inc. or its affiliates.
+   - **Full license text**: https://opensource.org/license/mit-0
+
+---
+
+**regex**
+   - **License**: Apache License 2.0 or Python Software Foundation License
+   - **Copyright**: Copyright (c) 2024, Matthew Barnett
+   - **Full license text**: https://www.apache.org/licenses/LICENSE-2.0
+
+---
+
+**ijson**
+
+Copyright (c) 2010, Ivan Sagalaev
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+    * Neither the name "ijson" nor the names of its contributors
+      may be used to endorse or promote products derived from this software
+      without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE REGENTS AND CONTRIBUTORS BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+---
+
+**yajl**
+
+Copyright (c) 2007-2014, Lloyd Hilaiel <me@lloyd.io>
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+---
+
+**Jinja2**
+   - **License**: BSD-3-Clause License
+   - **Copyright**: Copyright (c) 2007, Pallets
+   - **Full license text**: https://opensource.org/licenses/BSD-3-Clause
+
+---
+
+**jmespath**
+   - **License**: MIT License
+   - **Copyright**: Copyright (c) 2013 Amazon.com, Inc. or its affiliates
+   - **Full license text**: https://opensource.org/licenses/MIT
+
+---
+
+**pygrok**
+   - **License**: MIT License
+   - **Copyright**: Copyright (c) 2014
+   - **Full license text**: https://opensource.org/licenses/MIT
+
+---
+
+**PyYAML**
+   - **License**: MIT License
+   - **Copyright**: Copyright (c) 2017-2021 Ingy döt Net
+                    Copyright (c) 2006-2016 Kirill Simonov
+   - **Full license text**: https://opensource.org/licenses/MIT
+
+---
+
+**urllib3**
+   - **License**: MIT License
+   - **Copyright**: Copyright (c) 2008-2020 Andrey Petrov and contributors
+   - **Full license text**: https://opensource.org/licenses/MIT
+
+---
