@@ -23,7 +23,7 @@ ARG ENV
 
 # Update and install OS dependencies
 RUN dnf update -y \
-    && dnf install -y gcc gcc-c++ unzip \
+    && dnf install -y yajl-devel gcc gcc-c++ unzip \
     && dnf clean all \
     && rm -rf /var/cache/dnf
 
