@@ -23,7 +23,7 @@ import boto3
 import jmespath
 from aws_lambda_powertools import Metrics
 from aws_lambda_powertools.metrics import MetricUnit
-import ijson
+import ijson.backends.yajl2_c as ijson
 
 from log.processing.log_processing_rule import LogProcessingRule
 from utils.helpers import ENCODING
