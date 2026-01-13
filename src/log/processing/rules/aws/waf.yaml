@@ -19,7 +19,7 @@ name: waf
 # File Name example: AWSLogs/012345678910/WAFLogs/us-east-1/my-acl/2022/11/11/18/30/012345678910_waflogs_us-east-1_my-acl_20221111T1830Z_8e0a6094.log.gz
 # Hash string is 8 chars?
 
-known_key_path_pattern: '^.*?{aws_logs_prefix}/{aws_account_id_pattern}/WAFLogs/{aws_region_pattern}/{aws_resource_name_pattern}/{year_pattern}/{month_pattern}/{day_pattern}/{hour_pattern}/{minutes_pattern}/{aws_account_id_pattern}_(waflogs)_{aws_region_pattern}_{aws_resource_name_pattern}_{year_pattern}{month_pattern}{day_pattern}T{hour_pattern}{minutes_pattern}Z_[a-zA-Z0-9]{{8}}(\.log\.gz)$'
+known_key_path_pattern: '^.*?{aws_logs_prefix}/{aws_account_id_pattern}/WAFLogs/{aws_fms_waf_region_pattern}/{aws_resource_name_pattern}/{year_pattern}/{month_pattern}/{day_pattern}/{hour_pattern}/{minutes_pattern}/{aws_account_id_pattern}_(waflogs)_{aws_fms_waf_region_pattern}_{aws_resource_name_pattern}_{year_pattern}{month_pattern}{day_pattern}T{hour_pattern}{minutes_pattern}Z_[a-zA-Z0-9]{{8}}(\.log\.gz)$'
 source: aws
 
 log_format: json_stream
@@ -33,7 +33,7 @@ annotations:
 
 attribute_extraction_from_key_name:
   aws.account.id: '{aws_account_id_pattern}'
-  aws.region: '{aws_region_pattern}'
+  aws.region: '{aws_fms_waf_region_pattern}'
   # Get the value before /yyyy/mm/dd/HH/MM as the waf rule name
   aws.resource.id: '{aws_resource_name_pattern}(?=\/{year_pattern}\/{month_pattern}\/{day_pattern}\/{hour_pattern}\/{minutes_pattern})'
 
