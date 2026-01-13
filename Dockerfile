@@ -49,16 +49,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
     && dnf remove -y gcc-plugin-annobin annobin-plugin-gcc gcc gcc-c++ \
     && dnf clean all
 
-# Copy function code
-COPY src ${LAMBDA_TASK_ROOT}
+# Copy function code and license files
+COPY src LICENSE NOTICE THIRD_PARTY_LICENSES ${LAMBDA_TASK_ROOT}/
 
 # Copy local configuration
-ADD config ${LAMBDA_TASK_ROOT}/config
-
-# Copy license files to the root directory of the image
-COPY LICENSE /LICENSE
-COPY NOTICE /NOTICE
-COPY THIRD_PARTY_LICENSES /THIRD_PARTY_LICENSES
+COPY config ${LAMBDA_TASK_ROOT}/config
 
 # Set the CMD to your handler (could also be done as a parameter override outside of the Dockerfile)
 CMD [ "app.lambda_handler" ]
