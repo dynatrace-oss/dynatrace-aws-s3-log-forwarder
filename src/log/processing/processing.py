@@ -14,6 +14,7 @@
 
 
 import logging
+import os
 from os import environ
 import sys
 import time
@@ -23,7 +24,7 @@ import boto3
 import jmespath
 from aws_lambda_powertools import Metrics
 from aws_lambda_powertools.metrics import MetricUnit
-import ijson.backends.yajl2_c as ijson
+import ijson
 
 from log.processing.log_processing_rule import LogProcessingRule
 from utils.helpers import ENCODING
@@ -105,13 +106,16 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
     # Get log_format from processing rule and generate iterable log_entries
 
     # if JSON (we expect either a list[dict] or a JSON obj with a list of log entries in a key)
+
+    ijson_backend_name = os.getenv("IJSON_BACKEND", "yajl2_c")
+    backend = ijson.get_backend(ijson_backend_name)
     if log_processing_rule.log_format == 'json':
         if log_processing_rule.log_entries_key is not None:
             ijson_path = get_ijson_path_from_jmespath_path(
                 log_processing_rule.log_entries_key)
         else:
             ijson_path = 'item'
-        log_entries = ijson.items(
+        log_entries = backend.items(
             log_stream, ijson_path)
 
     # if it's a stream of JSON objects, create an iterable list of dicts
@@ -123,7 +127,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
             json_stream = log_stream
 
         # For json_stream with multiple root-level objects, use empty prefix
-        log_entries = ijson.items(
+        log_entries = backend.items(
             json_stream, '', multiple_values=True)
 
     # if it's text, either iterate the GzipFile if compressed or botocore response body iter_lines() if plain text
