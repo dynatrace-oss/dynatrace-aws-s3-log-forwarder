@@ -2,7 +2,7 @@ requests==2.32.5
 jmespath==1.0.1
 pygrok==1.0.0
 PyYAML==6.0.3
-regex==2025.11.3
+regex==2026.1.15
 aws-lambda-powertools==3.24.0
 ijson==3.4.0.post0
 Jinja2==3.1.6
