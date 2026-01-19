@@ -2,6 +2,7 @@
 files: 
   012345678910_CloudTrail_ap-northeast-1_20220101T0000Z_gkuyIJtLhiT90uem.json: 
     bucket: my-test-bucketabc
+    account_id: 012345678910
     key: AWSLogs/012345678910/CloudTrail/us-west-1/2022/09/07/012345678910_CloudTrail_ap-northeast-1_20220101T0000Z_gkuyIJtLhiT90uem.json.gz
     requester: cloudtrail.amazonaws.com
     pipeline: 
