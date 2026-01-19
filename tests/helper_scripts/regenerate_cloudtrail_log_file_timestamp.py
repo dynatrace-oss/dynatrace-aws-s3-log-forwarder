@@ -29,7 +29,7 @@ s3_client = s.client('s3')
 
 key= 'AWSLogs/012345678910/CloudTrail/us-east-1/2022/07/20/012345678910_CloudTrail_us-east-1_20220720T0735Z_I8jlargemodified.json.gz'
 bucket = 'mylogsbucket'
-account_id = "558221435292"
+account_id = "012345678910"
 
 resp = s3_client.get_object(Bucket=bucket, Key=key, ExpectedBucketOwner=account_id)
 
