@@ -108,7 +108,18 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
     # if JSON (we expect either a list[dict] or a JSON obj with a list of log entries in a key)
 
     ijson_backend_name = os.getenv("IJSON_BACKEND", "yajl2_c")
-    backend = ijson.get_backend(ijson_backend_name)
+    try:
+        backend = ijson.get_backend(ijson_backend_name)
+    except Exception as exc:
+        logger.error(
+            "Failed to load ijson backend '%s'. Ensure the backend is installed and "
+            "the IJSON_BACKEND environment variable is set correctly. Original error: %s",
+            ijson_backend_name,
+            exc,
+        )
+        raise RuntimeError(
+            f"Unable to load ijson backend '{ijson_backend_name}' for log processing"
+        ) from exc
     if log_processing_rule.log_format == 'json':
         if log_processing_rule.log_entries_key is not None:
             ijson_path = get_ijson_path_from_jmespath_path(
