@@ -29,8 +29,9 @@ s3_client = s.client('s3')
 
 key= 'AWSLogs/012345678910/CloudTrail/us-east-1/2022/07/20/012345678910_CloudTrail_us-east-1_20220720T0735Z_I8jlargemodified.json.gz'
 bucket = 'mylogsbucket'
+account_id = "012345678910"
 
-resp = s3_client.get_object(Bucket=bucket, Key = key)
+resp = s3_client.get_object(Bucket=bucket, Key = key, ExpectedBucketOwner = account_id)
 
 resp_j = json.loads(gzip.decompress(resp['Body'].read()).decode('utf-8'))
 
@@ -45,6 +46,6 @@ dest_key = (f"AWSLogs/012345678910/CloudTrail/us-east-1/{current_time.strftime('
            f"/012345678910_CloudTrail_us-east-1_{current_time.strftime('%Y')}{current_time.strftime('%m')}{current_time.strftime('%d')}T"
            f"{current_time.strftime('%H')}{current_time.strftime('%M')}Z_I8jlargemodified.json.gz")
 
-put_resp = s3_client.put_object(Bucket=dest_bucket, Key=dest_key, Body=result)
+put_resp = s3_client.put_object(Bucket=dest_bucket, Key=dest_key, Body=result, ExpectedBucketOwner = account_id)
 
 print(put_resp)

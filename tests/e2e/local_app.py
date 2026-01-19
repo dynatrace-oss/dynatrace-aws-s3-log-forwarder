@@ -66,6 +66,7 @@ def load_s3_test_data_from_disk():
                         logger.debug(f'preparing test data {dir_path}/{file}')
                         
                         bucket = config['bucket']
+                        account_id = config['account_id']
                         key = config['key']
                         
                         if 'requester' in config:
@@ -112,7 +113,7 @@ def load_s3_test_data_from_disk():
                         logger.debug(f'saving data mock s3 {bucket}/{key}')
                         s3 = boto3.client('s3')
                         s3.create_bucket(Bucket=bucket)
-                        s3.put_object(Bucket=bucket, Key=key, Body=data)
+                        s3.put_object(Bucket=bucket, Key=key, Body=data, ExpectedBucketOwner = account_id)
 
                         event_records.append('{"messageId": "' + hashlib.md5(key.encode('utf-8')).hexdigest() +
                                         '","body": "{\\"region\\":\\"us-east-1\\",\\"detail\\":{\\"bucket\\":{\\"name\\":\\"' + bucket + '\\"},\\"object\\":{\\"key\\":\\"' + key + '\\"},\\"requester\\":\\"' + requester + '\\"}}"}')
