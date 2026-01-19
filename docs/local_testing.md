@@ -29,7 +29,7 @@ As we're using Docker to build a Lambda container image, you can use the followi
    docker build --progress=plain . -t queueprocessingfunction:dev --build-arg ARCH=$LAMBDA_ARCH --build-arg LAMBDA_BASE_IMAGE_TAG=${LAMBDA_BASE_IMAGE_TAG} --build-arg ENABLE_LAMBDA_INSIGHTS="false" --build-arg ENV="DEV"
    ```
 
-   **Note:** If you're running on an x86_64 machine and an OS that doesn't support arm64 emulation, change the LAMBDA_BASE_IMAGE_TAG and LAMBDA_ARCH x86_64
+   **Note:** If you're running on an x86_64 machine and an OS that doesn't support arm64 emulation, change the LAMBDA_BASE_IMAGE_TAG and LAMBDA_ARCH to x86_64
 
 3. Run the following command to execute the `tests/e2e/local_app.py` code to validate the forwarding rules.
 
