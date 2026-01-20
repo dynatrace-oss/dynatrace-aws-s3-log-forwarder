@@ -28,7 +28,7 @@ helper_regexes = {
     'hour_pattern' : r'([0][0-9]|[1][0-9]|[2][0-3])',
     'minutes_pattern' : r'[0-5][0-9]',
     # https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html,
-    'aws_region_pattern' : r'(us(-gov)?|ap|ca|cn|eu|il|sa|me|af)-(central|((north(east|west)?|south(east|west)?)|(east|west)))-\d{1}',
+    'aws_region_pattern' : r'(us(-gov)?|ap|ca|cn|eu|il|sa|me|af|mx|eusc-de)-(central|((north(east|west)?|south(east|west)?)|(east|west)))-\d{1}',
     'classic_load_balancer_id_pattern' : r'[a-zA-Z0-9][a-zA-Z0-9-]{0,30}[a-zA-Z0-9]',
     # ALB / NLB Load Balancer id can be up to 48 chars, and / is substituted with .,
     'elbv2_id_pattern' : r'[a-zA-Z0-9][a-zA-Z0-9-.]{0,47}[a-zA-Z0-9]',
