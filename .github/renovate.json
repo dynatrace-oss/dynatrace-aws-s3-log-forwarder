@@ -1,14 +1,14 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base"
+    "config:recommended"
   ],
   "commitMessageExtra": "{{#if currentVersion}}from {{currentVersion}} {{/if}}to {{#if isSingleVersion}}{{{newVersion}}}{{else}}{{{newValue}}}{{/if}}",
   "prHourlyLimit": 0,
   "rebaseWhen": "conflicted",
   "pip_requirements": {
-    "fileMatch": [
-      "(^|/)([\\w-]*)requirements(-dev)?\\.(txt|pip)$"
+    "managerFilePatterns": [
+      "/(^|/)([\\w-]*)requirements(-dev)?\\.(txt|pip)$/"
     ]
   },
   "packageRules": [
@@ -19,11 +19,12 @@
       "allowedVersions": "< 3.10"
     }
   ],
-  "regexManagers": [
+  "customManagers": [
     {
+      "customType": "regex",
       "description": "Update lambda/python x86_64",
-      "fileMatch": [
-        "^template\\.yaml$"
+      "managerFilePatterns": [
+        "/^template\\.yaml$/"
       ],
       "matchStrings": [
         "LambdaBaseImageMap:[\\S\\s]+?x86:\\s*Tag: '(?<currentValue>.*)'"
@@ -32,9 +33,10 @@
       "depNameTemplate": "public.ecr.aws/lambda/python"
     },
     {
+      "customType": "regex",
       "description": "Update lambda/python arm64",
-      "fileMatch": [
-        "^template\\.yaml$"
+      "managerFilePatterns": [
+        "/^template\\.yaml$/"
       ],
       "matchStrings": [
         "LambdaBaseImageMap:[\\S\\s]+?arm64:\\s*Tag: '(?<currentValue>.*)'"
