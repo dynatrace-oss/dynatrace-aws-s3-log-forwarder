@@ -130,3 +130,8 @@ attribute_mapping_from_json_keys: Optional[dict]         # --> (Experimental) Al
 ```
 
 You can find an example custom processing rule under `config/log-processing-rules.yaml` used to process [VPC DNS Query logs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-query-logs.html) from AWS.
+
+## Alternate IJSON parsing backend
+
+The `dynatrace-aws-s3-log-forwarder` uses the [ijson](https://pypi.org/project/ijson/) library to parse JSON logs.
+By default, it uses the fastest backend (yajl2_c). To switch to other backend for testing purposes set the environment variable `IJSON_BACKEND` to available [ijson backend](https://github.com/ICRAR/ijson?tab=readme-ov-file#backends) on the Lambda function configuration.
