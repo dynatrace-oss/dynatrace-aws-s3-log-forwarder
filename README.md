@@ -34,6 +34,6 @@ Additionally, you can ingest any generic text and JSON logs. For more informatio
 
 To deploy `dynatrace-aws-s3-log-forwarder` in your AWS account, follow the [deployment guide](docs/deployment_guide.md).
 
-## Upgrade
+## Update
 
-To upgrade existing deployment of `dynatrace-aws-s3-log-forwarder` to latest version, follow the [upgrade guide](docs/upgrade_guide.md).
+To update existing deployment of `dynatrace-aws-s3-log-forwarder` to latest version, follow the [update guide](docs/update_guide.md).
