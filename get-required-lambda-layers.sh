@@ -17,16 +17,14 @@ set -e
 
 BASE_DIR=".tmp"
 
-# AWS AppConfig Extension 2.0.2037
+# AWS AppConfig Extension
 # https://docs.aws.amazon.com/appconfig/latest/userguide/appconfig-integration-lambda-extensions.html
 AWS_APPCONFIG_EXTENSION_X86_64="arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension:207"
 AWS_APPCONFIG_EXTENSION_ARM64="arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension-Arm64:140"
 
 # AWS Lambda Insights Extension
-# https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versions.html
-# AWS Lambda Insights Extension v1.0.178.0
+# https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versions.html
 AWS_LAMBDA_INSIGHTS_EXTENSION_X86_64="arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension:35"
-# AWS Lambda Insights Extension v1.0.135.0 (no latest version available for arm64)
 AWS_LAMBDA_INSIGHTS_EXTENSION_ARM64="arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension-Arm64:2"
 
 download_layer() {
