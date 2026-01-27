@@ -15,8 +15,7 @@
     {
       "matchPackageNames": [
         "public.ecr.aws/lambda/python"
-      ],
-      "allowedVersions": "< 3.10"
+      ]
     }
   ],
   "customManagers": [
@@ -27,7 +26,7 @@
         "/^template\\.yaml$/"
       ],
       "matchStrings": [
-        "LambdaBaseImageMap:[\\S\\s]+?x86:\\s*Tag: '(?<currentValue>.*)'"
+        "LambdaBaseImageMap:[\\S\\s]+?x86:\\s*Tag: '(?<currentValue>[^']+)'"
       ],
       "datasourceTemplate": "docker",
       "depNameTemplate": "public.ecr.aws/lambda/python"
@@ -39,10 +38,62 @@
         "/^template\\.yaml$/"
       ],
       "matchStrings": [
-        "LambdaBaseImageMap:[\\S\\s]+?arm64:\\s*Tag: '(?<currentValue>.*)'"
+        "LambdaBaseImageMap:[\\S\\s]+?arm64:\\s*Tag: '(?<currentValue>[^']+)'"
       ],
       "datasourceTemplate": "docker",
       "depNameTemplate": "public.ecr.aws/lambda/python"
+    },
+    {
+      "customType": "regex",
+      "description": "Update AWS AppConfig Lambda Layer ARN (x86_64)",
+      "managerFilePatterns": [
+        "/^get-required-lambda-layers\\.sh$/"
+      ],
+      "matchStrings": [
+        "AWS_APPCONFIG_EXTENSION_X86_64=\"arn:aws:lambda:(?<region>[^:]+):(?<accountId>\\d+):layer:AWS-AppConfig-Extension:(?<currentValue>\\d+)\""
+      ],
+      "datasourceTemplate": "aws-lambda-layer",
+      "depNameTemplate": "arn:aws:lambda:{{{region}}}:{{{accountId}}}:layer:AWS-AppConfig-Extension",
+      "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "description": "Update AWS AppConfig Lambda Layer ARN (arm64)",
+      "managerFilePatterns": [
+        "/^get-required-lambda-layers\\.sh$/"
+      ],
+      "matchStrings": [
+        "AWS_APPCONFIG_EXTENSION_ARM64=\"arn:aws:lambda:(?<region>[^:]+):(?<accountId>\\d+):layer:AWS-AppConfig-Extension-Arm64:(?<currentValue>\\d+)\""
+      ],
+      "datasourceTemplate": "aws-lambda-layer",
+      "depNameTemplate": "arn:aws:lambda:{{{region}}}:{{{accountId}}}:layer:AWS-AppConfig-Extension-Arm64",
+      "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Lambda Insights Extension Layer ARN (x86_64)",
+      "managerFilePatterns": [
+        "/^get-required-lambda-layers\\.sh$/"
+      ],
+      "matchStrings": [
+        "AWS_LAMBDA_INSIGHTS_EXTENSION_X86_64=\"arn:aws:lambda:(?<region>[^:]+):(?<accountId>\\d+):layer:LambdaInsightsExtension:(?<currentValue>\\d+)\""
+      ],
+      "datasourceTemplate": "aws-lambda-layer",
+      "depNameTemplate": "arn:aws:lambda:{{{region}}}:{{{accountId}}}:layer:LambdaInsightsExtension",
+      "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Lambda Insights Extension Layer ARN (arm64)",
+      "managerFilePatterns": [
+        "/^get-required-lambda-layers\\.sh$/"
+      ],
+      "matchStrings": [
+        "AWS_LAMBDA_INSIGHTS_EXTENSION_ARM64=\"arn:aws:lambda:(?<region>[^:]+):(?<accountId>\\d+):layer:LambdaInsightsExtension-Arm64:(?<currentValue>\\d+)\""
+      ],
+      "datasourceTemplate": "aws-lambda-layer",
+      "depNameTemplate": "arn:aws:lambda:{{{region}}}:{{{accountId}}}:layer:LambdaInsightsExtension-Arm64",
+      "versioningTemplate": "loose"
     }
   ],
   "vulnerabilityAlerts": {
