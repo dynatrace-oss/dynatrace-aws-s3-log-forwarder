@@ -15,7 +15,8 @@
     {
       "matchPackageNames": [
         "public.ecr.aws/lambda/python"
-      ]
+      ],
+      "allowedVersions": "<4"
     }
   ],
   "customManagers": [
