@@ -3,6 +3,7 @@
   "extends": [
     "config:recommended"
   ],
+  "useBaseBranchConfig": "merge",
   "commitMessageExtra": "{{#if currentVersion}}from {{currentVersion}} {{/if}}to {{#if isSingleVersion}}{{{newVersion}}}{{else}}{{{newValue}}}{{/if}}",
   "prHourlyLimit": 0,
   "rebaseWhen": "conflicted",
@@ -53,7 +54,7 @@
       "matchStrings": [
         "AWS_APPCONFIG_EXTENSION_X86_64=\"arn:aws:lambda:(?<region>[^:]+):(?<accountId>\\d+):layer:AWS-AppConfig-Extension:(?<currentValue>\\d+)\""
       ],
-      "datasourceTemplate": "custom.aws-appconfig-extension-x86_64",
+      "datasourceTemplate": "1custom.aws-appconfig-extension-x86_64",
       "depNameTemplate": "AWS-AppConfig-Extension",
       "versioningTemplate": "loose"
     },
@@ -98,7 +99,7 @@
     }
   ],
   "customDatasources": {
-    "aws-appconfig-extension-x86_64": {
+    "1-aws-appconfig-extension-x86_64": {
       "defaultRegistryUrlTemplate": "https://docs.aws.amazon.com/appconfig/latest/userguide/appconfig-integration-lambda-extensions-versions.html",
       "format": "html",
       "transformTemplates": [
