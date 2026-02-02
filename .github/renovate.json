@@ -54,7 +54,7 @@
       "matchStrings": [
         "AWS_APPCONFIG_EXTENSION_X86_64=\"arn:aws:lambda:(?<region>[^:]+):(?<accountId>\\d+):layer:AWS-AppConfig-Extension:(?<currentValue>\\d+)\""
       ],
-      "datasourceTemplate": "1custom.aws-appconfig-extension-x86_64",
+      "datasourceTemplate": "custom.aws-appconfig-extension-x86_64_test",
       "depNameTemplate": "AWS-AppConfig-Extension",
       "versioningTemplate": "loose"
     },
@@ -99,7 +99,7 @@
     }
   ],
   "customDatasources": {
-    "1-aws-appconfig-extension-x86_64": {
+    "aws-appconfig-extension-x86_64_test": {
       "defaultRegistryUrlTemplate": "https://docs.aws.amazon.com/appconfig/latest/userguide/appconfig-integration-lambda-extensions-versions.html",
       "format": "html",
       "transformTemplates": [
