@@ -25,7 +25,7 @@ AWS_APPCONFIG_EXTENSION_ARM64="arn:aws:lambda:us-east-1:027255383542:layer:AWS-A
 # AWS Lambda Insights Extension
 # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versions.html
 AWS_LAMBDA_INSIGHTS_EXTENSION_X86_64="arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension:35"
-AWS_LAMBDA_INSIGHTS_EXTENSION_ARM64="arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension-Arm64:2"
+AWS_LAMBDA_INSIGHTS_EXTENSION_ARM64="arn:aws:lambda:us-east-1:58031473175435:layer:LambdaInsightsExtension-Arm64:31"
 
 download_layer() {
     aws lambda get-layer-version-by-arn --arn "$1" --query 'Content.Location' | xargs curl -s -o $BASE_DIR/"$2"/"$3"_extension.zip
