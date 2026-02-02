@@ -51,7 +51,7 @@
         "/^get-required-lambda-layers\\.sh$/"
       ],
       "matchStrings": [
-        "AWS_APPCONFIG_EXTENSION_X86_64=\"arn:aws:lambda:(?<region>[^:]+):(?<accountId>\\d+):layer:AWS-AppConfig-Extension:(?<currentValue>\\d+)\""
+        "AWS_APPCONFIG_EXTENSION_X86_64=\"arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension:(?<currentValue>\\d+)\""
       ],
       "datasourceTemplate": "custom.aws-appconfig-extension-x86_64",
       "depNameTemplate": "AWS-AppConfig-Extension",
@@ -64,7 +64,7 @@
         "/^get-required-lambda-layers\\.sh$/"
       ],
       "matchStrings": [
-        "AWS_APPCONFIG_EXTENSION_ARM64=\"arn:aws:lambda:(?<region>[^:]+):(?<accountId>\\d+):layer:AWS-AppConfig-Extension-Arm64:(?<currentValue>\\d+)\""
+        "AWS_APPCONFIG_EXTENSION_ARM64=\"arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension-Arm64:(?<currentValue>\\d+)\""
       ],
       "datasourceTemplate": "custom.aws-appconfig-extension-arm64",
       "depNameTemplate": "AWS-AppConfig-Extension-Arm64",
@@ -77,7 +77,7 @@
         "/^get-required-lambda-layers\\.sh$/"
       ],
       "matchStrings": [
-        "AWS_LAMBDA_INSIGHTS_EXTENSION_X86_64=\"arn:aws:lambda:(?<region>[^:]+):(?<accountId>\\d+):layer:LambdaInsightsExtension:(?<currentValue>\\d+)\""
+        "AWS_LAMBDA_INSIGHTS_EXTENSION_X86_64=\"arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension:(?<currentValue>\\d+)\""
       ],
       "datasourceTemplate": "custom.lambda-insights-extension-x86_64",
       "depNameTemplate": "LambdaInsightsExtension",
@@ -90,7 +90,7 @@
         "/^get-required-lambda-layers\\.sh$/"
       ],
       "matchStrings": [
-        "AWS_LAMBDA_INSIGHTS_EXTENSION_ARM64=\"arn:aws:lambda:(?<region>[^:]+):(?<accountId>\\d+):layer:LambdaInsightsExtension-Arm64:(?<currentValue>\\d+)\""
+        "AWS_LAMBDA_INSIGHTS_EXTENSION_ARM64=\"arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension-Arm64:(?<currentValue>\\d+)\""
       ],
       "datasourceTemplate": "custom.lambda-insights-extension-arm64",
       "depNameTemplate": "LambdaInsightsExtension-Arm64",
@@ -100,30 +100,30 @@
   "customDatasources": {
     "aws-appconfig-extension-x86_64": {
       "defaultRegistryUrlTemplate": "https://docs.aws.amazon.com/appconfig/latest/userguide/appconfig-integration-lambda-extensions-versions.html",
-      "format": "html",
+      "format": "plain",
       "transformTemplates": [
-        "{ \"releases\": $match($.html, /arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension:(\\d+)/).groups.{ \"version\": $[0] } }"
+        "{ \"releases\": releases.{ \"version\": $match(version, /arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension:(\\d+)/).groups[0] }[version != null] }"
       ]
     },
     "aws-appconfig-extension-arm64": {
       "defaultRegistryUrlTemplate": "https://docs.aws.amazon.com/appconfig/latest/userguide/appconfig-integration-lambda-extensions-versions.html",
-      "format": "html",
+      "format": "plain",
       "transformTemplates": [
-        "{ \"releases\": $match($.html, /arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension-Arm64:(\\d+)/).groups.{ \"version\": $[0] } }"
+        "{ \"releases\": releases.{ \"version\": $match(version, /arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension-Arm64:(\\d+)/).groups[0] }[version != null] }"
       ]
     },
     "lambda-insights-extension-x86_64": {
       "defaultRegistryUrlTemplate": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versionsx86-64.html",
-      "format": "html",
+      "format": "plain",
       "transformTemplates": [
-        "{ \"releases\": $match($.html, /arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension:(\\d+)/).groups.{ \"version\": $[0] } }"
+        "{ \"releases\": releases.{ \"version\": $match(version, /arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension:(\\d+)/).groups[0] }[version != null] }"
       ]
     },
     "lambda-insights-extension-arm64": {
       "defaultRegistryUrlTemplate": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versionsARM.html",
-      "format": "html",
+      "format": "plain",
       "transformTemplates": [
-        "{ \"releases\": $match($.html, /arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension-Arm64:(\\d+)/).groups.{ \"version\": $[0] } }"
+        "{ \"releases\": releases.{ \"version\": $match(version, /arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension-Arm64:(\\d+)/).groups[0] }[version != null] }"
       ]
     }
   },
