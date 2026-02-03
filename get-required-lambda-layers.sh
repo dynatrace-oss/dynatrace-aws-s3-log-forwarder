@@ -20,7 +20,7 @@ BASE_DIR=".tmp"
 # AWS AppConfig Extension
 # https://docs.aws.amazon.com/appconfig/latest/userguide/appconfig-integration-lambda-extensions.html
 AWS_APPCONFIG_EXTENSION_X86_64="arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension:207"
-AWS_APPCONFIG_EXTENSION_ARM64="arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension-Arm64:140"
+AWS_APPCONFIG_EXTENSION_ARM64="arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension-Arm64:212"
 
 # AWS Lambda Insights Extension
 # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versions.html
