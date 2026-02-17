@@ -16,23 +16,24 @@ ARG ARCH
 ARG ENABLE_LAMBDA_INSIGHTS
 ARG LAMBDA_BASE_IMAGE_TAG
 
-FROM public.ecr.aws/lambda/python:${LAMBDA_BASE_IMAGE_TAG} AS base
+FROM python:3.14-alpine AS base
 
 ARG ARCH
 ARG ENV 
 
 # Update and install OS dependencies
-RUN dnf update -y \
-    && dnf install -y yajl-devel gcc gcc-c++ unzip \
-    && dnf clean all \
-    && rm -rf /var/cache/dnf
+RUN apk update \
+    && apk add --no-cache yajl-dev gcc g++ musl-dev unzip \
+    && rm -rf /var/cache/apk/*
 
 # Install the AWS AppConfig extension (needs to be downloaded beforehand with get-required-lambda-layers.sh)
 COPY .tmp/${ARCH}/aws_appconfig_extension.zip /tmp/
 RUN unzip /tmp/aws_appconfig_extension.zip -d /opt \
     && rm -f /tmp/aws_appconfig_extension.zip
 
-#WORKDIR ${LAMBDA_TASK_ROOT} 
+# Set Lambda environment variables
+ENV LAMBDA_TASK_ROOT=/var/task
+WORKDIR ${LAMBDA_TASK_ROOT}
 
 # Install the function's dependencies using file requirements.txt
 # from your project folder. If enabled, install Lambda Insights
@@ -46,8 +47,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
     else \
         pip install --no-cache-dir -r requirements.txt --target "${LAMBDA_TASK_ROOT}" --use-pep517; \
     fi \
-    && dnf remove -y gcc-plugin-annobin annobin-plugin-gcc gcc gcc-c++ \
-    && dnf clean all
+    && apk del gcc g++ musl-dev \
+    && rm -rf /var/cache/apk/*
 
 # Copy function code and license files
 COPY src LICENSE NOTICE THIRD_PARTY_LICENSES ${LAMBDA_TASK_ROOT}/
