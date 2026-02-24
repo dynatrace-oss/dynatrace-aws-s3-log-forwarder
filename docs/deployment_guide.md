@@ -34,7 +34,7 @@ export DYNATRACE_TENANT_UUID=<replace-with-your-dynatrace-tenant-uuid>
 
 > [!IMPORTANT]
 >
-> Your stack name should have a maximum of 54 characters, otherwise deployment will fail.
+> Your stack name should have a maximum of 53 characters, otherwise deployment will fail.
 
 ### Step 2. Create an AWS SSM SecureString Parameter to store your Dynatrace access token to ingest logs.
 
