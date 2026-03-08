@@ -1,2 +1,2 @@
-moto==5.1.21
+moto==5.1.22
 responses==0.26.0
