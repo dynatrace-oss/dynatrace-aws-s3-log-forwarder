@@ -64,8 +64,8 @@ class TestProcessLogObject(unittest.TestCase):
         # Create test data - simple JSON array
         test_data = json.dumps([
             {"id": 1, "message": "First log entry"},
-            {"id": 2, "message": "Second log entry"},
-            {"id": 3, "message": "Third log entry"}
+            {"id": 2, "message": ["array", "of", "strings"]},
+            {"id": 3, "message": 123.456}
         ])
 
         # Mock S3 client
