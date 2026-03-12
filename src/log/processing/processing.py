@@ -128,7 +128,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
         else:
             ijson_path = 'item'
         log_entries = ijson_backend.items(
-            log_stream, ijson_path)
+            log_stream, ijson_path, use_float=True)
 
     # if it's a stream of JSON objects, create an iterable list of dicts
     elif log_processing_rule.log_format == 'json_stream':
@@ -140,7 +140,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
 
         # For json_stream with multiple root-level objects, use empty prefix
         log_entries = ijson_backend.items(
-            json_stream, '', multiple_values=True)
+            json_stream, '', multiple_values=True, use_float=True)
 
     # if it's text, either iterate the GzipFile if compressed or botocore response body iter_lines() if plain text
     elif log_processing_rule.log_format == 'text':
