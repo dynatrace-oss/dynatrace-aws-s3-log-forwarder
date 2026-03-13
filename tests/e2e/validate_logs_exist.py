@@ -18,8 +18,33 @@ import argparse
 import requests
 import os
 
+DEFAULT_SSO_TOKEN_URL = "https://sso.dynatrace.com/sso/oauth2/token"
+OAUTH_SCOPES = "storage:buckets:read storage:logs:read"
+
 def check_required_env_variables():
-    return "DT_TENANT_URL" in os.environ and "DT_TENANT_API_KEY" in os.environ
+    required = ["DT_TENANT_URL", "DT_SSO_URL", "DT_OAUTH_CLIENT_ID", "DT_OAUTH_CLIENT_SECRET"]
+    return all(var in os.environ for var in required)
+
+def get_oauth_bearer_token():
+    token_url = f"{os.environ['DT_SSO_URL']}/sso/oauth2/token"
+    client_id = os.environ['DT_OAUTH_CLIENT_ID']
+    client_secret = os.environ['DT_OAUTH_CLIENT_SECRET']
+
+    payload = {
+        "grant_type": "client_credentials",
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "scope": OAUTH_SCOPES,
+    }
+
+    resp = requests.post(
+        token_url,
+        data=payload,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        timeout=10,
+    )
+    resp.raise_for_status()
+    return resp.json()["access_token"]
 
 def get_logs_from_dynatrace(source_bucket_name,source_key_name):
     url = f"{os.environ['DT_TENANT_URL']}/api/v2/logs/search"
@@ -29,8 +54,10 @@ def get_logs_from_dynatrace(source_bucket_name,source_key_name):
         "query": f'log.source.aws.s3.bucket.name="{source_bucket_name}" AND log.source.aws.s3.key.name="{source_key_name}"'
     }
 
+    bearer_token = get_oauth_bearer_token()
+
     headers = {
-        "Authorization": f"Api-Token {os.environ.get('DT_TENANT_API_KEY')}"
+        "Authorization": f"Bearer {bearer_token}"
     }
 
     resp = requests.get(url,params=params,headers=headers,timeout=3)
