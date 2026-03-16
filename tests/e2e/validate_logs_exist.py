@@ -17,12 +17,13 @@
 import argparse
 import requests
 import os
+import time
+from datetime import datetime, timezone, timedelta
 
-DEFAULT_SSO_TOKEN_URL = "https://sso.dynatrace.com/sso/oauth2/token"
 OAUTH_SCOPES = "storage:buckets:read storage:logs:read"
 
 def check_required_env_variables():
-    required = ["DT_TENANT_URL", "DT_SSO_URL", "DT_OAUTH_CLIENT_ID", "DT_OAUTH_CLIENT_SECRET"]
+    required = ["DT_TENANT_PLATFORM_URL", "DT_SSO_URL", "DT_OAUTH_CLIENT_ID", "DT_OAUTH_CLIENT_SECRET"]
     return all(var in os.environ for var in required)
 
 def get_oauth_bearer_token():
@@ -46,23 +47,64 @@ def get_oauth_bearer_token():
     resp.raise_for_status()
     return resp.json()["access_token"]
 
-def get_logs_from_dynatrace(source_bucket_name,source_key_name):
-    url = f"{os.environ['DT_TENANT_URL']}/api/v2/logs/search"
+POLL_INTERVAL_SECONDS = 10
+POLL_MAX_ATTEMPTS = 18
 
-    params = {
-        "from": "now-5m",
-        "query": f'log.source.aws.s3.bucket.name="{source_bucket_name}" AND log.source.aws.s3.key.name="{source_key_name}"'
+def get_logs_from_dynatrace(source_bucket_name,source_key_name):
+    base_url = os.environ['DT_TENANT_PLATFORM_URL']
+    execute_url = f"{base_url}/platform/storage/query/v1/query:execute"
+    poll_url = f"{base_url}/platform/storage/query/v1/query:poll"
+
+    dql_query = (
+        f'fetch logs'
+        f' | filter log.source.aws.s3.bucket.name == "{source_bucket_name}"'
+        f' AND log.source.aws.s3.key.name == "{source_key_name}"'
+        f' | limit 1'
+    )
+
+    now = datetime.now(timezone.utc)
+    five_minutes_ago = now - timedelta(minutes=5)
+
+    body = {
+        "query": dql_query,
+        "defaultTimeframeStart": five_minutes_ago.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        "defaultTimeframeEnd": now.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        "defaultScanLimitGbytes": -1,
     }
 
     bearer_token = get_oauth_bearer_token()
 
     headers = {
-        "Authorization": f"Bearer {bearer_token}"
+        "Authorization": f"Bearer {bearer_token}",
+        "Content-Type": "application/json",
     }
 
-    resp = requests.get(url,params=params,headers=headers,timeout=3)
+    # Start the query
+    resp = requests.post(execute_url, json=body, headers=headers, timeout=30)
+    resp.raise_for_status()
 
-    return resp
+    result = resp.json()
+    state = result.get("state")
+    request_token = result.get("requestToken")
+
+    # Poll until the query completes
+    attempts = 0
+    while state == "RUNNING" and attempts < POLL_MAX_ATTEMPTS:
+        time.sleep(POLL_INTERVAL_SECONDS)
+        attempts += 1
+
+        poll_resp = requests.get(
+            poll_url,
+            params={"request-token": request_token},
+            headers={"Authorization": f"Bearer {bearer_token}"},
+            timeout=30,
+        )
+        poll_resp.raise_for_status()
+
+        result = poll_resp.json()
+        state = result.get("state")
+
+    return result
 
 def main():
 
@@ -72,16 +114,22 @@ def main():
 
     args = parser.parse_args()
 
-    results = get_logs_from_dynatrace(args.bucket,args.key)
-    
-    print("API Response: " + results.text)
+    result = get_logs_from_dynatrace(args.bucket, args.key)
 
-    if results.status_code == 200 and results.json().get('sliceSize',0) == 1:
+    print("Query result: " + str(result))
+
+    state = result.get("state")
+    if state != "SUCCEEDED":
+        print(f"Error. Query did not succeed. Final state: {state}")
+        exit(1)
+
+    records = result.get("result", {}).get("records", [])
+    if len(records) > 0:
         print("Success. Log entries found!")
         exit(0)
-    else:
-        print("Error. No log entries found for given bucket and key")
-        exit(1)
+
+    print("Error. No log entries found for given bucket and key")
+    exit(1)
 
 if __name__ == "__main__":
     main()
