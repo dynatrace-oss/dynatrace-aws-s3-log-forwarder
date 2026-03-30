@@ -32,6 +32,7 @@ annotations:
   cloud.provider: aws
   aws.service: network-firewall
   aws.resource.type: "AWS::NetworkFirewall::Firewall"
+  aws.arn.pattern: "arn:aws:network-firewall:{aws.region}:{aws.account.id}:firewall/{aws.resource.id}"
 
 attribute_extraction_from_key_name:
   aws.account.id: '{aws_account_id_pattern}'

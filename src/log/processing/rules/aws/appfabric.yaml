@@ -23,6 +23,7 @@ annotations:
   cloud.provider: aws
   aws.service: appfabric
   aws.resource.type: "AWS::AppFabric::Ingestion"
+  # aws.arn.patter: "arn:${Partition}:appfabric:${Region}:${Account}:appbundle/${AppbundleId}/ingestion/${IngestionIdentifier}"
 
 # map message keys to DT LogsV2 API format  
 attribute_extraction_jmespath_expression:

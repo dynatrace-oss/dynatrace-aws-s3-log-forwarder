@@ -15,6 +15,7 @@
 
 import logging
 import os
+import re
 from os import environ
 import sys
 import time
@@ -61,6 +62,31 @@ def _get_context_log_attributes(bucket: str, key: str):
         'dt.da.aws.s3.key.name': key,
         'cloud.log_forwarder': environ['FORWARDER_FUNCTION_ARN']
     }
+
+
+def _resolve_aws_arn_from_pattern(attributes: dict):
+    """Build aws.arn from aws.arn.pattern using the final merged attributes."""
+    pattern = attributes.pop('aws.arn.pattern', None)
+
+    if pattern is None or 'aws.arn' in attributes:
+        return
+
+    missing_keys = []
+
+    def _replace(match):
+        key = match.group(1)
+        if key in attributes:
+            return str(attributes[key])
+        missing_keys.append(key)
+        return match.group(0)
+
+    resolved_arn = re.sub(r'\{([^{}]+)\}', _replace, pattern)
+
+    if missing_keys:
+        logger.debug("Unable to resolve aws.arn.pattern. Missing attributes: %s", ','.join(sorted(set(missing_keys))))
+        return
+
+    attributes['aws.arn'] = resolved_arn
 
 
 def get_ijson_path_from_jmespath_path(jmespath_expr: str):
@@ -220,6 +246,8 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
                     if "aws.region" not in dt_log_message:
                         dt_log_message['aws.region'] = bucket_region
 
+                    _resolve_aws_arn_from_pattern(dt_log_message)
+
                     # Push to destination sink(s)
                     for log_sink in log_sinks:
                         log_sink.push(dt_log_message)
@@ -281,6 +309,8 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
         # if the aws.region is not found, infer region from bucket
         if "aws.region" not in dt_log_message:
             dt_log_message['aws.region'] = bucket_region
+
+        _resolve_aws_arn_from_pattern(dt_log_message)
 
         # Push to destination sink(s)
         for log_sink in log_sinks:
