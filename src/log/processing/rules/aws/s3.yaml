@@ -29,6 +29,7 @@ requester:
 annotations:
   cloud.provider: aws
   aws.service: s3
+  aws.resource.type: "AWS::S3::Bucket"
 
 attribute_extraction_grok_expression: "%{DATA} %{DATA:bucket_name} \\[%{DATA:timestamp_to_transform}\\]"
 

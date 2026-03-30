@@ -152,6 +152,62 @@ class TestAWSAttributeInjection(unittest.TestCase):
         attributes = global_accelerator_processing_rule.get_attributes_from_s3_key_name(global_accelerator_key_name)
         self.assertEqual(attributes,expected_attributes)
 
+    def test_alb_annotations_include_resource_type(self):
+        annotations = processing_rules['aws']['ALB'].get_processing_log_annotations()
+        self.assertEqual(annotations['aws.resource.type'], 'AWS::ElasticLoadBalancingV2::LoadBalancer')
+
+    def test_nlb_annotations_include_resource_type(self):
+        annotations = processing_rules['aws']['NLB'].get_processing_log_annotations()
+        self.assertEqual(annotations['aws.resource.type'], 'AWS::ElasticLoadBalancingV2::LoadBalancer')
+
+    def test_classic_elb_annotations_include_resource_type(self):
+        annotations = processing_rules['aws']['Classic-ELB'].get_processing_log_annotations()
+        self.assertEqual(annotations['aws.resource.type'], 'AWS::ElasticLoadBalancing::LoadBalancer')
+
+    def test_cloudtrail_annotations_include_resource_type(self):
+        annotations = processing_rules['aws']['CloudTrail'].get_processing_log_annotations()
+        self.assertEqual(annotations['aws.resource.type'], 'AWS::CloudTrail::Trail')
+
+    def test_cloudfront_annotations_include_resource_type(self):
+        annotations = processing_rules['aws']['cloudfront'].get_processing_log_annotations()
+        self.assertEqual(annotations['aws.resource.type'], 'AWS::CloudFront::Distribution')
+
+    def test_global_accelerator_annotations_include_resource_type(self):
+        annotations = processing_rules['aws']['global-accelerator'].get_processing_log_annotations()
+        self.assertEqual(annotations['aws.resource.type'], 'AWS::GlobalAccelerator::Accelerator')
+
+    def test_msk_annotations_include_resource_type(self):
+        annotations = processing_rules['aws']['msk'].get_processing_log_annotations()
+        self.assertEqual(annotations['aws.resource.type'], 'AWS::MSK::Cluster')
+
+    def test_network_firewall_annotations_include_resource_type(self):
+        annotations = processing_rules['aws']['network-firewall'].get_processing_log_annotations()
+        self.assertEqual(annotations['aws.resource.type'], 'AWS::NetworkFirewall::Firewall')
+
+    def test_redshift_annotations_include_resource_type(self):
+        annotations = processing_rules['aws']['redshift'].get_processing_log_annotations()
+        self.assertEqual(annotations['aws.resource.type'], 'AWS::Redshift::Cluster')
+
+    def test_s3_annotations_include_resource_type(self):
+        annotations = processing_rules['aws']['s3'].get_processing_log_annotations()
+        self.assertEqual(annotations['aws.resource.type'], 'AWS::S3::Bucket')
+
+    def test_vpcflowlogs_annotations_include_resource_type(self):
+        annotations = processing_rules['aws']['vpcflowlogs'].get_processing_log_annotations()
+        self.assertEqual(annotations['aws.resource.type'], 'AWS::EC2::VPC')
+
+    def test_vpcdnsquerylogs_annotations_include_resource_type(self):
+        annotations = processing_rules['aws']['vpcdnsquerylogs'].get_processing_log_annotations()
+        self.assertEqual(annotations['aws.resource.type'], 'AWS::EC2::VPC')
+
+    def test_waf_annotations_include_resource_type(self):
+        annotations = processing_rules['aws']['waf'].get_processing_log_annotations()
+        self.assertEqual(annotations['aws.resource.type'], 'AWS::WAFv2::WebACL')
+
+    def test_appfabric_annotations_include_resource_type(self):
+        annotations = processing_rules['aws']['appfabric-ocsf-json'].get_processing_log_annotations()
+        self.assertEqual(annotations['aws.resource.type'], 'AWS::AppFabric::Ingestion')
+
 class TestS3KeyMatchingExpression(unittest.TestCase):
 
     def test_cloudtrail_s3_key(self):

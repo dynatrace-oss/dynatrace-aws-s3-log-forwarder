@@ -28,6 +28,7 @@ annotations:
   log.source: aws.alb
   cloud.provider: aws
   aws.service: alb
+  aws.resource.type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
 
 # https://docs.aws.amazon.com/elasticloadbalancing/latest/application/enable-access-logging.html#attach-bucket-policy
 requester: 

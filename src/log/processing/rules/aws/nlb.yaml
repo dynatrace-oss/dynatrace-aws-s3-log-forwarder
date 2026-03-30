@@ -28,6 +28,7 @@ annotations:
   log.source: aws.nlb
   cloud.provider: aws
   aws.service: nlb
+  aws.resource.type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
 
 # https://docs.aws.amazon.com/elasticloadbalancing/latest/network/load-balancer-access-logs.html#access-logging-bucket-requirements
 requester: 

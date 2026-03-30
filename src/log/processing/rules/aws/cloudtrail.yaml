@@ -24,6 +24,7 @@ log_entries_key: Records
 annotations:
   cloud.provider: aws
   aws.service: cloudtrail
+  aws.resource.type: "AWS::CloudTrail::Trail"
 
 requester:
   - cloudtrail.amazonaws.com

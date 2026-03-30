@@ -31,6 +31,7 @@ requester:
 annotations:
   cloud.provider: aws
   aws.service: vpc
+  aws.resource.type: "AWS::EC2::VPC"
 
 attribute_extraction_from_key_name:
   aws.account.id: '{aws_account_id_pattern}'

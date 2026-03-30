@@ -30,6 +30,7 @@ requester:
 annotations:
   cloud.provider: aws
   aws.service: wafv2
+  aws.resource.type: "AWS::WAFv2::WebACL"
 
 attribute_extraction_from_key_name:
   aws.account.id: '{aws_account_id_pattern}'

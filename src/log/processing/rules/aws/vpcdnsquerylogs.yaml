@@ -30,6 +30,7 @@ annotations:
   log.source: aws.vpcdnsquerylogs
   cloud.provider: aws
   aws.service: route53
+  aws.resource.type: "AWS::EC2::VPC"
 
 # map message keys to DT LogsV2 API format  
 attribute_extraction_jmespath_expression:
