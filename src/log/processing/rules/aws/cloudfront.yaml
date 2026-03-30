@@ -28,6 +28,7 @@ annotations:
   aws.service: cloudfront
   aws.region: global
   aws.resource.type: "AWS::CloudFront::Distribution"
+  # aws.arn.pattern: "arn:{Partition}:cloudfront::${Account}:distribution/${DistributionId}"
 
 attribute_extraction_from_key_name:
   aws.resource.id: '{cloudfront_distribution_id_pattern}(?=\.{year_pattern}-{month_pattern}-{day_pattern})'

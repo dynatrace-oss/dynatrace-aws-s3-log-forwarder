@@ -353,6 +353,44 @@ class TestProcessLogObject(unittest.TestCase):
         self.assertIn('cloud.log_forwarder', call_args)
 
     @patch('boto3._get_default_session')
+    def test_text_log_emits_aws_arn_from_pattern(self, mock_session):
+        from log.processing import log_processing_rules
+
+        test_data = (
+            'http 2018-07-02T22:23:00.186641Z app/my-loadbalancer/50dc6c495c0c9188 '
+            '192.168.131.39:2817 10.0.0.1:80 0.000 0.001 0.000 200 200 34 366 '
+            '"GET http://www.example.com:80/ HTTP/1.1" "curl/7.46.0" - - '
+            'arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 '
+            '"Root=1-58337262-36d228ad5d99923122bbe354" "-" "-" 0 2018-07-02T22:22:48.364000Z '
+            '"forward" "-" "-" "10.0.0.1:80" "200" "-" "-"\n'
+        )
+
+        mock_s3_client = Mock()
+        mock_s3_client.get_object.return_value = self._create_s3_response(test_data, compressed=True)
+        mock_session_instance = Mock()
+        mock_session_instance.client.return_value = mock_s3_client
+        mock_session.return_value = mock_session_instance
+
+        processing_rules, _ = log_processing_rules.load()
+        log_rule = processing_rules['aws']['ALB']
+
+        process_log_object(
+            log_processing_rule=log_rule,
+            bucket='my-test-bucket',
+            key='AWSLogs/012345678910/elasticloadbalancing/us-east-1/2022/09/23/012345678910_elasticloadbalancing_us-east-1_app.my-loadbalancer.50dc6c495c0c9188_20220721T1440Z_192.168.122.18_3okvlwdx.log.gz',
+            bucket_region='us-west-2',
+            log_sinks=[self.mock_log_sink],
+            lambda_context=self.mock_lambda_context
+        )
+
+        call_args = self.mock_log_sink.push.call_args[0][0]
+        self.assertEqual(
+            call_args['aws.arn'],
+            'arn:aws:elasticloadbalancing:us-east-1:012345678910:loadbalancer/app/my-loadbalancer/50dc6c495c0c9188'
+        )
+        self.assertNotIn('aws.arn.pattern', call_args)
+
+    @patch('boto3._get_default_session')
     def test_large_json_array(self, mock_session):
         """Test processing large JSON array to ensure streaming works"""
         # Create large test data (1000 entries)

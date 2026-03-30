@@ -31,6 +31,8 @@ annotations:
   cloud.provider: aws
   aws.service: route53
   aws.resource.type: "AWS::EC2::VPC"
+  # not sure
+  aws.arn.pattern: "arn:aws:ec2:{aws.region}:{aws.account.id}:vpc/{aws.resource.id}"
 
 # map message keys to DT LogsV2 API format  
 attribute_extraction_jmespath_expression:

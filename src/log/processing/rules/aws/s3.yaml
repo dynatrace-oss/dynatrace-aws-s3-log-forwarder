@@ -30,6 +30,7 @@ annotations:
   cloud.provider: aws
   aws.service: s3
   aws.resource.type: "AWS::S3::Bucket"
+  aws.arn.pattern: "arn:aws:s3:::{aws.resource.id}"
 
 attribute_extraction_grok_expression: "%{DATA} %{DATA:bucket_name} \\[%{DATA:timestamp_to_transform}\\]"
 

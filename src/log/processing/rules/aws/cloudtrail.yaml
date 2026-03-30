@@ -25,6 +25,7 @@ annotations:
   cloud.provider: aws
   aws.service: cloudtrail
   aws.resource.type: "AWS::CloudTrail::Trail"
+  ###aws.arn.pattern: "arn:aws:cloudtrail:{aws.region}:{aws.account.id}:trail/{aws.resource.id}"
 
 requester:
   - cloudtrail.amazonaws.com

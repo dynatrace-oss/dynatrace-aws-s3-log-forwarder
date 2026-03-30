@@ -31,6 +31,7 @@ annotations:
   cloud.provider: aws
   aws.service: redshift
   aws.resource.type: "AWS::Redshift::Cluster"
+  aws.arn.pattern: "arn:aws:redshift:{aws.region}:{aws.account.id}:cluster:{aws.resource.id}"
 
 # https://docs.aws.amazon.com/redshift/latest/mgmt/db-auditing.html#db-auditing-manage-log-files
 attribute_extraction_from_key_name:
