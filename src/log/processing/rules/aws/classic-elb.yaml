@@ -24,6 +24,7 @@ annotations:
   log.source: aws.clb
   cloud.provider: aws
   aws.service: clb
+  aws.resource.type: "AWS::ElasticLoadBalancing::LoadBalancer"
 
 # https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/enable-access-logs.html#attach-bucket-policy
 requester: 
