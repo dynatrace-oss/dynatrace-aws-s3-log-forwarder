@@ -57,6 +57,8 @@ def _get_context_log_attributes(bucket: str, key: str):
     return {
         'log.source.aws.s3.bucket.name': bucket,
         'log.source.aws.s3.key.name': key,
+        'dt.da.aws.s3.bucket.name': bucket,
+        'dt.da.aws.s3.key.name': key,
         'cloud.log_forwarder': environ['FORWARDER_FUNCTION_ARN']
     }
 
