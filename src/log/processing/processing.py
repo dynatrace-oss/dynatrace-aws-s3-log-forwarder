@@ -246,6 +246,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
                     if "aws.region" not in dt_log_message:
                         dt_log_message['aws.region'] = bucket_region
 
+                    # resolve ARN based on pattern
                     _resolve_aws_arn_from_pattern(dt_log_message)
 
                     # Push to destination sink(s)

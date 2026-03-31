@@ -31,7 +31,6 @@ annotations:
   cloud.provider: aws
   aws.service: wafv2
   aws.resource.type: "AWS::WAFv2::WebACL"
-  # aws.arn.pattern: "arn:${Partition}:wafv2:${Region}:${Account}:${Scope}/webacl/${Name}/${Id}"
 
 attribute_extraction_from_key_name:
   aws.account.id: '{aws_account_id_pattern}'
