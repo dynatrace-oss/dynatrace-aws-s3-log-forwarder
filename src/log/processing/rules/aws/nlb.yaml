@@ -29,7 +29,7 @@ annotations:
   cloud.provider: aws
   aws.service: nlb
   aws.resource.type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
-  aws.arn.pattern: "arn:aws:elasticloadbalancing:{aws.region}:{aws.account.id}:loadbalancer/net/{aws.resource.id}"
+  aws.arn.pattern: "arn:aws:elasticloadbalancing:{aws.region}:{aws.account.id}:loadbalancer/{aws.resource.id}"
 
 # https://docs.aws.amazon.com/elasticloadbalancing/latest/network/load-balancer-access-logs.html#access-logging-bucket-requirements
 requester: 

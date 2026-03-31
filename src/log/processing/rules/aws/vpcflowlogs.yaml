@@ -31,8 +31,8 @@ requester:
 annotations:
   cloud.provider: aws
   aws.service: vpc
+  # should it be marked as VPC or vpc flow log
   aws.resource.type: "AWS::EC2::VPC"
-  # not sure
   aws.arn.pattern: "arn:aws:ec2:{aws.region}:{aws.account.id}:vpc-flow-log/{aws.vpc.flow_log_id}"
 
 attribute_extraction_from_key_name:
