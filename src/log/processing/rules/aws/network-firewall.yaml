@@ -20,30 +20,20 @@ name: network-firewall
 # Example file name: AWSLogs/012345678910/network-firewall/flow/us-east-1/my-test-firewall/2023/02/20/16/012345678910_network-firewall_flow_us-east-1_my-test-firewall_202302201610_e5c84094.log.gz
 
 known_key_path_pattern: '^.*?{aws_logs_prefix}/{aws_account_id_pattern}/(network-firewall)/(alert|flow)/{aws_region_pattern}/{aws_resource_name_pattern}/{year_pattern}/{month_pattern}/{day_pattern}/{hour_pattern}/{aws_account_id_pattern}_(network-firewall)_(alert|flow)_{aws_region_pattern}_{aws_resource_name_pattern}_{year_pattern}{month_pattern}{day_pattern}{hour_pattern}{minutes_pattern}_[a-fA-F0-9]{{8}}(\.log\.gz)$'
-
 source: aws
-
 log_format: json_stream
 
-requester:
-  - delivery.logs.amazonaws.com
-
 annotations:
-  cloud.provider: aws
-  aws.service: network-firewall
   aws.resource.type: "AWS::NetworkFirewall::Firewall"
   aws.arn.pattern: "arn:aws:network-firewall:{aws.region}:{aws.account.id}:firewall/{aws.resource.id}"
 
 attribute_extraction_from_key_name:
+  # for ARN calculation
   aws.account.id: '{aws_account_id_pattern}'
   aws.region: '{aws_region_pattern}'
-  # Should flow id be the log.source?
-  log.type: '(flow|alert)'
-  aws.resource.id: '{aws_resource_name_pattern}(?=\/{year_pattern}\/{month_pattern}\/{day_pattern}\/{hour_pattern}\/{minutes_pattern})'
 
 # https://docs.aws.amazon.com/network-firewall/latest/developerguide/firewall-logging.html#firewall-logging-contents
 # {"firewall_name":"test-firewall","availability_zone":"us-east-1b","event_timestamp":"1602627001","event":{"timestamp":"2020-10-13T22:10:01.006481+0000","flow_id":1582438383425873,"event_type":"alert","src_ip":"203.0.113.4","src_port":55555,"dest_ip":"192.0.2.16","dest_port":111,"proto":"TCP","alert":{"action":"allowed","signature_id":5,"rev":0,"signature":"test_tcp","category":"","severity":1}}}
 attribute_extraction_jmespath_expression:
-  #aws.resource.id: firewall_name
-  #aws.availability_zone: availability_zone
+  aws.resource.id: firewall_name
   timestamp: event_timestamp

@@ -19,17 +19,10 @@ name: msk
 # Example file name: AWSLogs/012345678910/KafkaBrokerLogs/us-east-1/demo-cluster-2-043b6d76-352c-494a-9eee-fbff5cc1687d-20/2023-02-20-17/Broker-1_17-05_5b17f696.log.gz
 
 known_key_path_pattern: '^.*?{aws_logs_prefix}\/{aws_account_id_pattern}\/(KafkaBrokerLogs)/{aws_region_pattern}\/{aws_resource_name_pattern}\/{year_pattern}-{month_pattern}-{day_pattern}-{hour_pattern}\/(Broker)-\d{{1,3}}_{hour_pattern}-{minutes_pattern}_[a-fA-F0-9]{{8}}(\.log\.gz)$'
-
 source: aws
-
 log_format: text
 
-requester:
-  - delivery.logs.amazonaws.com
-
 annotations:
-  cloud.provider: aws
-  aws.service: msk
   aws.resource.type: "AWS::MSK::Cluster"
   aws.arn.pattern: "arn:aws:kafka:{aws.region}:{aws.account.id}:cluster/{aws.resource.id}"
   # 	arn:{aws_partition}:kafka:{aws_region}:{aws_account_id}:cluster/{resource_name}/{aws_cluster_uuid}
@@ -38,8 +31,6 @@ attribute_extraction_from_key_name:
   aws.account.id: '{aws_account_id_pattern}'
   aws.region: '{aws_region_pattern}'
   aws.resource.id: '{aws_resource_name_pattern}(?=\/{year_pattern}-{month_pattern}-{day_pattern}-{hour_pattern})'
-  aws.msk.broker: '(Broker)-\d{{1,3}}(?=_{hour_pattern}-{minutes_pattern}_[a-fA-F0-9]{{8}}(\.log\.gz)$)'
 
-
-attribute_extraction_grok_expression: '\[%{TIMESTAMP_ISO8601:timestamp_to_transform}\] %{LOGLEVEL:severity}'
+attribute_extraction_grok_expression: '\[%{TIMESTAMP_ISO8601:timestamp_to_transform}\] %{GREEDYDATA}'
 

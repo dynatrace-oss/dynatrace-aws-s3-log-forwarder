@@ -22,32 +22,9 @@ log_format: json
 log_entries_key: Records
 
 annotations:
-  cloud.provider: aws
-  aws.service: cloudtrail
   aws.resource.type: "AWS::CloudTrail::Trail"
   ###aws.arn.pattern: "arn:aws:cloudtrail:{aws.region}:{aws.account.id}:trail/{aws.resource.id}"
 
-requester:
-  - cloudtrail.amazonaws.com
-
-attribute_extraction_from_key_name:
-  aws.account.id: '{aws_account_id_pattern}'
-  aws.region: '{aws_region_pattern}'
-  aws.organization.id: '{organization_id_pattern}'
-
-attribute_extraction_grok_expression:
-
 attribute_extraction_jmespath_expression:
   timestamp: eventTime
-  audit.event_source: eventSource
-  audit.action: eventName
-  audit.read_only: readOnly
-  audit.identity_type: "userIdentity.type || 'NotProvided'"
 
-  # Identity might be an ARN, an AWS Service or an AWS account Id
-  # (or principalId for WebIdentity user, e.g. Federated Users, Kubernetes IRSA)
-  audit.identity: "userIdentity.arn || userIdentity.invokedBy || userIdentity.principalId || userIdentity.accountId"
-  # if errorCode then Failed.errorCode, otherwise Succeed
-  audit.result: "errorCode && join('.', ['Failed', errorCode]) || 'Succeeded'"
-  # if errorCode exists -> ERROR, otherwise INFO
-  severity: "errorCode && 'ERROR' || 'INFO'"

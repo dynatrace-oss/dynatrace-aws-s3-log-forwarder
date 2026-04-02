@@ -18,18 +18,12 @@ name: vpcdnsquerylogs
 # https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-query-logs.html
 # File name example: AWSLogs/012345678910/vpcdnsquerylogs/vpc-0123456789abcdf12/2023/02/15/vpc-0123456789abcdf12_vpcdnsquerylogs_012345678910_20230215T0000Z_213be99c.log.gz
 known_key_path_pattern: '^.*?{aws_logs_prefix}/{aws_account_id_pattern}/(vpcdnsquerylogs)/{vpc_id_pattern}/{year_pattern}/{month_pattern}/{day_pattern}/{vpc_id_pattern}_(vpcdnsquerylogs)_{aws_account_id_pattern}_{year_pattern}{month_pattern}{day_pattern}T{hour_pattern}{minutes_pattern}Z_[a-fA-F0-9]{{8}}(\.log\.gz)$'
-
 source: aws
-
 log_format: json_stream
 
-requester:
-  - delivery.logs.amazonaws.com
 
 annotations:
-  log.source: aws.vpcdnsquerylogs
-  cloud.provider: aws
-  aws.service: route53
+  # not sure
   aws.resource.type: "AWS::EC2::VPC"
   # not sure
   aws.arn.pattern: "arn:aws:ec2:{aws.region}:{aws.account.id}:vpc/{aws.resource.id}"
@@ -40,5 +34,3 @@ attribute_extraction_jmespath_expression:
   aws.account.id: account_id
   aws.region: region
   aws.resource.id: vpc_id
-  #net.host.name: query_name
-  severity: "rcode == 'NOERROR' && 'INFO' || 'ERROR'"

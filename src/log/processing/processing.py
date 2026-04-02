@@ -16,7 +16,6 @@
 import logging
 import os
 import re
-from os import environ
 import sys
 import time
 import json
@@ -56,12 +55,22 @@ def _get_context_log_attributes(bucket: str, key: str):
     Returns context attributes to the log entry for troubleshooting purposes.
     '''
     return {
-        'log.source.aws.s3.bucket.name': bucket,
-        'log.source.aws.s3.key.name': key,
         'dt.da.aws.s3.bucket.name': bucket,
         'dt.da.aws.s3.key.name': key,
-        'cloud.log_forwarder': environ['FORWARDER_FUNCTION_ARN']
     }
+
+
+def _get_filtered_output_message(attributes: dict) -> dict:
+    """Keep only attributes that should be sent to sinks."""
+    allowed_keys = {
+        'dt.da.aws.s3.bucket.name',
+        'dt.da.aws.s3.key.name',
+        'aws.arn',
+        'aws.resource.type',
+        'content',
+        'timestamp',
+    }
+    return {k: v for k, v in attributes.items() if k in allowed_keys}
 
 
 def _resolve_aws_arn_from_pattern(attributes: dict):
@@ -80,7 +89,7 @@ def _resolve_aws_arn_from_pattern(attributes: dict):
         missing_keys.append(key)
         return match.group(0)
 
-    resolved_arn = re.sub(r'\{([^{}]+)\}', _replace, pattern)
+    resolved_arn = re.sub(r'\{([^{}]+)}', _replace, pattern)
 
     if missing_keys:
         logger.debug("Unable to resolve aws.arn.pattern. Missing attributes: %s", ','.join(sorted(set(missing_keys))))
@@ -134,7 +143,6 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
     s3_client = session.client('s3')
 
     log_obj_http_response = s3_client.get_object(Bucket=bucket, Key=key)
-
     log_obj_http_response_body = log_obj_http_response['Body']
     log_obj_http_response_content_encoding = log_obj_http_response.get('ContentEncoding', '').lower()
 
@@ -242,14 +250,11 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
                     dt_log_message.update(
                         log_processing_rule.get_extracted_log_attributes(sub_entry))
 
-                    # if the aws.region is not found, infer region from bucket
-                    if "aws.region" not in dt_log_message:
-                        dt_log_message['aws.region'] = bucket_region
-
                     # resolve ARN based on pattern
                     _resolve_aws_arn_from_pattern(dt_log_message)
 
                     # Push to destination sink(s)
+                    dt_log_message = _get_filtered_output_message(dt_log_message)
                     for log_sink in log_sinks:
                         log_sink.push(dt_log_message)
 
@@ -314,8 +319,9 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
         _resolve_aws_arn_from_pattern(dt_log_message)
 
         # Push to destination sink(s)
+        output_message = _get_filtered_output_message(dt_log_message)
         for log_sink in log_sinks:
-            log_sink.push(dt_log_message)
+            log_sink.push(output_message)
 
         num_log_entries += 1
 

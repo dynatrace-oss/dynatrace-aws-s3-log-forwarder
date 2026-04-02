@@ -119,7 +119,6 @@ def lambda_handler(event, context):
         event_records = []
 
     for index, message in enumerate(event_records):
-
         # Empty the sinks in case some content was left due to errors and initialize
         # num_batch to 1.
         dynatrace.empty_sinks(dynatrace_sinks)
