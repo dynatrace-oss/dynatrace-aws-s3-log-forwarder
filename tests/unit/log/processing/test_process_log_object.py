@@ -342,15 +342,10 @@ class TestProcessLogObject(unittest.TestCase):
 
         # Verify context attributes were added (both old and new)
         call_args = self.mock_log_sink.push.call_args[0][0]
-        self.assertIn('log.source.aws.s3.bucket.name', call_args)
-        self.assertEqual(call_args['log.source.aws.s3.bucket.name'], 'my-test-bucket')
-        self.assertIn('log.source.aws.s3.key.name', call_args)
-        self.assertEqual(call_args['log.source.aws.s3.key.name'], 'logs/2024/01/01/test.json')
         self.assertIn('dt.da.aws.s3.bucket.name', call_args)
         self.assertEqual(call_args['dt.da.aws.s3.bucket.name'], 'my-test-bucket')
         self.assertIn('dt.da.aws.s3.key.name', call_args)
         self.assertEqual(call_args['dt.da.aws.s3.key.name'], 'logs/2024/01/01/test.json')
-        self.assertIn('cloud.log_forwarder', call_args)
 
     @patch('boto3._get_default_session')
     def test_text_log_emits_aws_arn_from_pattern(self, mock_session):

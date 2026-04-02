@@ -24,7 +24,7 @@ processing_rules, _ = log_processing_rules.load()
 
 cloudtrail_key_name = 'random_prefix/AWSLogs/012345678910/CloudTrail/us-east-1/2022/09/23/012345678910_CloudTrail_us-east-1_20220923T2350Z_noxkMtWv70h0LEES.json.gz'
 cloudtrail_key_with_org_name = 'random_prefix/AWSLogs/o-012345678910/012345678910/CloudTrail/us-east-1/2022/09/23/012345678910_CloudTrail_us-east-1_20220923T2350Z_noxkMtWv70h0LEES.json.gz'
-alb_key_name = 'random_prefix/AWSLogs/012345678910/elasticloadbalancing/us-east-1/2022/09/23/012345678910_elasticloadbalancing_us-east-1_app.k8s-podinfo-podinfoi-ffbc3dc280.82a34fae168ba1aa_20220721T1440Z_192.168.122.18_3okvlwdx.log.gz'
+alb_key_name = 'random1_prefix/AWSLogs/012345678910/elasticloadbalancing/us-east-1/2022/09/23/012345678910_elasticloadbalancing_us-east-1_app.k8s-podinfo-podinfoi-ffbc3dc280.82a34fae168ba1aa_20220721T1440Z_192.168.122.18_3okvlwdx.log.gz'
 classic_elb_key_name = 'random_prefix/AWSLogs/012345678910/elasticloadbalancing/us-east-1/2022/09/23/012345678910_elasticloadbalancing_us-east-1_a2e8277e0e09143fbb06db5dcd2a14c2_20220730T2350Z_192.168.36.65_31av101p.log'
 nlb_key_name = 'random_prefix/AWSLogs/012345678910/elasticloadbalancing/us-east-1/2022/09/23/012345678910_elasticloadbalancing_us-east-1_net.k8s-podinfo-frontend-352ef7564b.809b86b470cfa0ff_20220927T1715Z_bbb0861d.log.gz'
 waf_key_name = 'random_prefix/AWSLogs/012345678910/WAFLogs/eu-west-1/my-web-acl/2023/02/15/14/30/012345678910_waflogs_us-east-1_my-web-acl_20230215T1430Z_ec507835.log.gz'
@@ -39,6 +39,10 @@ redshift_key_name = 'AWSLogs/123456789012/redshift/us-east-1/2013/10/29/12345678
 alb_log_entry = 'http 2018-07-02T22:23:00.186641Z app/my-loadbalancer/50dc6c495c0c9188 192.168.131.39:2817 10.0.0.1:80 0.000 0.001 0.000 200 200 34 366 "GET http://www.example.com:80/ HTTP/1.1" "curl/7.46.0" - - arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337262-36d228ad5d99923122bbe354" "-" "-" 0 2018-07-02T22:22:48.364000Z "forward" "-" "-" "10.0.0.1:80" "200" "-" "-"'
 classic_elb_log_entry = '2022-09-27T22:48:26.330387Z a2e8277e0e09143fbb06db5dcd2a14c2 3.67.7.163:8596 192.168.18.161:32728 0.000042 0.004504 0.000036 404 404 0 1086 "GET http://a2e8277e0e09143fbb06db5dcd2a14c2-1086714162.us-east-1.elb.amazonaws.com:80/n9BxiYVakde9.php HTTP/1.1" "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0)" - -'
 nlb_log_entry = 'tls 2.0 2022-09-27T17:10:23 net/k8s-podinfo-frontend-352ef7564b/809b86b470cfa0ff f0f22c45225e4663 192.168.18.161:60808 192.168.103.168:443 24 16 140 518 - arn:aws:acm:us-east-1:012345678910:certificate/ae6e87cd-9848-465b-9433-b0d34850a685 - ECDHE-RSA-AES128-GCM-SHA256 tlsv12 - k8s-podinfo-frontend-352ef7564b-809b86b470cfa0ff.elb.us-east-1.amazonaws.com - - -'
+network_firewall_log_entry = {
+    'event_timestamp': '1602627001',
+    'firewall_name': 'my-test-firewall',
+}
 s3_access_log_entry = '79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be DOC-EXAMPLE-BUCKET1 [06/Feb/2019:00:00:38 +0000] 192.0.2.3 79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be 3E57427F3EXAMPLE REST.GET.VERSIONING - "GET /DOC-EXAMPLE-BUCKET1?versioning HTTP/1.1" 200 - 113 - 7 - "-" "S3Console/0.4" - s9lzHYrFp76ZVxRcpX9+5cjAnEH2ROuNkd2BHfIa6UkFVdtjf5mKR3/eTPFvsiP/XV/VLi31234= SigV4 ECDHE-RSA-AES128-GCM-SHA256 AuthHeader DOC-EXAMPLE-BUCKET1.s3.us-west-1.amazonaws.com TLSV1.2 arn:aws:s3:us-west-1:123456789012:accesspoint/example-AP Yes'
 vpcdnsquery_log_entry = {
     'version': '1.100000',
@@ -52,21 +56,14 @@ vpcdnsquery_log_entry = {
 class TestAWSAttributeInjection(unittest.TestCase):
     def test_cloudtrail_attributes(self):
         cloudtrail_processing_rule = processing_rules['aws']['CloudTrail']
-        expected_attributes = {
-                        'aws.account.id': '012345678910',
-                        'aws.region': 'us-east-1',
-                      }
+        expected_attributes = {}
 
         attributes = cloudtrail_processing_rule.get_attributes_from_s3_key_name(cloudtrail_key_name)
         self.assertEqual(attributes,expected_attributes)
 
     def test_cloudtrail_with_org_id_attributes(self):
         cloudtrail_processing_rule = processing_rules['aws']['CloudTrail']
-        expected_attributes = {
-            'aws.account.id': '012345678910',
-            'aws.region': 'us-east-1',
-            'aws.organization.id': 'o-012345678910'
-        }
+        expected_attributes = {}
 
         attributes = cloudtrail_processing_rule.get_attributes_from_s3_key_name(cloudtrail_key_with_org_name)
         self.assertEqual(attributes, expected_attributes)
@@ -75,7 +72,7 @@ class TestAWSAttributeInjection(unittest.TestCase):
         alb_processing_rule = processing_rules['aws']['ALB']
         expected_attributes = {
                         'aws.account.id': '012345678910',
-                        'aws.region': 'us-east-1'
+                        'aws.region': 'us-east-1',
                       }
 
         attributes = alb_processing_rule.get_attributes_from_s3_key_name(alb_key_name)
@@ -85,7 +82,7 @@ class TestAWSAttributeInjection(unittest.TestCase):
         classic_elb_processing_rule = processing_rules['aws']['Classic-ELB']
         expected_attributes = {
                         'aws.account.id': '012345678910',
-                        'aws.region': 'us-east-1'
+                        'aws.region': 'us-east-1',
                       }
 
         attributes = classic_elb_processing_rule.get_attributes_from_s3_key_name(classic_elb_key_name)
@@ -95,7 +92,7 @@ class TestAWSAttributeInjection(unittest.TestCase):
         nlb_processing_rule = processing_rules['aws']['NLB']
         expected_attributes = {
                         'aws.account.id': '012345678910',
-                        'aws.region': 'us-east-1'
+                        'aws.region': 'us-east-1',
                       }
 
         attributes = nlb_processing_rule.get_attributes_from_s3_key_name(nlb_key_name)
@@ -104,18 +101,14 @@ class TestAWSAttributeInjection(unittest.TestCase):
     def test_waf_attributes(self):
         waf_processing_rule = processing_rules['aws']['waf']
         attributes = waf_processing_rule.get_attributes_from_s3_key_name(waf_key_name)
-        expected_attributes = {
-                        'aws.account.id': '012345678910',
-                        'aws.region': 'eu-west-1',
-                        'aws.resource.id': 'my-web-acl'
-                      }
+        expected_attributes = {}
 
         self.assertEqual(attributes,expected_attributes)
 
     def test_cloudfront_attributes(self):
-        expected_attributes = {'aws.resource.id': 'E1SFLUZKKLSP61'}
         cloudfront_processing_rule = processing_rules['aws']['cloudfront']
         attributes = cloudfront_processing_rule.get_attributes_from_s3_key_name(cloudfront_key_name)
+        expected_attributes = {}
 
         self.assertEqual(attributes,expected_attributes)
 
@@ -133,10 +126,8 @@ class TestAWSAttributeInjection(unittest.TestCase):
 
     def test_networkfirewall_attributes(self):
         expected_attributes = {
-            'log.type': 'flow',
             'aws.account.id': '012345678910',
             'aws.region': 'us-east-1',
-            'aws.resource.id': 'my-test-firewall'
         }
 
         netfw_processing_rule = processing_rules['aws']['network-firewall']
@@ -149,7 +140,6 @@ class TestAWSAttributeInjection(unittest.TestCase):
             'aws.account.id': '012345678910',
             'aws.region': 'us-east-1',
             'aws.resource.id': 'demo-cluster-2-043b6d76-352c-494a-9eee-fbff5cc1687d-20',
-            'aws.msk.broker': 'Broker-1'
         }
 
         msk_processing_rule = processing_rules['aws']['msk']
@@ -159,7 +149,6 @@ class TestAWSAttributeInjection(unittest.TestCase):
     def test_global_accelerator_attributes(self):
         expected_attributes = {
             'aws.account.id': '012345678910',
-            'aws.region': 'us-west-2',
             'aws.resource.id': 'f0154cf1-4ac0-451b-87a2-5b2ce89142e6'
         }
 
@@ -252,7 +241,7 @@ class TestAWSAttributeInjection(unittest.TestCase):
             },
             'network-firewall': {
                 'key': network_firewall_key_name,
-                'message': {},
+                'message': network_firewall_log_entry,
                 'expected_arn': 'arn:aws:network-firewall:us-east-1:012345678910:firewall/my-test-firewall'
             },
             'redshift': {

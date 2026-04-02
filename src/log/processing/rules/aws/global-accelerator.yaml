@@ -19,28 +19,20 @@ name: global-accelerator
 # Format: s3-bucket_name/s3-bucket-prefix/AWSLogs/aws_account_id/globalaccelerator/region/yyyy/mm/dd/aws_account_id_globalaccelerator_accelerator_id_flow_log_id_timestamp_hash.log.gz
 # Example file name: optional_prefix/AWSLogs/123456789012/globalaccelerator/us-west-2/2018/11/23/123456789012_globalaccelerator_1234abcd-abcd-1234-abcd-1234abcdefgh_20181123T0005Z_1fb12345.log.gz
 known_key_path_pattern: '^.*?{aws_logs_prefix}\/{aws_account_id_pattern}\/(globalaccelerator)\/{aws_region_pattern}\/{year_pattern}/{month_pattern}/{day_pattern}\/{aws_account_id_pattern}_(globalaccelerator)_{aws_global_accelerator_id_pattern}_{year_pattern}{month_pattern}{day_pattern}T{hour_pattern}{minutes_pattern}Z_[a-fA-F0-9]{{8}}(\.log\.gz)$'
-
 source: aws
-
 log_format: text
 
-requester:
-  - delivery.logs.amazonaws.com
-
 annotations:
-  cloud.provider: aws
-  aws.service: global-accelerator
   aws.resource.type: "AWS::GlobalAccelerator::Accelerator"
   aws.arn.pattern: "arn:aws:globalaccelerator::{aws.account.id}:accelerator/{aws.resource.id}"
 
-
 attribute_extraction_from_key_name:
+  # needed for ARN calculation
   aws.account.id: '{aws_account_id_pattern}'
-  aws.region: '{aws_region_pattern}'
   aws.resource.id: '{aws_global_accelerator_id_pattern}(?=_{year_pattern}{month_pattern}{day_pattern}T{hour_pattern}{minutes_pattern}Z_[a-fA-F0-9]{{8}}(\.log\.gz)$)'
 
 
 # https://docs.aws.amazon.com/global-accelerator/latest/dg/monitoring-global-accelerator.flow-logs.html#monitoring-global-accelerator.flow-logs.records.syntax
-attribute_extraction_grok_expression: '%{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE:timestamp} %{GREEDYDATA}'
+attribute_extraction_grok_expression: '^(?:\S+\s+){13}(?P<timestamp>\S+).*$'
 
 skip_header_lines: 1

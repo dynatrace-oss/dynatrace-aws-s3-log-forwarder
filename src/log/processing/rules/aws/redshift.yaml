@@ -18,24 +18,15 @@ name: redshift
 # example log file: AWSLogs/123456789012/redshift/us-east-1/2013/10/29/123456789012_redshift_us-east-1_mycluster_userlog_2013-10-29T18:01.gz
 
 known_key_path_pattern: '^.*?{aws_logs_prefix}\/{aws_account_id_pattern}\/(redshift)/{aws_region_pattern}\/{year_pattern}\/{month_pattern}\/{day_pattern}\/{aws_account_id_pattern}_redshift_{aws_region_pattern}_{redshift_cluster_name_pattern}_(userlog|connectionlog|useractivitylog)_{year_pattern}-{month_pattern}-{day_pattern}T{hour_pattern}:{minutes_pattern}(\.gz)$'
-
 source: aws
-
 log_format: text
 
-requester:
-  - redshift.amazonaws.com
-  # opt-in regions have region-specific service-principal: redshift.region.amazonaws.com
-
 annotations:
-  cloud.provider: aws
-  aws.service: redshift
   aws.resource.type: "AWS::Redshift::Cluster"
   aws.arn.pattern: "arn:aws:redshift:{aws.region}:{aws.account.id}:cluster:{aws.resource.id}"
 
 # https://docs.aws.amazon.com/redshift/latest/mgmt/db-auditing.html#db-auditing-manage-log-files
 attribute_extraction_from_key_name:
-  log.source: '(connectionlog|userlog|useractivitylog)(?=_{year_pattern}-{month_pattern}-{day_pattern}T{hour_pattern}:{minutes_pattern}(\.gz)$)'
   aws.account.id: '{aws_account_id_pattern}'
   aws.region: '{aws_region_pattern}'
   aws.resource.id: '(?<=_){redshift_cluster_name_pattern}(?=_(connectionlog|userlog|useractivitylog)_{year_pattern}-{month_pattern}-{day_pattern}T{hour_pattern}:{minutes_pattern}(\.gz)$)'
