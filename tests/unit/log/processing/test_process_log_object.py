@@ -348,6 +348,52 @@ class TestProcessLogObject(unittest.TestCase):
         self.assertEqual(call_args['dt.da.aws.s3.key.name'], 'logs/2024/01/01/test.json')
 
     @patch('boto3._get_default_session')
+    def test_output_reduced_fields_include_missing_keys_as_none(self, mock_session):
+        """Test that reduced output always includes allowed keys, defaulting missing ones to None."""
+        test_data = json.dumps([{"message": "test"}])
+
+        mock_s3_client = Mock()
+        mock_s3_client.get_object.return_value = self._create_s3_response(test_data)
+        mock_session_instance = Mock()
+        mock_session_instance.client.return_value = mock_s3_client
+        mock_session.return_value = mock_session_instance
+
+        log_rule = LogProcessingRule(
+            name='test_reduced_fields',
+            source='s3',
+            known_key_path_pattern='.*',
+            log_format='json',
+            log_entries_key=None,
+            annotations={},
+            attribute_extraction_jmespath_expression={}
+        )
+
+        process_log_object(
+            log_processing_rule=log_rule,
+            bucket='my-test-bucket',
+            key='logs/2024/01/01/test.json',
+            bucket_region='us-west-2',
+            log_sinks=[self.mock_log_sink],
+            lambda_context=self.mock_lambda_context
+        )
+
+        self.assertEqual(self.mock_log_sink.push.call_count, 1)
+        call_args = self.mock_log_sink.push.call_args[0][0]
+
+        expected_keys = {
+            'dt.da.aws.s3.bucket.name',
+            'dt.da.aws.s3.key.name',
+            'aws.arn',
+            'aws.resource.type',
+            'content',
+            'timestamp'
+        }
+        self.assertEqual(set(call_args.keys()), expected_keys)
+        self.assertIsNone(call_args['aws.arn'])
+        self.assertIsNone(call_args['aws.resource.type'])
+        self.assertIsNone(call_args['timestamp'])
+
+    @patch('boto3._get_default_session')
     def test_text_log_emits_aws_arn_from_pattern(self, mock_session):
         from log.processing import log_processing_rules
 
