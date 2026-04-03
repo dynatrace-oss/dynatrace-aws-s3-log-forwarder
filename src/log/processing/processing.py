@@ -60,17 +60,17 @@ def _get_context_log_attributes(bucket: str, key: str):
     }
 
 
-def _get_filtered_output_message(attributes: dict) -> dict:
+def _get_output_message_with_reduced_fields(attributes: dict) -> dict:
     """Keep only attributes that should be sent to sinks."""
-    allowed_keys = {
+    allowed_keys = (
         'dt.da.aws.s3.bucket.name',
         'dt.da.aws.s3.key.name',
         'aws.arn',
         'aws.resource.type',
         'content',
         'timestamp',
-    }
-    return {k: v for k, v in attributes.items() if k in allowed_keys}
+    )
+    return {k: attributes.get(k) for k in allowed_keys}
 
 
 def _resolve_aws_arn_from_pattern(attributes: dict):
@@ -254,7 +254,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
                     _resolve_aws_arn_from_pattern(dt_log_message)
 
                     # Push to destination sink(s)
-                    dt_log_message = _get_filtered_output_message(dt_log_message)
+                    dt_log_message = _get_output_message_with_reduced_fields(dt_log_message)
                     for log_sink in log_sinks:
                         log_sink.push(dt_log_message)
 
@@ -319,7 +319,7 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
         _resolve_aws_arn_from_pattern(dt_log_message)
 
         # Push to destination sink(s)
-        output_message = _get_filtered_output_message(dt_log_message)
+        output_message = _get_output_message_with_reduced_fields(dt_log_message)
         for log_sink in log_sinks:
             log_sink.push(output_message)
 
