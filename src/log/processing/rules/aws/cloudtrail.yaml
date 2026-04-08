@@ -23,7 +23,6 @@ log_entries_key: Records
 
 annotations:
   aws.resource.type: "AWS::CloudTrail::Trail"
-  ###aws.arn.pattern: "arn:aws:cloudtrail:{aws.region}:{aws.account.id}:trail/{aws.resource.id}"
 
 attribute_extraction_jmespath_expression:
   timestamp: eventTime
