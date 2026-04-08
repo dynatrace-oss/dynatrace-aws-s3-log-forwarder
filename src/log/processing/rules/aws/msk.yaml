@@ -24,8 +24,8 @@ log_format: text
 
 annotations:
   aws.resource.type: "AWS::MSK::Cluster"
+  # not sure
   aws.arn.pattern: "arn:aws:kafka:{aws.region}:{aws.account.id}:cluster/{aws.resource.id}"
-  # 	arn:{aws_partition}:kafka:{aws_region}:{aws_account_id}:cluster/{resource_name}/{aws_cluster_uuid}
 
 attribute_extraction_from_key_name:
   aws.account.id: '{aws_account_id_pattern}'

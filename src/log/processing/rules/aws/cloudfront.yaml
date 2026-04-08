@@ -25,7 +25,6 @@ log_format: text
 
 annotations:
   aws.resource.type: "AWS::CloudFront::Distribution"
-  # aws.arn.pattern: "arn:{Partition}:cloudfront::${Account}:distribution/${DistributionId}"
 
 attribute_extraction_grok_expression: "%{CLOUDFRONTTIMESTAMP:timestamp_to_transform}"
 
