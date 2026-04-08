@@ -11,7 +11,6 @@ The update instructions are written for Linux/MacOS. If you are running on Windo
 You'll need the following software installed (already available in AWS CloudShell and AWS Cloud9):
 
 * [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-* Docker Engine
 
 ## Update the dynatrace-aws-s3-log-forwarder
 
@@ -28,21 +27,7 @@ Find name of the stack that do not start with `dynatrace-aws-s3-log-forwarder` p
 export STACK_NAME=<replace-with-your-log-forwarder-stack-name>
 ```
 
-### Step 3. Note down the current version
-
-Note down the current version you're using by checking the container image URI used in your deployment in case rollback is needed.
-
-```bash
-aws cloudformation describe-stacks --stack-name ${STACK_NAME} --query 'Stacks[0].Parameters[?ParameterKey==`ContainerImageUri`].ParameterValue' --output text
-```
-
-You'll see a response similar to the below example (version v0.5.8 in this case):
-
-```bash
-012345678901.dkr.ecr.us-east-1.amazonaws.com/dynatrace-aws-s3-log-forwarder:v5.8.0-x86_64
-```
-
-### Step 4. Set the version to update to
+### Step 3. Set the version to update to
 
 Set the `VERSION_TAG` environment variable to the latest release version tag of `dynatrace-aws-s3-log-forwarder`.
 
@@ -59,31 +44,34 @@ export VERSION_TAG=$(curl -s https://api.github.com/repos/dynatrace-oss/dynatrac
 > export VERSION_TAG=v0.5.8
 > ```
 
-### Step 5. Get the latest `dynatrace-aws-s3-log-forwarder` image.
+### Step 4. Download the latest templates and Lambda package
 
-Pull the latest `dynatrace-aws-s3-log-forwarder` image from the Amazon ECR Public repository and push it to your private ECR repository, so it can be used by Lambda to update the function.
+Download the CloudFormation templates and the Lambda deployment package for the version you're updating to:
 
 ```bash
-# Get private repo URI
-export REPOSITORY_URI=$(aws ecr describe-repositories --repository-names dynatrace-aws-s3-log-forwarder --query 'repositories[0].repositoryUri' --output text)
-
-# Pull the image
-docker pull public.ecr.aws/dynatrace-oss/dynatrace-aws-s3-log-forwarder:${VERSION_TAG}-x86_64
-docker tag public.ecr.aws/dynatrace-oss/dynatrace-aws-s3-log-forwarder:${VERSION_TAG}-x86_64 ${REPOSITORY_URI}:${VERSION_TAG}-x86_64
-
-# ECR login and push image
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $(echo "$REPOSITORY_URI" | cut -d'/' -f1)
-docker push ${REPOSITORY_URI}:${VERSION_TAG}-x86_64
+mkdir -p dynatrace-aws-s3-log-forwarder-templates && cd "$_"
+wget https://dynatrace-aws-s3-log-forwarder-assets.s3.amazonaws.com/${VERSION_TAG}/templates.zip
+unzip -o templates.zip
 ```
 
-### Step 6. Update the stack
+### Step 5. Update the stack and Lambda function code
 
-Update the `dynatrace-aws-s3-log-forwarder` CloudFormation stack.
+Update the `dynatrace-aws-s3-log-forwarder` CloudFormation stack:
 
 ```bash
-aws cloudformation deploy --stack-name ${STACK_NAME} --parameter-overrides \
-            ContainerImageUri=${REPOSITORY_URI}:${VERSION_TAG}-x86_64 \
+aws cloudformation deploy --stack-name ${STACK_NAME} \
             --template-file template.yaml --capabilities CAPABILITY_IAM
+```
+
+Then update the Lambda function code with the new deployment package:
+
+```bash
+FUNCTION_NAME=$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} \
+    --query 'Stacks[0].Outputs[?OutputKey==`QueueProcessingFunction`].OutputValue' \
+    --output text | rev | cut -d':' -f1 | rev)
+
+aws lambda update-function-code --function-name ${FUNCTION_NAME} \
+    --zip-file fileb://lambda.zip
 ```
 
 If successfull, you'll see a message similar to the below at the end of the execution:
@@ -94,4 +82,4 @@ Successfully created/updated stack - dynatrace-s3-log-forwarder in us-east-1
 
 ## Rollback procedure
 
-If you need to rollback to the previous version, repeat entire update procedure, but use the previous version (noted in Step 3) to set the `VERSION_TAG` environment variable in Step 4.
+If you need to rollback to the previous version, repeat entire update procedure, but use the previous version to set the `VERSION_TAG` environment variable in Step 3.

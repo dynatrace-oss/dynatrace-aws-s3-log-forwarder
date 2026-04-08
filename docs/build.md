@@ -1,6 +1,6 @@
 # Build
 
-If you're contributing to the project or if you want to build your own container images you'll need to build and deploy from source. The following sections cover how to build the AWS Severless Application Model application using SAM CLI.
+If you're contributing to the project or if you want to build and deploy from source, the following sections cover how to build and deploy the `dynatrace-aws-s3-log-forwarder`.
 
 ## Prerequisites
 
@@ -9,21 +9,26 @@ The deployment instructions are written for Linux/MacOS. If you are running on W
 You'll need the following software installed:
 
 * [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-* [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
-* Docker Engine
+* Docker Engine (required to build the Lambda deployment package inside an Amazon Linux 2023 container)
 * Git
 
 You'll also need:
 
 * A [Dynatrace access token](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication) for your tenant with the `logs.ingest` APIv2 scope.
 
+## Build details
+
+The build script `scripts/build_lambda_zip.sh` runs entirely inside an Amazon Linux 2023 Docker container. It:
+
+* Installs Python dependencies from `requirements.txt`
+* Copies application source code, configuration files, and license files
+* Installs and bundles the `libyajl.so.2` native library (required by the `ijson` `yajl2_c` backend for high-performance JSON streaming)
+* Produces a ready-to-deploy Lambda ZIP package
+
+At runtime, the `LD_LIBRARY_PATH` environment variable is set to `/var/task/lib` so the yajl library is found.
+
+
 ## Deployment instructions
-
-1. Download required dependencies (AWS Lambda Extensions) to build the log forwarder container image:
-
-    ```bash
-    bash get-required-lambda-layers.sh
-    ```
 
 1. Clone the `dynatrace-aws-s3-log-forwarder` repository and checkout the latest version tag:
 
@@ -57,89 +62,42 @@ You'll also need:
     * It's important that your parameter name follows the structure above, as the solution grants permissions to AWS Lambda to the hierarchy `/dynatrace/s3-log-forwarder/your_stack_name/*`
     * Your API Key is stored encyrpted with the default AWS-managed key alias: `aws/ssm`. If you want to use a Customer-managed Key, you'll need to grant Decrypt permissions to the AWS Lambda IAM Role that's deployed within the SAM template.
 
-1. From the project root directory, execute the following command to build the Serverless application:
+1. From the project root directory, execute the following command to build the Lambda deployment package:
 
     ```bash
-    sam build 
+    mkdir -p build
+    ./scripts/build_lambda_zip.sh build/lambda.zip
     ```
 
-    **NOTE:** We are using a container image to build the AWS Lambda function. By default, we set the processor architecture to x86_64. If you want to build an arm64, you can use the `ProcessorArchitecture` parameter.
+    > [!NOTE]
+    >
+    > The build runs inside a Docker container. Make sure Docker is running before executing the build script.
+
+1. Deploy the CloudFormation stack (this creates all infrastructure with a placeholder Lambda function):
 
     ```bash
-    sam build --parameter-overrides \
-            ProcessorArchitecture=arm64
-    ```
-
-1. Execute the following command to deploy the `dynatrace-aws-s3-log-forwarder`:
-
-    ```bash
-    sam deploy --stack-name $STACK_NAME --guided \
+    aws cloudformation deploy --stack-name $STACK_NAME \
+               --template-file template.yaml \
                --parameter-overrides \
                     DynatraceEnvironment1URL="https://$DYNATRACE_TENANT_UUID.live.dynatrace.com" \
-                    DynatraceEnvironment1ApiKeyParameter=$PARAMETER_NAME 
+                    DynatraceEnvironment1ApiKeyParameter=$PARAMETER_NAME \
+               --capabilities CAPABILITY_IAM
     ```
 
-    The command will prompt you for parameter values as well as will create a set of required resources for AWS SAM to deploy the application during the initial deploymemnt.
-    All parameters will have default values predefined, those will work well for general use cases, just hit enter on the prompt to leave it as it is. If you want to customize values, you can find the parameter descriptions on the [template.yaml](template.yaml#L27-L122) file.
+    If you want to customize deployment values, you can find the parameter descriptions on the [template.yaml](../template.yaml) file.
 
-    The output will be similar to the one below:
+1. Update the Lambda function code with the built deployment package:
 
     ```bash
-    Configuring SAM deploy
-    ======================
+    FUNCTION_NAME=$(aws cloudformation describe-stacks --stack-name $STACK_NAME \
+        --query 'Stacks[0].Outputs[?OutputKey==`QueueProcessingFunction`].OutputValue' \
+        --output text | rev | cut -d':' -f1 | rev)
 
-    Looking for config file [samconfig.toml] :  Not found
-
-    Setting default arguments for 'sam deploy'
-    =========================================
-    Stack Name [your_log_forwarder_stack_name]: 
-    AWS Region [us-east-1]: 
-    Parameter DynatraceEnvironment1URL [https://abc12345.live.dynatrace.com]: 
-    Parameter DynatraceEnvironment1ApiKeyParameter [/dynatrace/s3-log-forwarder/your_log_forwarder_stack_name/abcd1234/api-key]: 
-    Parameter DynatraceEnvironment2URL []: 
-    Parameter DynatraceEnvironment2ApiKeyParameter []: 
-    Parameter NotificationsEmail []: 
-    Parameter ProcessorArchitecture [x86_64]: 
-    Parameter LambdaFunctionMemorySize [256]: 
-    Parameter LambdaLoggingLevel [INFO]: 
-    Parameter LogForwarderConfigurationLocation [aws-appconfig]: 
-    Parameter DeployCloudWatchMonitoringDashboard [true]: 
-    Parameter EnableLambdaInsights [false]: 
-    Parameter MaximumLambdaConcurrency [30]: 
-    Parameter LambdaSQSMessageBatchSize [4]: 
-    Parameter LambdaMaximumExecutionTime [300]: 
-    Parameter SQSVisibilityTimeout [420]: 
-    Parameter SQSLongPollingMaxSeconds [20]: 
-    Parameter MaximumSQSMessageRetries [2]: 
-    Parameter EnableCrossRegionCrossAccountForwarding [false]: 
-    #Shows you resources changes to be deployed and require a 'Y' to initiate deploy
-    Confirm changes before deploy [y/N]: 
-    #SAM needs permission to be able to create roles to connect to the resources in your template
-    Allow SAM CLI IAM role creation [Y/n]: 
-    #Preserves the state of previously provisioned resources when an operation fails
-    Disable rollback [y/N]: 
-    Save arguments to configuration file [Y/n]: 
-    SAM configuration file [samconfig.toml]: 
-    SAM configuration environment [default]: 
-
-    Looking for resources needed for deployment:
-     Managed S3 bucket: aws-sam-cli-managed-default-samclisourcebucket-pnxn6blqbr3e
-     A different default S3 bucket can be set in samconfig.toml
-     Image repositories: Not found.
-     #Managed repositories will be deleted when their functions are removed from the template and deployed
-     Create managed ECR repositories for all functions? [Y/n]: 
-
-    Saved arguments to config file
-    Running 'sam deploy' for future deployments will use the parameters saved above.
-
-    (...)
+    aws lambda update-function-code --function-name ${FUNCTION_NAME} \
+        --zip-file fileb://build/lambda.zip
     ```
 
-    If successfull, you'll see the a message similar to the below at the end of the execution:
-
-    ```bash
-    Successfully created/updated stack - dynatrace-s3-log-forwarder in us-east-1
-    ```
+    If successfull, you'll see a JSON response with `"LastUpdateStatus": "InProgress"`.
 
     **NOTES:**
     * The e-mail address is set to receive alerts when log files can't be processed and messages are arriving to the Dead Letter Queue. If you don't want to receive those, just leave the parameter empty.
@@ -154,7 +112,7 @@ You'll also need:
       - name: default_forward_all
         # Match any file in your buckets
         prefix: ".*"
-        # Process as AWS-vended log (automatic fallback to generic text log    ingestion if log is not 
+        # Process as AWS-vended log (automatic fallback to generic text log    ingestion if log is not
         source: aws
     ```
 
