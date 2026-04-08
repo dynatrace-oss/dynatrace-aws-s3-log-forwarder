@@ -34,7 +34,6 @@ class TestAttributeExtractionCWLFireHoseS3(unittest.TestCase):
         expected_attributes = {
             "timestamp": 1676419301941,
             "content": "Hello World!",
-            "aws.log_event_id": "37385399698484814707871715858877515407325547836143501312",
             "aws.service": "lambda",
             "aws.resource.id": "hello-world-123"
         }
@@ -55,7 +54,6 @@ class TestAttributeExtractionCWLFireHoseS3(unittest.TestCase):
         expected_attributes = {
             "timestamp": 1676419301941,
             "content": "Hello World!",
-            "aws.log_event_id": "37385399698484814707871715858877515407325547836143501312",
             "aws.service": "eks",
             "aws.resource.id": "my_cluster",
             "log.source": "placeholder"

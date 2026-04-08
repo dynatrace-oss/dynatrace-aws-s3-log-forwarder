@@ -20,12 +20,7 @@ source: aws
 log_format: json_stream
 
 annotations:
-  cloud.provider: aws
-  aws.service: appfabric
+  aws.resource.type: "AWS::AppFabric::Ingestion"
 
-# map message keys to DT LogsV2 API format  
 attribute_extraction_jmespath_expression:
   timestamp: time
-  log.source: metadata.product.uid
-  audit.action: type_name
-  audit.identity: actor.user.email_addr

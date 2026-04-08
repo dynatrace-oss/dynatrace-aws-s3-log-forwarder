@@ -57,8 +57,8 @@ def get_logs_from_dynatrace(source_bucket_name,source_key_name):
 
     dql_query = (
         f'fetch logs'
-        f' | filter log.source.aws.s3.bucket.name == "{source_bucket_name}"'
-        f' AND log.source.aws.s3.key.name == "{source_key_name}"'
+        f' | filter dt.da.aws.s3.bucket.name == "{source_bucket_name}"'
+        f' AND dt.da.aws.s3.key.name == "{source_key_name}"'
         f' | limit 1'
     )
 

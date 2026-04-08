@@ -20,17 +20,13 @@ name: vpcflowlogs
 # File name format: optional-prefix/AWSLogs/account_id/vpcflowlogs/region/year/month/day/(?hour/)aws_account_id_vpcflowlogs_region_flow_log_id_YYYYMMDDTHHmmZ_hash.log.gz
 # File name example: AWSLogs/012345678910/vpcflowlogs/us-east-1/2023/02/14/012345678910_vpcflowlogs_us-east-1_fl-07f38b767c7cd46e3_20230214T0000Z_129a0cf7.log.gz
 known_key_path_pattern: '^.*?{aws_logs_prefix}/{aws_account_id_pattern}/(vpcflowlogs)/{aws_region_pattern}/{year_pattern}/{month_pattern}/{day_pattern}/({hour_pattern}/)?{aws_account_id_pattern}_(vpcflowlogs)_{aws_region_pattern}_{vpc_flow_id_pattern}_{year_pattern}{month_pattern}{day_pattern}T{hour_pattern}{minutes_pattern}Z_[a-fA-F0-9]{{8}}(\.log\.gz)$'
-
 source: aws
-
 log_format: text
 
-requester:
-  - delivery.logs.amazonaws.com
-
 annotations:
-  cloud.provider: aws
-  aws.service: vpc
+  # should it be marked as VPC or vpc flow log
+  aws.resource.type: "AWS::EC2::VPC"
+  aws.arn.pattern: "arn:aws:ec2:{aws.region}:{aws.account.id}:vpc-flow-log/{aws.vpc.flow_log_id}"
 
 attribute_extraction_from_key_name:
   aws.account.id: '{aws_account_id_pattern}'
@@ -38,6 +34,6 @@ attribute_extraction_from_key_name:
   aws.vpc.flow_log_id: '{vpc_flow_id_pattern}'
 
 # Standar log format: version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status
-attribute_extraction_grok_expression: '%{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE} %{NOTSPACE:timestamp} %{GREEDYDATA}'
+attribute_extraction_grok_expression: '^(?:\S+\s+){10}(?P<timestamp>\S+).*$'
 
 skip_header_lines: 1
