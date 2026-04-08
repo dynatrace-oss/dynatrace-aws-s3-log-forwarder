@@ -11,47 +11,15 @@
       "/(^|/)([\\w-]*)requirements(-dev)?\\.(txt|pip)$/"
     ]
   },
-  "packageRules": [
-    {
-      "matchPackageNames": [
-        "public.ecr.aws/lambda/python"
-      ],
-      "allowedVersions": "<4"
-    }
-  ],
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Update lambda/python x86_64",
+      "description": "Update AWS AppConfig Lambda Layer ARN version in template.yaml (us-east-1)",
       "managerFilePatterns": [
         "/^template\\.yaml$/"
       ],
       "matchStrings": [
-        "LambdaBaseImageMap:[\\S\\s]+?x86:\\s*Tag: '(?<currentValue>[^']+)'"
-      ],
-      "datasourceTemplate": "docker",
-      "depNameTemplate": "public.ecr.aws/lambda/python"
-    },
-    {
-      "customType": "regex",
-      "description": "Update lambda/python arm64",
-      "managerFilePatterns": [
-        "/^template\\.yaml$/"
-      ],
-      "matchStrings": [
-        "LambdaBaseImageMap:[\\S\\s]+?arm64:\\s*Tag: '(?<currentValue>[^']+)'"
-      ],
-      "datasourceTemplate": "docker",
-      "depNameTemplate": "public.ecr.aws/lambda/python"
-    },
-    {
-      "customType": "regex",
-      "description": "Update AWS AppConfig Lambda Layer ARN (x86_64)",
-      "managerFilePatterns": [
-        "/^get-required-lambda-layers\\.sh$/"
-      ],
-      "matchStrings": [
-        "AWS_APPCONFIG_EXTENSION_X86_64=\"arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension:(?<currentValue>\\d+)\""
+        "us-east-1:[\\s\\S]*?AppConfigExtension:\\s*\"arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension:(?<currentValue>\\d+)\""
       ],
       "datasourceTemplate": "custom.aws-appconfig-extension-x86_64",
       "depNameTemplate": "AWS-AppConfig-Extension",
@@ -59,25 +27,12 @@
     },
     {
       "customType": "regex",
-      "description": "Update AWS AppConfig Lambda Layer ARN (arm64)",
+      "description": "Update Lambda Insights Extension Layer ARN version in template.yaml (us-east-1)",
       "managerFilePatterns": [
-        "/^get-required-lambda-layers\\.sh$/"
+        "/^template\\.yaml$/"
       ],
       "matchStrings": [
-        "AWS_APPCONFIG_EXTENSION_ARM64=\"arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension-Arm64:(?<currentValue>\\d+)\""
-      ],
-      "datasourceTemplate": "custom.aws-appconfig-extension-arm64",
-      "depNameTemplate": "AWS-AppConfig-Extension-Arm64",
-      "versioningTemplate": "loose"
-    },
-    {
-      "customType": "regex",
-      "description": "Update Lambda Insights Extension Layer ARN (x86_64)",
-      "managerFilePatterns": [
-        "/^get-required-lambda-layers\\.sh$/"
-      ],
-      "matchStrings": [
-        "AWS_LAMBDA_INSIGHTS_EXTENSION_X86_64=\"arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension:(?<currentValue>\\d+)\""
+        "us-east-1:[\\s\\S]*?LambdaInsightsExtension:\\s*\"arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension:(?<currentValue>\\d+)\""
       ],
       "datasourceTemplate": "custom.lambda-insights-extension-x86_64",
       "depNameTemplate": "LambdaInsightsExtension",
@@ -85,15 +40,15 @@
     },
     {
       "customType": "regex",
-      "description": "Update Lambda Insights Extension Layer ARN (arm64)",
+      "description": "Update Amazon Linux 2023 image tag in build_lambda_zip.sh",
       "managerFilePatterns": [
-        "/^get-required-lambda-layers\\.sh$/"
+        "/^scripts/build_lambda_zip\\.sh$/"
       ],
       "matchStrings": [
-        "AWS_LAMBDA_INSIGHTS_EXTENSION_ARM64=\"arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension-Arm64:(?<currentValue>\\d+)\""
+        "AL2023_IMAGE=\"public\\.ecr\\.aws/amazonlinux/amazonlinux:(?<currentValue>[^\"]+)\""
       ],
-      "datasourceTemplate": "custom.lambda-insights-extension-arm64",
-      "depNameTemplate": "LambdaInsightsExtension-Arm64",
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "public.ecr.aws/amazonlinux/amazonlinux",
       "versioningTemplate": "loose"
     }
   ],
@@ -105,25 +60,11 @@
         "{ \"releases\": releases.{ \"version\": $match(version, /arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension:(\\d+)/).groups[0] }[version != null] }"
       ]
     },
-    "aws-appconfig-extension-arm64": {
-      "defaultRegistryUrlTemplate": "https://docs.aws.amazon.com/appconfig/latest/userguide/appconfig-integration-lambda-extensions-versions.html",
-      "format": "plain",
-      "transformTemplates": [
-        "{ \"releases\": releases.{ \"version\": $match(version, /arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension-Arm64:(\\d+)/).groups[0] }[version != null] }"
-      ]
-    },
     "lambda-insights-extension-x86_64": {
       "defaultRegistryUrlTemplate": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versionsx86-64.html",
       "format": "plain",
       "transformTemplates": [
         "{ \"releases\": releases.{ \"version\": $match(version, /arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension:(\\d+)/).groups[0] }[version != null] }"
-      ]
-    },
-    "lambda-insights-extension-arm64": {
-      "defaultRegistryUrlTemplate": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versionsARM.html",
-      "format": "plain",
-      "transformTemplates": [
-        "{ \"releases\": releases.{ \"version\": $match(version, /arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension-Arm64:(\\d+)/).groups[0] }[version != null] }"
       ]
     }
   },

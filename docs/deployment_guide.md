@@ -7,7 +7,6 @@ The deployment instructions are written for Linux/MacOS. If you are running on W
 You'll need the following software installed:
 
 * [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-* Docker Engine
 
 You'll also need:
 
@@ -19,9 +18,9 @@ The deployment of the log forwarder is split into multiple CloudFormation templa
 
 ![single-region-deployment](images/single-region-deployment.jpg)
 
-The AWS Lambda function that performs log forwarding is built as a container image. Starting on `v0.3.1` container images are built and released to the `dynatrace-oss` Amazon ECR public registry [here](https://gallery.ecr.aws/dynatrace-oss/dynatrace-aws-s3-log-forwarder) to facilitate the deployment. If you want to build your own container images, go to the [docs/build.md](build.md) documentation.
+The AWS Lambda function that performs log forwarding is deployed as a ZIP package. If you want to build the package from source, go to the [docs/build.md](build.md) documentation.
 
-To deploy the `dynatrace-aws-s3-log-forwarder` using the provided container images, follow the instructions below:
+To deploy the `dynatrace-aws-s3-log-forwarder`, follow the instructions below:
 
 ### Step 1. Define a name for your `dynatrace-aws-s3-log-forwarder` deployment.
 
@@ -54,59 +53,48 @@ export HISTCONTROL=ignorespace
 > * It's important that your parameter name follows the structure above, as the solution grants permissions to AWS Lambda to the hierarchy `/dynatrace/s3-log-forwarder/your-stack-name/*`
 > * Your API Key is stored encyrpted with the default AWS-managed key alias: `aws/ssm`. If you want to use a Customer-managed Key, you'll need to grant Decrypt permissions to the AWS Lambda IAM Role that's deployed within the CloudFormation template.
 
-### Step 3. Create an Amazon ECR repository on your AWS account.
+### Step 3. Download the CloudFormation templates and Lambda package for the latest version
 
-Execute the following command to create a private Amazon ECR repository to host the `dynatrace-aws-s3-log-forwarder` container image:
-
-```bash
-aws ecr create-repository --repository-name dynatrace-aws-s3-log-forwarder
-```
-
-### Step 4. Get the latest `dynatrace-aws-s3-log-forwarder` image.
-
-Pull the `dynatrace-aws-s3-log-forwarder` image from the Amazon ECR Public repository and push it to your private ECR repository, so it can be used by Lambda to deploy the function.
+Execute the following commands to download the CloudFormation templates and the Lambda deployment package for the latest version:
 
 ```bash
-# Get the latest version
 export VERSION_TAG=$(curl -s https://api.github.com/repos/dynatrace-oss/dynatrace-aws-s3-log-forwarder/releases/latest | grep tag_name | cut -d'"' -f4)
-# Get private repo URI
-export REPOSITORY_URI=$(aws ecr describe-repositories --repository-names dynatrace-aws-s3-log-forwarder --query 'repositories[0].repositoryUri' --output text)
-
-# Pull the image
-docker pull public.ecr.aws/dynatrace-oss/dynatrace-aws-s3-log-forwarder:${VERSION_TAG}-x86_64
-docker tag public.ecr.aws/dynatrace-oss/dynatrace-aws-s3-log-forwarder:${VERSION_TAG}-x86_64 ${REPOSITORY_URI}:${VERSION_TAG}-x86_64
-
-# ECR login and push image
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $(echo "$REPOSITORY_URI" | cut -d'/' -f1)
-docker push ${REPOSITORY_URI}:${VERSION_TAG}-x86_64
-```
-
-### Step 5. Download the CloudFormation templates for the latest version:
-
-Execute the following commands to download the CloudFormation templates for the latest version:
-
-```bash
 mkdir dynatrace-aws-s3-log-forwarder-templates && cd "$_"
 wget https://dynatrace-aws-s3-log-forwarder-assets.s3.amazonaws.com/${VERSION_TAG}/templates.zip
 unzip templates.zip
 ```
 
-### Step 6. Deploy the CloudFormation stack.
+### Step 4. Deploy the CloudFormation stack and update the Lambda function code.
 
-Execute the following command to deploy the `dynatrace-aws-s3-log-forwarder`:
+The deployment is done in two steps: first deploy the CloudFormation stack (which creates all infrastructure with a placeholder Lambda function), then update the Lambda function code with the actual deployment package.
+
+**Step 4a.** Deploy the CloudFormation stack:
 
 ```bash
 aws cloudformation deploy --stack-name ${STACK_NAME} --parameter-overrides \
           DynatraceEnvironment1URL="https://$DYNATRACE_TENANT_UUID.live.dynatrace.com" \
           DynatraceEnvironment1ApiKeyParameter=$PARAMETER_NAME \
-          ContainerImageUri=${REPOSITORY_URI}:${VERSION_TAG}-x86_64 \
           --template-file template.yaml --capabilities CAPABILITY_IAM
+```
+
+**Step 4b.** Update the Lambda function code with the deployment package:
+
+```bash
+FUNCTION_NAME=$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} \
+    --query 'Stacks[0].Outputs[?OutputKey==`QueueProcessingFunction`].OutputValue' \
+    --output text | rev | cut -d':' -f1 | rev)
+
+aws lambda update-function-code --function-name ${FUNCTION_NAME} \
+    --zip-file fileb://lambda.zip
 ```
 
 If successfull, you'll see a message similar to the below at the end of the execution:
 
-```bash
-Successfully created/updated stack - dynatrace-s3-log-forwarder in us-east-1
+```json
+{
+    "FunctionName": "...",
+    "LastUpdateStatus": "InProgress"
+}
 ```
 
 > [!NOTE]
@@ -118,7 +106,7 @@ Successfully created/updated stack - dynatrace-s3-log-forwarder in us-east-1
 > * To ingest logs into a Dynatrace Managed environment, the `DynatraceEnvironment1URL` parameter should be formatted like this: `https://{your-activegate-domain}:9999/e/{your-environment-id}`. Unless your environment Active Gate is public-facing, you'll need to configure Lambda to run on an Amazon VPC from where your Active Gate can be reached adding the parameters `LambdaSubnetIds` with the list of subnets where Lambda can run (for high availability, select at least 2 in different Availability Zones) and `LambdaSecurityGroupId` with the security group assigned to your Lambda function. The subnets where the Lambda function runs should allow outbound connectivity to the Internet. For more details, check the [AWS Lambda documentation](https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.htm). If your Active Gate uses a self-signed SSL certificate, set the parameter `VerifyLogEndpointSSLCerts` to `false`.
 > * If ingesting logs into Dynatrace Managed environment, add the parameter `DynatraceLogIngestContentMaxLength`=`8192`, as it is default content length in Managed Dynatrace.
 
-### Step 7. Deploy the log forwarding configuration.
+### Step 5. Deploy the log forwarding configuration.
 
 The log forwarding Lambda function pulls configuration data from AWS AppConfig that contains the rules that defines how to forward and process log files. The `dynatrace-aws-s3-log-forwarder-configuration.yaml` CloudFormation template is designed to help get you started deploying the log forwarding configuration. It deploys a default "catch all" log forwarding rule that makes the log forwarding Lambda function process any S3 Object it receives an S3 Object Created notification for, and attempts to identify the source of the log, matching the object against supported AWS log sources. The log forwarder logic falls back to generic text log ingestion if it's unable to identify the log source:
 
@@ -149,7 +137,7 @@ aws cloudformation deploy \
 > * You can deploy updated configurations at any point in time, the log forwarding function will load them in ~1 minute after they've been deployed.
 > * The log forwarder adds context attributes to all forwarded logs, including: `log.source.aws.s3.bucket.name`, `log.source.aws.s3.key.name` and `cloud.forwarder`. Additional attributes are extracted from log contents for supported AWS-vended logs.
 
-### Step 8. Configure S3 buckets to send "S3 Object created" notifications to the log forwarder.
+### Step 6. Configure S3 buckets to send "S3 Object created" notifications to the log forwarder.
 
 At this point, you have successfully deployed the `dynatrace-aws-s3-log-forwarder` with your desired configuration. Now, you need to configure specific Amazon S3 buckets to send "S3 Object created" notifications to the log forwarder; as well as grant permissions to the log forwarder to read files from your bucket.
 

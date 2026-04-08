@@ -2,7 +2,7 @@
 
 You may want to perform local testing of the Lambda function when creating log Forwarding rules or log processing rules to validate that they behave as expected before deploying the changes.
 
-As we're using Docker to build a Lambda container image, you can use the following steps to test locally:
+You can use the following steps to test locally:
 
 1. Create a file `dev/env_vars.cfg` with the required configuration environment variables for the Lambda function to work:
 
@@ -17,33 +17,22 @@ As we're using Docker to build a Lambda container image, you can use the followi
    DYNATRACE_2_ENV_URL=https://yyy.dynatrace.com
    DYNATRACE_2_API_KEY_PARAM=/dynatrace/s3-log-forwarder/my-test/api-key2 
    DYNATRACE_2_API_KEY=dt0c01.YYY
-   PYTHONPATH=/var/task
+   PYTHONPATH=src
    LOG_FORWARDER_CONFIGURATION_LOCATION=local
    ```
 
-2. Create a development Docker image with the development and testing dependencies running the following command:
+2. Install the required dependencies:
 
    ```bash
-   export LAMBDA_BASE_IMAGE_TAG=3.14.2025.12.22.13-arm64
-   export LAMBDA_ARCH=arm64
-   docker build --progress=plain . -t queueprocessingfunction:dev --build-arg ARCH=$LAMBDA_ARCH --build-arg LAMBDA_BASE_IMAGE_TAG=${LAMBDA_BASE_IMAGE_TAG} --build-arg ENABLE_LAMBDA_INSIGHTS="false" --build-arg ENV="DEV"
+   pip install -r src/requirements.txt -r src/requirements-dev.txt
    ```
 
-   **Note:** If you're running on an x86_64 machine and an OS that doesn't support arm64 emulation, change the LAMBDA_BASE_IMAGE_TAG and LAMBDA_ARCH to x86_64
-
-3. Run the following command to execute the `tests/e2e/local_app.py` code to validate the forwarding rules.
+3. Run the following command to execute the `tests/e2e/local_app.py` code to validate the forwarding rules:
 
    ```bash
-   docker run \
-           --entrypoint="" \
-           --env-file dev/env_vars.cfg \
-           --mount type=bind,source=$(pwd)/tests,target=/var/task/tests \
-           --mount type=bind,source=$(pwd)/config,target=/var/task/config \
-           queueprocessingfunction:dev \
-           python tests/e2e/local_app.py
+   cd src && env $(cat ../dev/env_vars.cfg | grep -v '^#' | xargs) \
+       python ../tests/e2e/local_app.py
    ```
-
-   **NOTE:** The above command mounts the `tests` and `config` folders on the development container, so you don't need to rebuild the image on every    change of log_processing or log_forwarding rules or adding new log files to `tests/test_data`.
 
 To test/validate forwarding and processing rules, we execute `tests/e2e/local_app.py`. It is a lightweight wrapper around the real forwarder's entry point, adding additional processing steps:
 

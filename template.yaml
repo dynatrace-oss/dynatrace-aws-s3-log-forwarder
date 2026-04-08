@@ -61,13 +61,13 @@ Parameters:
     Description: E-mail address to send alarm notifications to.
     Type: String
     Default: ""
-  ProcessorArchitecture:
-    Description: Processor architecture for the Lambda function
+  DeploymentPackageType:
+    Description: "Deployment package type for the Lambda function. Note: 'layer' deployment is not yet supported."
     Type: String
     AllowedValues:
-      - arm64
-      - x86_64
-    Default: x86_64
+      - zip
+      - layer
+    Default: zip
   LambdaFunctionMemorySize:
     Description: Memory size of the queue processing Lambda function
     Type: Number
@@ -159,10 +159,6 @@ Parameters:
     Type: Number
     Description: Maximum number of retries for failed processing of S3 Object Created notification messages
     Default: 2
-  ContainerImageUri:
-    Type: String
-    Description: If deploying from ECR, URI of the Container image for the lambda function to deploy.
-    Default: ""
 
 Conditions:
   SecondDTEnvironmentSpecified: !Not [!Equals [!Ref DynatraceEnvironment2URL, "" ]]
@@ -172,9 +168,8 @@ Conditions:
   CreateEventBridgePolicy: !And [ !Condition AwsAccountListIsNotEmpty , !Condition CrossRegionCrossAccountForwardingIsEnabled ]
   DeployMonitoringDashboard: !Equals [ !Ref DeployCloudWatchMonitoringDashboard, "true" ]
   IsEmailConfigured: !Not [!Equals [ !Ref NotificationsEmail, "" ]]
+  IsLayerDeployment: !Equals [ !Ref DeploymentPackageType, "layer" ]
   CreateSNSTopicForS3Notifications: !Equals [ !Ref CreateS3NotificationsSNSTopic, "true" ]
-  ContainerImageUriIsDefined: !Not [!Equals [ !Ref ContainerImageUri, "" ]]
-  ArchIsArm: !Equals [ !Ref ProcessorArchitecture, "arm64"]
   LambdaVpcConfigSpecified: !Not [!Equals [ !Join [ "", !Ref LambdaSubnetIds ], "" ]]
   LambdaVpcSecurityGroupSpecified: !Not [!Equals [!Ref LambdaSecurityGroupId, ""]]
 
@@ -186,32 +181,30 @@ Globals:
         POWERTOOLS_METRICS_NAMESPACE: dynatrace-aws-s3-log-forwarder
         DEPLOYMENT_NAME: !Ref AWS::StackName
 
-Mappings:
-  LambdaBaseImageMap:
-    # Mappings only support alphanumeric chars, '-' and '.', so name can't be x86_64
-    # That means to resolve the image tag we need !If [ ArchIsArm , !FindInMap arm, !FindInMap x86]
-    x86: 
-      Tag: '3.14.2026.03.31.12-x86_64'
-    arm64:
-      Tag: '3.14.2026.03.31.12-arm64'
+Rules:
+  LayerDeploymentNotSupported:
+    RuleCondition: !Equals [ !Ref DeploymentPackageType, "layer" ]
+    Assertions:
+      - Assert: !Equals [ !Ref DeploymentPackageType, "zip" ]
+        AssertDescription: "DeploymentPackageType 'layer' is not yet supported. Please use 'zip'."
+
 
 Resources:
   QueueProcessingFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      DockerTag: !Ref ProcessorArchitecture
-      DockerContext: .
-      Dockerfile: Dockerfile
-      DockerBuildArgs:
-        ARCH: !Ref ProcessorArchitecture
-        ENABLE_LAMBDA_INSIGHTS: !Ref EnableLambdaInsights
-        LAMBDA_BASE_IMAGE_TAG: !If [ ArchIsArm, !FindInMap [ LambdaBaseImageMap, "arm64", 'Tag' ], !FindInMap [ LambdaBaseImageMap, "x86", 'Tag'] ]
     Properties:
-      PackageType: Image
-      ImageUri: !If [ ContainerImageUriIsDefined, !Ref ContainerImageUri, !Ref AWS::NoValue ]
+      PackageType: Zip
+      InlineCode: |
+        def lambda_handler(event, context):
+            return {"statusCode": 200, "body": "Placeholder function. Update the function code with the Lambda ZIP package."}
+      Handler: app.lambda_handler
+      Runtime: python3.14
       MemorySize: !Ref LambdaFunctionMemorySize
+      Architectures:
+        - x86_64
       Environment:
         Variables:
+          LD_LIBRARY_PATH: /var/task/lib
           DYNATRACE_1_ENV_URL: !Ref DynatraceEnvironment1URL
           DYNATRACE_1_API_KEY_PARAM: !Ref DynatraceEnvironment1ApiKeyParameter
           DYNATRACE_2_ENV_URL: !If [ SecondDTEnvironmentSpecified, !Ref DynatraceEnvironment2URL, !Ref "AWS::NoValue"]
@@ -222,8 +215,6 @@ Resources:
           LOG_FORWARDER_CONFIGURATION_LOCATION: !Ref LogForwarderConfigurationLocation
           VERIFY_DT_SSL_CERT: !Ref VerifyLogEndpointSSLCerts
           DYNATRACE_LOG_INGEST_CONTENT_MAX_LENGTH: !Ref DynatraceLogIngestContentMaxLength
-      Architectures:
-        - !Ref ProcessorArchitecture
       Events:
         SQSMessages:
           Type: SQS
