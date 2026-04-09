@@ -40,16 +40,15 @@
     },
     {
       "customType": "regex",
-      "description": "Update Amazon Linux 2023 image tag in build_lambda_zip.sh",
+      "description": "Update Lambda Python image tag in build_lambda_zip.sh",
       "managerFilePatterns": [
         "/^scripts/build_lambda_zip\\.sh$/"
       ],
       "matchStrings": [
-        "AL2023_IMAGE=\"public\\.ecr\\.aws/amazonlinux/amazonlinux:(?<currentValue>[^\"]+)\""
+        "AL2023_IMAGE=\"(?<depName>public\\.ecr\\.aws/lambda/python):(?<currentValue>[^\"]+)\""
       ],
       "datasourceTemplate": "docker",
-      "depNameTemplate": "public.ecr.aws/amazonlinux/amazonlinux",
-      "versioningTemplate": "loose"
+      "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+(?:\\.\\d+)*)(?:-(?<build>.+))?$"
     }
   ],
   "customDatasources": {

@@ -23,7 +23,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # Amazon Linux 2023 base image - pinned for reproducibility
-AL2023_IMAGE="public.ecr.aws/amazonlinux/amazonlinux:2023.7.20250331"
+AL2023_IMAGE="public.ecr.aws/lambda/python:3.14.2026.03.31.12-x86_64"
 
 OUTPUT_ZIP="${1:?Usage: $0 <output_zip_path>}"
 # Resolve to absolute path
@@ -35,8 +35,9 @@ echo "Building Lambda ZIP package using ${AL2023_IMAGE}..."
 docker run --rm \
     -v "${REPO_ROOT}:/src:ro" \
     -v "${OUTPUT_DIR}:/output" \
+    --entrypoint bash \
     "${AL2023_IMAGE}" \
-    bash -c "
+    -c "
         set -e
 
         BUILD_DIR=/tmp/lambda-build
