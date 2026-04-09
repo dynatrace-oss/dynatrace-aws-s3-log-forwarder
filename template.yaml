@@ -260,7 +260,7 @@ Resources:
         deadLetterTargetArn: !GetAtt SQSDeadLetterQueue.Arn
         maxReceiveCount: !Ref MaximumSQSMessageRetries
 
-  # Allow EventBridge rules to send messages to SQS
+  # Allow EventBridge rules, SNS topics, and S3 buckets to send messages to SQS
   S3NotificationsQueuePolicy:
     Type: AWS::SQS::QueuePolicy
     Properties:
@@ -277,6 +277,24 @@ Resources:
             Condition:
               ArnEquals:
                 "aws:SourceArn": !Sub "arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/${AWS::StackName}-*"
+          - Sid: "Allow SNS topics to Send Messages"
+            Effect: "Allow"
+            Principal:
+              Service: "sns.amazonaws.com"
+            Action: "sqs:SendMessage"
+            Resource: !GetAtt S3NotificationsQueue.Arn
+            Condition:
+              StringEquals:
+                "aws:SourceAccount": !Ref AWS::AccountId
+          - Sid: "Allow S3 buckets to Send Messages"
+            Effect: "Allow"
+            Principal:
+              Service: "s3.amazonaws.com"
+            Action: "sqs:SendMessage"
+            Resource: !GetAtt S3NotificationsQueue.Arn
+            Condition:
+              StringEquals:
+                "aws:SourceAccount": !Ref AWS::AccountId
       Queues:
         - !Ref S3NotificationsQueue
 
