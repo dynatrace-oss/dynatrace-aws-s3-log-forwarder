@@ -23,20 +23,20 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # Amazon Linux 2023 base image - pinned for reproducibility
-AL2023_IMAGE="public.ecr.aws/lambda/python:3.14.2026.03.31.12-x86_64"
+LAMBDA_RUNTIME_IMAGE="public.ecr.aws/lambda/python:3.14.2026.03.31.12-x86_64"
 
 OUTPUT_ZIP="${1:?Usage: $0 <output_zip_path>}"
 # Resolve to absolute path
 OUTPUT_DIR="$(cd "$(dirname "${OUTPUT_ZIP}")" 2>/dev/null && pwd)" || { mkdir -p "$(dirname "${OUTPUT_ZIP}")"; OUTPUT_DIR="$(cd "$(dirname "${OUTPUT_ZIP}")" && pwd)"; }
 OUTPUT_FILENAME="$(basename "${OUTPUT_ZIP}")"
 
-echo "Building Lambda ZIP package using ${AL2023_IMAGE}..."
+echo "Building Lambda ZIP package using ${LAMBDA_RUNTIME_IMAGE}..."
 
 docker run --rm \
     -v "${REPO_ROOT}:/src:ro" \
     -v "${OUTPUT_DIR}:/output" \
     --entrypoint bash \
-    "${AL2023_IMAGE}" \
+    "${LAMBDA_RUNTIME_IMAGE}" \
     -c "
         set -e
 
@@ -44,10 +44,11 @@ docker run --rm \
         mkdir -p \${BUILD_DIR}/lib
 
         # Install build tools and yajl
-        dnf install -y python3.11 python3.11-pip zip yajl > /dev/null 2>&1
+        dnf install -y zip yajl > /dev/null 2>&1
 
         # Install Python dependencies
-        python3.11 -m pip install --no-cache-dir -r /src/src/requirements.txt \
+        pip install --upgrade pip
+        python3.14 -m pip install --no-cache-dir -r /src/src/requirements.txt \
             -t \${BUILD_DIR} --use-pep517 --quiet
 
         # Copy application source code
@@ -61,12 +62,13 @@ docker run --rm \
         # Copy license files
         cp /src/LICENSE /src/NOTICE /src/THIRD_PARTY_LICENSES \${BUILD_DIR}/ 2>/dev/null || true
 
-        # Copy yajl shared library
+        # Copy yajl shared library and create symlink for compatibility
         cp /usr/lib64/libyajl.so.2 \${BUILD_DIR}/lib/
+        cd \${BUILD_DIR}/lib && ln -sf libyajl.so.2 libyajl.so
 
         # Create ZIP
         cd \${BUILD_DIR}
-        zip -r9q /output/${OUTPUT_FILENAME} . -x '*.pyc' '__pycache__/*'
+        zip -r9q /output/${OUTPUT_FILENAME} . -x '*.pyc' '__pycache__/*' '*.dist-info/*'
 
         echo 'Lambda ZIP created successfully'
     "
