@@ -27,7 +27,6 @@ The build script `scripts/build_lambda_zip.sh` runs entirely inside an Amazon Li
 
 At runtime, the `LD_LIBRARY_PATH` environment variable is set to `/var/task/lib` so the yajl library is found.
 
-
 ## Deployment instructions
 
 1. Clone the `dynatrace-aws-s3-log-forwarder` repository and checkout the latest version tag:

@@ -65,10 +65,6 @@ jobs:
       # Build Lambda ZIP inside AL2023 Docker container
       - mkdir -p build
       - ./scripts/build_lambda_zip.sh build/lambda.zip
-      # Upload Lambda ZIP to S3
-      - aws s3 cp build/lambda.zip s3://dynatrace-aws-s3-log-forwarder-assets/builds/${COMMIT}/lambda.zip
-      # Upload template to S3
-      - aws s3 cp template.yaml s3://dynatrace-aws-s3-log-forwarder-assets/builds/${COMMIT}/template.yaml
 
   - stage: end-to-end-test
     name: End-to-end deployment test

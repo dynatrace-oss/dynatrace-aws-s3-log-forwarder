@@ -45,7 +45,7 @@
         "/^scripts/build_lambda_zip\\.sh$/"
       ],
       "matchStrings": [
-        "AL2023_IMAGE=\"(?<depName>public\\.ecr\\.aws/lambda/python):(?<currentValue>[^\"]+)\""
+        "LAMBDA_RUNTIME_IMAGE=\"(?<depName>public\\.ecr\\.aws/lambda/python):(?<currentValue>[^\"]+)\""
       ],
       "datasourceTemplate": "docker",
       "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+(?:\\.\\d+)*)(?:-(?<build>.+))?$"
