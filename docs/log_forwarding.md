@@ -101,6 +101,7 @@ The SAM template deploys the forwarder with the following default parameters tha
 * `SQSVisibilityTimeout`: 420  --> SQS message invisibility time once received. This value should be larger than the LambdaMaximumExecutionTime to avoid more than one Lambda function processing the same log file (note however that SQS provides at-least-once delivery)
 * `SQSLongPollingMaxSeconds`: 20  --> Time to wait while polling the SQS queue for messages
 * `MaximumSQSMessageRetries`: 2  --> Maximum number of times the forwarder retries processing a log file if it fails before sending the S3 Object created notification to the DLQ
+* `CreateS3NotificationsSNSTopic`: false --> Set to "true" to create an SNS topic for receiving S3 Object Created notifications (useful for fan-out architectures)
 
 ## S3 notification source options
 
@@ -119,9 +120,21 @@ To use this method:
 
 This method is useful when you have a centralized logging account with an SNS topic that fans out S3 notifications to multiple consumers. The log forwarder automatically unwraps the SNS envelope to extract the S3 event notification.
 
-To use this method:
+#### Option A: Create an SNS topic with the log forwarder stack
 
-1. Configure your S3 bucket to send Object Created notifications to an SNS topic ([instructions](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ways-to-add-notification-config-to-bucket.html))
+The log forwarder can create and manage an SNS topic for you. Set the `CreateS3NotificationsSNSTopic` parameter to `true` when deploying or updating the stack. This creates:
+
+* An SNS topic (`<stack-name>-S3Notifications`)
+* An SQS subscription (automatically subscribes the log forwarder's queue to the topic)
+* A topic policy allowing S3 buckets in the same account to publish to the topic
+
+The SNS topic ARN is available in the stack outputs (`S3NotificationsSNSTopic`). Configure your S3 buckets to send Object Created notifications to this topic ([instructions](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ways-to-add-notification-config-to-bucket.html)).
+
+#### Option B: Use an existing SNS topic
+
+If you already have an SNS topic receiving S3 notifications (e.g. in a fan-out architecture with multiple consumers), you can subscribe the log forwarder's SQS queue to it:
+
+1. Configure your S3 bucket to send Object Created notifications to the SNS topic ([instructions](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ways-to-add-notification-config-to-bucket.html))
 2. Subscribe the log forwarder's SQS queue (`<stack-name>-S3NotificationsQueue`) to the SNS topic. You can do this via the AWS Console or AWS CLI:
 
     ```bash
@@ -136,7 +149,7 @@ To use this method:
         --notification-endpoint $QUEUE_ARN
     ```
 
-3. Ensure the log forwarder Lambda function has `s3:GetObject` permissions on the source bucket. You can use the IAM policy section of the `dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml` template as reference, or grant the permissions manually.
+In both options, ensure the log forwarder Lambda function has `s3:GetObject` permissions on the source bucket. You can use the IAM policy section of the `dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml` template as reference, or grant the permissions manually.
 
 **NOTE:** The SQS queue policy deployed by the log forwarder stack already allows SNS topics in the same AWS account to send messages. For cross-account SNS topics, you will need to update the queue policy accordingly.
 

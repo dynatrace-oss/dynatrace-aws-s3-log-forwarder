@@ -151,7 +151,13 @@ aws cloudformation deploy \
 
 ### Step 8. Configure S3 buckets to send "S3 Object created" notifications to the log forwarder.
 
-At this point, you have successfully deployed the `dynatrace-aws-s3-log-forwarder` with your desired configuration. Now, you need to configure specific Amazon S3 buckets to send "S3 Object created" notifications to the log forwarder; as well as grant permissions to the log forwarder to read files from your bucket. For each bucket that you want to send logs from to Dynatrace, perform the below steps:
+At this point, you have successfully deployed the `dynatrace-aws-s3-log-forwarder` with your desired configuration. Now, you need to configure specific Amazon S3 buckets to send "S3 Object created" notifications to the log forwarder; as well as grant permissions to the log forwarder to read files from your bucket.
+
+The log forwarder supports three notification methods. Choose the one that best fits your architecture (see [S3 notification source options](log_forwarding.md#s3-notification-source-options) for details):
+
+#### Option A: Amazon EventBridge (default)
+
+For each bucket that you want to send logs from to Dynatrace, perform the below steps:
 
 * Go to your S3 bucket(s) configuration and enable S3 notifications via EventBridge following instructions [here](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html).
 * Create Amazon EventBridge rules to send Object created notifications to the log forwarder. To do so, deploy the `dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml` CloudFormation template:
@@ -167,10 +173,33 @@ aws cloudformation deploy \
     --capabilities CAPABILITY_IAM
 ```
 
+#### Option B: Amazon SNS to SQS (fan-out)
+
+If you want to use SNS fan-out, you can have the log forwarder create an SNS topic for you by updating the stack with `CreateS3NotificationsSNSTopic=true`:
+
+```bash
+# Update the log forwarder stack to create the SNS topic
+# (add CreateS3NotificationsSNSTopic="true" to your parameter overrides)
+
+# Get the SNS topic ARN from the stack outputs
+export SNS_TOPIC_ARN=$(aws cloudformation describe-stacks \
+    --stack-name $STACK_NAME \
+    --query 'Stacks[].Outputs[?OutputKey==`S3NotificationsSNSTopic`].OutputValue' \
+    --output text)
+```
+
+Then configure your S3 bucket(s) to send Object Created notifications to the SNS topic. The SQS subscription is created automatically.
+
+Alternatively, if you already have an existing SNS topic, you can subscribe the log forwarder's SQS queue to it manually. See [S3 notification source options](log_forwarding.md#s3-notification-source-options) for instructions.
+
+#### Option C: Direct S3 to SQS
+
+Configure your S3 bucket to send Object Created notifications directly to the log forwarder's SQS queue (`<stack-name>-S3NotificationsQueue`). See [S3 notification source options](log_forwarding.md#s3-notification-source-options) for instructions.
+
 > [!NOTE]
 >
 > * The S3 bucket must be on the same AWS account and region than where your log forwarder is deployed. For cross-region and cross-account deployments, check the [docs/log_forwarding.md](log_forwarding.md#forward-logs-from-s3-buckets-on-different-aws-regions) docs.
-> * If you want to forward logs only for specific S3 prefixes, you can add up to 10 LogsBucketPrefix# parameter overrides (e.g. LogsBucketPrefix1=dev/ LogsBucketPrefix2=prod/ ...)
+> * If you want to forward logs only for specific S3 prefixes (EventBridge option), you can add up to 10 LogsBucketPrefix# parameter overrides (e.g. LogsBucketPrefix1=dev/ LogsBucketPrefix2=prod/ ...)
 > * If your logs on S3 are SSE-KMS encrypted with a customer-managed KMS key, you need to grant `kms:Decrypt` permissions to the IAM role used by the AWS Lambda function forwarding logs so it can download the logs. You can find the IAM role name on the CloudFormation outputs of the log forwarder stack. For more information, check the AWS KMS [documentation](https://docs.aws.amazon.com/kms/latest/developerguide/control-access.html).
 >
 > ```bash

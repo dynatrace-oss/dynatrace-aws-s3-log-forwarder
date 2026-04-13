@@ -106,6 +106,13 @@ Parameters:
       - "true"
       - "false"
     Default: "true"
+  CreateS3NotificationsSNSTopic:
+    Type: String
+    Description: Create an SNS topic for receiving S3 Object Created notifications (useful for fan-out architectures where multiple consumers need to process S3 events)
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
   EnableCrossRegionCrossAccountForwarding:
     Type: String
     Description: Create a dedicated event bus to receive and manage cross-region and cross-account S3 Object Created notifications
@@ -165,6 +172,7 @@ Conditions:
   CreateEventBridgePolicy: !And [ !Condition AwsAccountListIsNotEmpty , !Condition CrossRegionCrossAccountForwardingIsEnabled ]
   DeployMonitoringDashboard: !Equals [ !Ref DeployCloudWatchMonitoringDashboard, "true" ]
   IsEmailConfigured: !Not [!Equals [ !Ref NotificationsEmail, "" ]]
+  CreateSNSTopicForS3Notifications: !Equals [ !Ref CreateS3NotificationsSNSTopic, "true" ]
   ContainerImageUriIsDefined: !Not [!Equals [ !Ref ContainerImageUri, "" ]]
   ArchIsArm: !Equals [ !Ref ProcessorArchitecture, "arm64"]
   LambdaVpcConfigSpecified: !Not [!Equals [ !Join [ "", !Ref LambdaSubnetIds ], "" ]]
@@ -316,6 +324,41 @@ Resources:
               - !Ref AWS::Region
               - !Ref AWS::AccountId
               - !Sub ${AWS::StackName}-S3NotificationsQueue
+
+  S3NotificationsSNSTopic:
+    Type: AWS::SNS::Topic
+    Condition: CreateSNSTopicForS3Notifications
+    Properties:
+      TopicName: !Sub ${AWS::StackName}-S3Notifications
+
+  S3NotificationsSNSSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: CreateSNSTopicForS3Notifications
+    Properties:
+      TopicArn: !Ref S3NotificationsSNSTopic
+      Protocol: sqs
+      Endpoint: !GetAtt S3NotificationsQueue.Arn
+      RawMessageDelivery: "false"
+
+  S3NotificationsSNSTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Condition: CreateSNSTopicForS3Notifications
+    Properties:
+      PolicyDocument:
+        Id: "S3NotificationsSNSTopicPolicy"
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "Allow_S3_to_publish"
+            Effect: Allow
+            Principal:
+              Service: "s3.amazonaws.com"
+            Action: "sns:Publish"
+            Resource: !Ref S3NotificationsSNSTopic
+            Condition:
+              StringEquals:
+                "aws:SourceAccount": !Ref AWS::AccountId
+      Topics:
+        - !Ref S3NotificationsSNSTopic
 
   AlarmsSNSTopic:
     Type: AWS::SNS::Topic
@@ -980,6 +1023,12 @@ Outputs:
   SNSAlertsTopic:
     Description: "SNS Topic receiving monitoring alerts"
     Value: !Ref AlarmsSNSTopic
+  S3NotificationsSNSTopic:
+    Condition: CreateSNSTopicForS3Notifications
+    Description: "SNS Topic for receiving S3 Object Created notifications (subscribe your S3 buckets to this topic)"
+    Value: !Ref S3NotificationsSNSTopic
+    Export:
+      Name: !Sub ${AWS::StackName}:S3NotificationsSNSTopicArn
   CrossRegionCrossAccountEventBus:
     Condition: CrossRegionCrossAccountForwardingIsEnabled
     Description: "Amazon EventBridge event bus to receive cross-region and cross-account S3 object created notifications"
