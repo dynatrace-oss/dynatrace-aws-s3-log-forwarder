@@ -52,7 +52,7 @@ docker run --rm \
             -t \${BUILD_DIR} --use-pep517 --quiet
 
         # Copy application source code
-        cp /src/src/app.py /src/src/version.py /src/src/__init__.py \${BUILD_DIR}/
+        cp /src/src/app.py /src/src/index.py /src/src/version.py /src/src/__init__.py \${BUILD_DIR}/
         cp -r /src/src/log \${BUILD_DIR}/
         cp -r /src/src/utils \${BUILD_DIR}/
 
