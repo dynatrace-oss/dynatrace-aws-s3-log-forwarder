@@ -189,7 +189,7 @@ Resources:
       PackageType: Zip
       InlineCode: |
         def lambda_handler(event, context):
-            return {"statusCode": 200, "body": "Placeholder function. Update the function code with the Lambda ZIP package."}
+            raise NotImplementedError("Placeholder function. Update the function code with the Lambda ZIP package.")
       Handler: app.lambda_handler
       Runtime: python3.14
       MemorySize: !Ref LambdaFunctionMemorySize

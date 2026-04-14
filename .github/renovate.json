@@ -14,32 +14,6 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Update AWS AppConfig Lambda Layer ARN version in template.yaml (us-east-1)",
-      "managerFilePatterns": [
-        "/^template\\.yaml$/"
-      ],
-      "matchStrings": [
-        "us-east-1:[\\s\\S]*?AppConfigExtension:\\s*\"arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension:(?<currentValue>\\d+)\""
-      ],
-      "datasourceTemplate": "custom.aws-appconfig-extension-x86_64",
-      "depNameTemplate": "AWS-AppConfig-Extension",
-      "versioningTemplate": "loose"
-    },
-    {
-      "customType": "regex",
-      "description": "Update Lambda Insights Extension Layer ARN version in template.yaml (us-east-1)",
-      "managerFilePatterns": [
-        "/^template\\.yaml$/"
-      ],
-      "matchStrings": [
-        "us-east-1:[\\s\\S]*?LambdaInsightsExtension:\\s*\"arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension:(?<currentValue>\\d+)\""
-      ],
-      "datasourceTemplate": "custom.lambda-insights-extension-x86_64",
-      "depNameTemplate": "LambdaInsightsExtension",
-      "versioningTemplate": "loose"
-    },
-    {
-      "customType": "regex",
       "description": "Update Lambda Python image tag in build_lambda_zip.sh",
       "managerFilePatterns": [
         "/^scripts/build_lambda_zip\\.sh$/"
@@ -51,22 +25,6 @@
       "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+(?:\\.\\d+)*)(?:-(?<build>.+))?$"
     }
   ],
-  "customDatasources": {
-    "aws-appconfig-extension-x86_64": {
-      "defaultRegistryUrlTemplate": "https://docs.aws.amazon.com/appconfig/latest/userguide/appconfig-integration-lambda-extensions-versions.html",
-      "format": "plain",
-      "transformTemplates": [
-        "{ \"releases\": releases.{ \"version\": $match(version, /arn:aws:lambda:us-east-1:027255383542:layer:AWS-AppConfig-Extension:(\\d+)/).groups[0] }[version != null] }"
-      ]
-    },
-    "lambda-insights-extension-x86_64": {
-      "defaultRegistryUrlTemplate": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versionsx86-64.html",
-      "format": "plain",
-      "transformTemplates": [
-        "{ \"releases\": releases.{ \"version\": $match(version, /arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension:(\\d+)/).groups[0] }[version != null] }"
-      ]
-    }
-  },
   "vulnerabilityAlerts": {
     "enabled": true
   }
