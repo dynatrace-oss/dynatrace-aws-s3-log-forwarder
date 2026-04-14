@@ -115,8 +115,64 @@ def load_s3_test_data_from_disk():
                         s3.create_bucket(Bucket=bucket)
                         s3.put_object(Bucket=bucket, Key=key, Body=data, ExpectedBucketOwner=account_id)
 
-                        event_records.append('{"messageId": "' + hashlib.md5(key.encode('utf-8')).hexdigest() +
-                                        '","body": "{\\"region\\":\\"us-east-1\\",\\"detail\\":{\\"bucket\\":{\\"name\\":\\"' + bucket + '\\"},\\"object\\":{\\"key\\":\\"' + key + '\\"},\\"requester\\":\\"' + requester + '\\"}}"}')
+                        eb_body = json.dumps({
+                            "version": "0",
+                            "source": "aws.s3",
+                            "detail-type": "Object Created",
+                            "region": "us-east-1",
+                            "detail": {
+                                "bucket": {"name": bucket},
+                                "object": {"key": key},
+                                "requester": requester
+                            }
+                        })
+                        event_records.append(json.dumps({
+                            "messageId": hashlib.md5(("eb-" + key).encode('utf-8')).hexdigest(),
+                            "body": eb_body
+                        }))
+
+                        sns_inner_message = json.dumps({
+                            "Records": [{
+                                "eventVersion": "2.1",
+                                "eventSource": "aws:s3",
+                                "awsRegion": "us-east-1",
+                                "eventName": "ObjectCreated:Put",
+                                "userIdentity": {"principalId": requester},
+                                "s3": {
+                                    "bucket": {"name": bucket},
+                                    "object": {"key": key}
+                                }
+                            }]
+                        })
+                        sns_body = json.dumps({
+                            "Type": "Notification",
+                            "MessageId": hashlib.md5(("sns-" + key).encode('utf-8')).hexdigest(),
+                            "TopicArn": "arn:aws:sns:us-east-1:123456789012:s3-notifications",
+                            "Subject": "Amazon S3 Notification",
+                            "Message": sns_inner_message
+                        })
+                        event_records.append(json.dumps({
+                            "messageId": hashlib.md5(("sns-" + key).encode('utf-8')).hexdigest(),
+                            "body": sns_body
+                        }))
+
+                        s3direct_body = json.dumps({
+                            "Records": [{
+                                "eventVersion": "2.1",
+                                "eventSource": "aws:s3",
+                                "awsRegion": "us-east-1",
+                                "eventName": "ObjectCreated:Put",
+                                "userIdentity": {"principalId": requester},
+                                "s3": {
+                                    "bucket": {"name": bucket},
+                                    "object": {"key": key}
+                                }
+                            }]
+                        })
+                        event_records.append(json.dumps({
+                            "messageId": hashlib.md5(("s3d-" + key).encode('utf-8')).hexdigest(),
+                            "body": s3direct_body
+                        }))
                 except:
                     logger.exception('an unforseen issue occured')
    
@@ -127,7 +183,7 @@ if os.environ['AWS_SAM_LOCAL'] == 'True':
     logger.warning('mocking boto3 S3')
     logger.warning('mocking boto3 SSM')
     
-    from moto import mock_s3, mock_ssm
+    from moto import mock_aws
 
     def save_test_ssm_parameters():
         client = boto3.client('ssm')
@@ -142,8 +198,7 @@ if os.environ['AWS_SAM_LOCAL'] == 'True':
         def get_remaining_time_in_millis(self):
             return(25000)
 
-    @mock_s3
-    @mock_ssm
+    @mock_aws
     def run_locally():
         # import here so S3 is mocked
         # http://docs.getmoto.org/en/latest/docs/getting_started.html#what-about-those-pesky-imports

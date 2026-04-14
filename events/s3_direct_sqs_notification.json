@@ -1,0 +1,21 @@
+{
+  "Records": [
+    {
+      "messageId": "f1e2d3c4-b5a6-7890-fedc-ba0987654321",
+      "receiptHandle": "AQEBwJnKyrHigUMZj6rYigCgxlaS3SLy0b...",
+      "body": "{\"Records\":[{\"eventVersion\":\"2.1\",\"eventSource\":\"aws:s3\",\"awsRegion\":\"us-east-1\",\"eventTime\":\"2022-07-12T16:29:18Z\",\"eventName\":\"ObjectCreated:Put\",\"userIdentity\":{\"principalId\":\"AWS:AIDAXXXXXXXXXXXXXXXXX\"},\"requestParameters\":{\"sourceIPAddress\":\"52.60.42.48\"},\"responseElements\":{\"x-amz-request-id\":\"68FJA1R4K3J3S5V3\",\"x-amz-id-2\":\"example\"},\"s3\":{\"s3SchemaVersion\":\"1.0\",\"configurationId\":\"s3-event-config\",\"bucket\":{\"name\":\"my-logs-s3-bucket\",\"ownerIdentity\":{\"principalId\":\"EXAMPLE\"},\"arn\":\"arn:aws:s3:::my-logs-s3-bucket\"},\"object\":{\"key\":\"AWSLogs/012345678910/CloudTrail/us-east-1/2022/07/12/012345678910_CloudTrail_us-east-1_20220712T1630Z_2qE5X0w3OkA50tAj.json.gz\",\"size\":950,\"eTag\":\"39168a9f15fb92d5aaf8e3421a93c144\",\"sequencer\":\"0062CDA15ED1DD9942\"}}}]}",
+      "attributes": {
+        "ApproximateReceiveCount": "1",
+        "SentTimestamp": "1657643361443",
+        "SenderId": "AIDAXXXXXXXXXXXXXXXXX",
+        "ApproximateFirstReceiveTimestamp": "1657643361444"
+      },
+      "messageAttributes": {},
+      "md5OfMessageAttributes": null,
+      "md5OfBody": "example",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-1:012345678910:dynatrace-s3-log-forwarder-S3NotificationsQueue",
+      "awsRegion": "us-east-1"
+    }
+  ]
+}
