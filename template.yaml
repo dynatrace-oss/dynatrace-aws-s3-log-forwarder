@@ -125,13 +125,6 @@ Parameters:
     Description: List of AWS Accounts to allow to send cross-account S3 Object created Notifications
     Default: ""
     AllowedPattern: "($^|\\d{12})"
-  EnableLambdaInsights:
-    Description: Enable Amazon CloudWatch Lambda Insights
-    Type: String
-    AllowedValues:
-      - "true"
-      - "false"
-    Default: "false"
   MaximumLambdaConcurrency:
     Description: Maximum number of Lambda functions running concurrently. The concurrency is reserved for the queue processing function, so it's guaranteed. 
     Type: Number
@@ -162,7 +155,7 @@ Parameters:
 
 Conditions:
   SecondDTEnvironmentSpecified: !Not [!Equals [!Ref DynatraceEnvironment2URL, "" ]]
-  LambdaInsightsEnabled: !Equals [ !Ref EnableLambdaInsights, "true" ]
+
   CrossRegionCrossAccountForwardingIsEnabled: !Equals [ !Ref EnableCrossRegionCrossAccountForwarding, "true" ]
   AwsAccountListIsNotEmpty: !Not [ !Equals [!Join ["", !Ref AwsAccountsToReceiveLogsFrom ], ""] ]
   CreateEventBridgePolicy: !And [ !Condition AwsAccountListIsNotEmpty , !Condition CrossRegionCrossAccountForwardingIsEnabled ]
@@ -211,7 +204,6 @@ Resources:
           DYNATRACE_2_API_KEY_PARAM: !If [ SecondDTEnvironmentSpecified, !Ref DynatraceEnvironment2ApiKeyParameter, !Ref "AWS::NoValue"]
           QueueName: !GetAtt S3NotificationsQueue.QueueName
           LOGGING_LEVEL: !Ref LambdaLoggingLevel
-          AWS_APPCONFIG_EXTENSION_PREFETCH_LIST: !Sub "/applications/${AWS::StackName}-app-config/environments/${AWS::StackName}/configurations/log-forwarding-rules,/applications/${AWS::StackName}-app-config/environments/${AWS::StackName}/configurations/log-processing-rules"
           LOG_FORWARDER_CONFIGURATION_LOCATION: !Ref LogForwarderConfigurationLocation
           VERIFY_DT_SSL_CERT: !Ref VerifyLogEndpointSSLCerts
           DYNATRACE_LOG_INGEST_CONTENT_MAX_LENGTH: !Ref DynatraceLogIngestContentMaxLength
@@ -232,7 +224,6 @@ Resources:
             QueueName: !GetAtt S3NotificationsQueue.QueueName
         - SSMParameterReadPolicy:
             ParameterName: !Sub dynatrace/s3-log-forwarder/${AWS::StackName}/*
-        - !If [ LambdaInsightsEnabled, "arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy" , !Ref "AWS::NoValue"] 
         - Statement:
           - Effect: Allow
             Resource:
