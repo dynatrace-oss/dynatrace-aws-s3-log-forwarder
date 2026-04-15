@@ -45,7 +45,7 @@ aws lambda publish-layer-version \
     --zip-file fileb://dist/dynatrace-aws-s3-log-forwarder-layer-x86_64.zip \
     --compatible-runtimes python3.14 \
     --compatible-architectures x86_64 \
-    --description "Dynatrace AWS S3 Log Forwarder"
+    --description "Dynatrace AWS S3 Log Forwarder (x86_64)"
 ```
 
 Note the `LayerVersionArn` from the output — this is the ARN you'll share with customers.
@@ -58,7 +58,7 @@ Provide customers with the full Layer Version ARN, for example:
 arn:aws:lambda:us-east-1:123456789012:layer:dynatrace-aws-s3-log-forwarder:1
 ```
 
-Customers can then deploy the log forwarder using the [Pre-published Lambda Layer](deployment_guide.md) option in the deployment guide — no build tools or SAM CLI required.
+Customers can then deploy the log forwarder using the [Lambda Layer](deployment_guide.md) option in the deployment guide — no build tools or SAM CLI required.
 
 ## Publishing a new version
 

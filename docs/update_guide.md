@@ -54,13 +54,30 @@ wget https://dynatrace-aws-s3-log-forwarder-assets.s3.amazonaws.com/${VERSION_TA
 unzip -o templates.zip
 ```
 
-### Step 5. Update the stack and Lambda function code
+### Step 5. Update the stack
 
-Update the `dynatrace-aws-s3-log-forwarder` CloudFormation stack:
+#### If using Lambda Layer deployment
+
+Update the `DynatraceS3LogForwarderLayerArn` parameter with the new Layer Version ARN and redeploy:
+
+```bash
+export LAYER_ARN=<new-layer-version-arn>
+
+aws cloudformation deploy --stack-name ${STACK_NAME} \
+            --template-file template.yaml \
+            --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
+            --parameter-overrides \
+                DeploymentPackageType="layer" \
+                DynatraceS3LogForwarderLayerArn="$LAYER_ARN"
+```
+
+#### If using ZIP deployment
+
+Update the CloudFormation stack:
 
 ```bash
 aws cloudformation deploy --stack-name ${STACK_NAME} \
-            --template-file template.yaml --capabilities CAPABILITY_IAM
+            --template-file template.yaml --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND
 ```
 
 Then update the Lambda function code with the new deployment package:

@@ -2,6 +2,11 @@
 
 If you're contributing to the project or if you want to build and deploy from source, the following sections cover how to build and deploy the `dynatrace-aws-s3-log-forwarder`.
 
+There are two build options:
+
+* **Lambda Layer** — built locally using pip (no Docker required). See `scripts/build_layer.sh`.
+* **Lambda ZIP** — built inside a Docker container for binary compatibility. See `scripts/build_lambda_zip.sh`.
+
 ## Prerequisites
 
 The deployment instructions are written for Linux/MacOS. If you are running on Windows, use the Linux Subsystem for Windows or use an [AWS Cloud9](https://aws.amazon.com/cloud9/) instance.
@@ -9,8 +14,12 @@ The deployment instructions are written for Linux/MacOS. If you are running on W
 You'll need the following software installed:
 
 * [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-* Docker Engine (required to build the Lambda deployment package inside an Amazon Linux 2023 container)
 * Git
+
+Additionally:
+
+* **For Lambda Layer builds:** Python 3.14 + pip, [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
+* **For Lambda ZIP builds:** Docker Engine
 
 You'll also need:
 
