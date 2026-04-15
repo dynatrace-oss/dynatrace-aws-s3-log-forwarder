@@ -48,7 +48,7 @@ echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Deploying the S3 bucket configuration t
 aws cloudformation deploy --stack-name ${STACK_NAME}-s3-bucket-configuration --parameter-overrides \
                 DynatraceAwsS3LogForwarderStackName=${STACK_NAME} \
                 LogsBucketName=${E2E_TESTING_BUCKET_NAME} \
-                LogsBucketPrefix1=test/${TRAVIS_BUILD_ID}/validation/ \
+                LogsBucketPrefix1=${E2E_TEST_PREFIX}/ \
                 --capabilities CAPABILITY_IAM \
                 --template-file dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml \
                 --role-arn ${CFN_ROLE_ARN}

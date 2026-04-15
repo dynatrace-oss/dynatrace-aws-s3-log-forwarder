@@ -2,7 +2,7 @@
 
 # Settings for CloudWatch Log Export job
 PREFIX="test/${TRAVIS_BUILD_ID}/lambda-logs"
-STACK_NAME=e2e-dt-aws-s3-log-forwarder-${TRAVIS_BUILD_ID}
+STACK_NAME=${STACK_NAME:-e2e-dt-aws-s3-log-forwarder-${TRAVIS_BUILD_ID}}
 E2E_TESTING_BUCKET_NAME=dynatrace-aws-s3-log-forwarder-e2e-testing
 LAMBDA_FUNCTION_NAME=$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} --query \
                          'Stacks[].Outputs[?OutputKey==`QueueProcessingFunction`].OutputValue' \
@@ -49,9 +49,15 @@ aws cloudformation wait stack-delete-complete --stack-name ${STACK_NAME}-s3-buck
 echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Deleting Cloudformation Stack ${STACK_NAME}-configutation"
 aws cloudformation delete-stack --stack-name ${STACK_NAME}-configuration
 aws cloudformation wait stack-delete-complete --stack-name ${STACK_NAME}-configuration
-echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Deleting Cloudformation Stack ${STACK_NAME}-s3-bucket-configutation"
+echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Deleting Cloudformation Stack ${STACK_NAME}"
 aws cloudformation delete-stack --stack-name ${STACK_NAME}
 aws cloudformation wait stack-delete-complete --stack-name ${STACK_NAME}
+# Delete the layer stack if it exists
+if aws cloudformation describe-stacks --stack-name ${STACK_NAME}-layer >/dev/null 2>&1; then
+    echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Deleting Cloudformation Stack ${STACK_NAME}-layer"
+    aws cloudformation delete-stack --stack-name ${STACK_NAME}-layer
+    aws cloudformation wait stack-delete-complete --stack-name ${STACK_NAME}-layer
+fi
 echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Deleting SSM parameter /dynatrace/s3-log-forwarder/${STACK_NAME}/api-key"
 aws ssm delete-parameter --name "/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key"
 # Export CloudWatch Logs
