@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  dynatrace-aws-s3-log-forwarder-layer
+
+  Lambda Layer containing the dynatrace-aws-s3-log-forwarder application code and dependencies.
+  https://github.com/dynatrace-oss/dynatrace-aws-s3-log-forwarder
+
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: dynatrace-aws-s3-log-forwarder-layer
+    Description: >
+      Lambda Layer for the Dynatrace AWS S3 Log Forwarder.
+      This layer is deployed as a nested application
+      by the main dynatrace-aws-s3-log-forwarder stack (Lambda Layer mode).
+    Author: Dynatrace
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: LICENSE
+    ReadmeUrl: README.md
+    HomePageUrl: https://github.com/dynatrace-oss/dynatrace-aws-s3-log-forwarder
+    SemanticVersion: "0.0.1"
+    SourceCodeUrl: https://github.com/dynatrace-oss/dynatrace-aws-s3-log-forwarder
+
+  Version:
+    Description: dev
+
+Resources:
+  DynatraceS3LogForwarderLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: dynatrace-aws-s3-log-forwarder
+      Description: "Dynatrace AWS S3 Log Forwarder (x86_64)"
+      ContentUri: build/layer/
+      CompatibleRuntimes:
+        - python3.14
+      CompatibleArchitectures:
+        - x86_64
+      RetentionPolicy: Retain
+
+Outputs:
+  DynatraceS3LogForwarderLayerVersionArn:
+    Description: Lambda Layer Version ARN for the Dynatrace S3 Log Forwarder. Pass this value to the DynatraceS3LogForwarderLayerArn parameter of the main stack.
+    Value: !Ref DynatraceS3LogForwarderLayer
+

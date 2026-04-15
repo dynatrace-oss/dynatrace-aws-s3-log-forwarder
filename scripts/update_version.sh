@@ -26,4 +26,12 @@ do
     yq -i -e '.Metadata.Version.Description = strenv(VERSION)' $file
 done
 
-    
+# Update SAR semantic version in layer template
+if [ -f "dynatrace-aws-s3-log-forwarder-layer.yaml" ]; then
+    yq -i -e '(.Metadata."AWS::ServerlessRepo::Application".SemanticVersion) = strenv(VERSION)' dynatrace-aws-s3-log-forwarder-layer.yaml
+fi
+
+# Update default layer version parameter in lambda layer deployment template
+if [ -f "template-lambda-layer.yaml" ]; then
+    yq -i -e '(.Parameters.DynatraceS3LogForwarderLayerVersion.Default) = strenv(VERSION)' template-lambda-layer.yaml
+fi

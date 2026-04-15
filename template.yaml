@@ -62,12 +62,16 @@ Parameters:
     Type: String
     Default: ""
   DeploymentPackageType:
-    Description: "Deployment package type for the Lambda function. Note: 'layer' deployment is not yet supported."
+    Description: "Deployment package type for the Lambda function."
     Type: String
     AllowedValues:
       - zip
       - layer
     Default: zip
+  DynatraceS3LogForwarderLayerArn:
+    Type: String
+    Description: ARN of the Lambda Layer Version containing the dynatrace-aws-s3-log-forwarder application code and dependencies (required when DeploymentPackageType is 'layer').
+    Default: ""
   LambdaFunctionMemorySize:
     Description: Memory size of the queue processing Lambda function
     Type: Number
@@ -174,30 +178,31 @@ Globals:
         POWERTOOLS_METRICS_NAMESPACE: dynatrace-aws-s3-log-forwarder
         DEPLOYMENT_NAME: !Ref AWS::StackName
 
-Rules:
-  LayerDeploymentNotSupported:
-    RuleCondition: !Equals [ !Ref DeploymentPackageType, "layer" ]
-    Assertions:
-      - Assert: !Equals [ !Ref DeploymentPackageType, "zip" ]
-        AssertDescription: "DeploymentPackageType 'layer' is not yet supported. Please use 'zip'."
-
 
 Resources:
   QueueProcessingFunction:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Zip
-      InlineCode: |
-        def lambda_handler(event, context):
-            raise NotImplementedError("Placeholder function. Update the function code with the Lambda ZIP package.")
-      Handler: app.lambda_handler
+      InlineCode: !If
+        - IsLayerDeployment
+        - |
+          from app import lambda_handler as handler
+        - |
+          def lambda_handler(event, context):
+              raise NotImplementedError("Placeholder function. Update the function code with the Lambda ZIP package.")
+      Handler: !If [IsLayerDeployment, "index.handler", "app.lambda_handler"]
       Runtime: python3.14
+      Layers: !If
+        - IsLayerDeployment
+        - - !Ref DynatraceS3LogForwarderLayerArn
+        - !Ref "AWS::NoValue"
       MemorySize: !Ref LambdaFunctionMemorySize
       Architectures:
         - x86_64
       Environment:
         Variables:
-          LD_LIBRARY_PATH: /var/task/lib
+          LD_LIBRARY_PATH: !If [IsLayerDeployment, !Ref "AWS::NoValue", "/var/task/lib"]
           DYNATRACE_1_ENV_URL: !Ref DynatraceEnvironment1URL
           DYNATRACE_1_API_KEY_PARAM: !Ref DynatraceEnvironment1ApiKeyParameter
           DYNATRACE_2_ENV_URL: !If [ SecondDTEnvironmentSpecified, !Ref DynatraceEnvironment2URL, !Ref "AWS::NoValue"]
