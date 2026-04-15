@@ -51,7 +51,7 @@ jobs:
     name: Unit Tests
     script:
       # Install dependencies
-      - pip install -r src/requirements.txt -r src/requirements-pure-python.txt -r src/requirements-dev.txt 
+      - pip install -r src/requirements.txt -r src/requirements-pure-python.txt -r src/requirements-dev.txt
       # Run unit tests
       - |
         cd src && env $(cat ../tests/unit/unit_test.env | grep -v '^#' | xargs) \

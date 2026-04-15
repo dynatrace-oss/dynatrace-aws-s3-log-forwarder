@@ -70,35 +70,38 @@ FAILED_REGIONS=()
 for REGION in "${REGIONS[@]}"; do
     echo "--- Publishing to $REGION ---"
 
-    PUBLISH_OUTPUT=$(aws lambda publish-layer-version \
+    LAYER_VERSION_ARN=$(aws lambda publish-layer-version \
         --region "$REGION" \
         --layer-name "$LAYER_NAME" \
         --zip-file "fileb://$ZIP_FILE" \
         --compatible-runtimes python3.14 \
         --compatible-architectures x86_64 \
         --description "Dynatrace AWS S3 Log Forwarder (x86_64)" \
-        --output json 2>&1) || {
+        --query 'LayerVersionArn' \
+        --output text 2>&1) || {
         echo "  FAILED to publish in $REGION"
         FAILED_REGIONS+=("$REGION")
         continue
     }
 
-    LAYER_VERSION_ARN=$(echo "$PUBLISH_OUTPUT" | grep -o '"LayerVersionArn": "[^"]*"' | cut -d'"' -f4)
-    LAYER_VERSION=$(echo "$PUBLISH_OUTPUT" | grep -o '"Version": [0-9]*' | grep -o '[0-9]*')
+    LAYER_VERSION=$(echo "$LAYER_VERSION_ARN" | grep -o '[0-9]*$')
 
     echo "  Published: $LAYER_VERSION_ARN"
 
     # Grant public access
-    aws lambda add-layer-version-permission \
+    if aws lambda add-layer-version-permission \
         --region "$REGION" \
         --layer-name "$LAYER_NAME" \
         --version-number "$LAYER_VERSION" \
         --statement-id allow-all-accounts \
         --principal "*" \
         --action lambda:GetLayerVersion \
-        --output json > /dev/null 2>&1 && \
-    echo "  Public access granted." || \
-    echo "  WARNING: Failed to grant public access."
+        --output json > /dev/null 2>&1; then
+        echo "  Public access granted."
+    else
+        echo "  FAILED to grant public access in $REGION"
+        FAILED_REGIONS+=("$REGION")
+    fi
 
     echo ""
 done
@@ -114,9 +117,6 @@ if [ ${#FAILED_REGIONS[@]} -gt 0 ]; then
 fi
 
 echo "All regions published successfully."
-
-
-
 
 
 

@@ -54,7 +54,7 @@ Note the `LayerVersionArn` from the output — this is the ARN you'll share with
 
 Provide customers with the full Layer Version ARN, for example:
 
-```
+```text
 arn:aws:lambda:us-east-1:123456789012:layer:dynatrace-aws-s3-log-forwarder:1
 ```
 
@@ -69,12 +69,3 @@ When releasing an update:
 3. Communicate the new Layer Version ARNs to customers
 
 > **Note:** Each `publish-layer-version` call creates a new immutable version. Previous versions remain available until explicitly deleted. Customers must update the `DynatraceS3LogForwarderLayerArn` parameter and redeploy to pick up the new version.
-
-
-
-
-
-
-
-
-

@@ -65,13 +65,14 @@ Parameters:
     Description: "Deployment package type for the Lambda function."
     Type: String
     AllowedValues:
-      - zip
       - layer
-    Default: zip
+      - zip
+    Default: layer
   DynatraceS3LogForwarderLayerArn:
     Type: String
     Description: ARN of the Lambda Layer Version containing the dynatrace-aws-s3-log-forwarder application code and dependencies (required when DeploymentPackageType is 'layer').
     Default: ""
+    AllowedPattern: "(arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}(-gov)?(-iso([a-z])?)?-[a-z]+-\\d{1}:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)?"
   LambdaFunctionMemorySize:
     Description: Memory size of the queue processing Lambda function
     Type: Number
@@ -156,6 +157,13 @@ Parameters:
     Type: Number
     Description: Maximum number of retries for failed processing of S3 Object Created notification messages
     Default: 2
+
+Rules:
+  LayerArnRequiredForLayerDeployment:
+    RuleCondition: !Equals [!Ref DeploymentPackageType, "layer"]
+    Assertions:
+      - Assert: !Not [!Equals [!Ref DynatraceS3LogForwarderLayerArn, ""]]
+        AssertDescription: "DynatraceS3LogForwarderLayerArn must be provided when DeploymentPackageType is 'layer'. Specify a valid Lambda Layer Version ARN (e.g. arn:aws:lambda:us-east-1:123456789012:layer:dynatrace-aws-s3-log-forwarder:1)."
 
 Conditions:
   SecondDTEnvironmentSpecified: !Not [!Equals [!Ref DynatraceEnvironment2URL, "" ]]

@@ -52,7 +52,7 @@ echo "Copying application source code..."
 cp -r src/* "$LAYER_DIR/"
 
 # Remove files not needed in the layer
-rm -f "$LAYER_DIR/requirements.txt" "$LAYER_DIR/requirements-dev.txt"
+rm -f "$LAYER_DIR/requirements.txt" "$LAYER_DIR/requirements-pure-python.txt" "$LAYER_DIR/requirements-dev.txt"
 find "$LAYER_DIR" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 
 # Copy license files

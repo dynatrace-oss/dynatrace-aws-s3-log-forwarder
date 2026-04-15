@@ -17,7 +17,8 @@ aws cloudformation deploy --stack-name ${STACK_NAME} --parameter-overrides \
                 DynatraceEnvironment1URL=${DT_TENANT_URL} \
                 DynatraceEnvironment1ApiKeyParameter="/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key" \
                 EnableCrossRegionCrossAccountForwarding=true \
-                --template-file template.yaml --capabilities CAPABILITY_IAM \
+                DeploymentPackageType=zip \
+                --template-file template.yaml --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
                 --role-arn ${CFN_ROLE_ARN}
 
 aws cloudformation wait stack-create-complete --stack-name ${STACK_NAME}
