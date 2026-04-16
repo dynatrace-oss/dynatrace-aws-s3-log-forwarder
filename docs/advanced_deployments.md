@@ -2,7 +2,6 @@
 
 This page contains guidance and considerations for large deployments.
 
-
 ## Log forwarding throughput
 
 This solution has been tested to forward logs to Dynatrace at a throughput of 10 GB / min.
