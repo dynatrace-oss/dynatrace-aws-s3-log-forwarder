@@ -5,7 +5,6 @@
 set -e
 
 LAYER_STACK_NAME="${STACK_NAME}-layer"
-LAYER_ASSETS_BUCKET="dynatrace-aws-s3-log-forwarder-assets"
 
 echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Creating the SSM parameter"
 aws ssm put-parameter --name "/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key" \
