@@ -73,7 +73,7 @@ This will:
 
 1. Deploy the main forwarder stack.
 
-    Continue with the standard deployment from [Step 4a in the deployment guide](deployment_guide.md#step-4a-set-the-layer-arn), using the Layer ARN retrieved above.
+    Continue with the standard deployment from [the default option in the deployment guide](deployment_guide.md#default-option-lambda-layer), using the Layer ARN retrieved above.
 
 ### Updating the layer after code changes
 

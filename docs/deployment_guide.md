@@ -75,17 +75,17 @@ Choose one of the deployment options below:
 
 ---
 
-#### Option A: Lambda Layer (default)
+#### Default option: Lambda Layer
 
 This is the simplest option — no build tools, SAM CLI, or Python required.
 
-##### Step 4a. Set the Layer ARN
+1. Set the Layer ARN:
 
 ```bash
 export LAYER_ARN=<layer-version-arn-provided-by-publisher>
 ```
 
-##### Step 4b. Deploy the main forwarder stack
+1. Deploy the main forwarder stack:
 
 ```bash
 aws cloudformation deploy \
@@ -101,11 +101,15 @@ aws cloudformation deploy \
 
 > **Note:** When the publisher releases a new layer version, update the `DynatraceS3LogForwarderLayerArn` parameter with the new ARN and redeploy the stack to pick up the update.
 
+> [!IMPORTANT]
+>
+> If you deployed using the default Lambda Layer option above, continue directly to [Step 5. Deploy the log forwarding configuration](#step-5-deploy-the-log-forwarding-configuration).
+
 ---
 
-#### Option B: ZIP deployment
+#### Alternative option: ZIP deployment
 
-##### Step 4a. Deploy the CloudFormation stack
+1. Deploy the CloudFormation stack:
 
 ```bash
 aws cloudformation deploy \
@@ -117,7 +121,7 @@ aws cloudformation deploy \
         DynatraceEnvironment1ApiKeyParameter=$PARAMETER_NAME
 ```
 
-##### Step 4b. Update the Lambda function code with the deployment package
+1. Update the Lambda function code with the deployment package:
 
 ```bash
 FUNCTION_NAME=$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} \
