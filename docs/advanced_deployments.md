@@ -4,7 +4,7 @@ This page contains guidance and considerations for large deployments.
 
 ## Building and deploying a Lambda Layer from source
 
-If you want to build the Lambda Layer from source instead of using a pre-published Layer ARN, follow the steps below. This requires Python 3.14 + pip and [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html).
+If you want to build the Lambda Layer from source instead of using a pre-published Layer ARN, follow the steps below. This requires Python 3.14 + pip and the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
 
 ### 1. Build the Lambda Layer
 
@@ -20,16 +20,21 @@ This will:
 2. Copy the application source code and license files
 3. Produce a ZIP at `dist/dynatrace-aws-s3-log-forwarder-layer-x86_64.zip`
 
-### 2. Deploy the Lambda Layer stack
+### 2. Package and deploy the Lambda Layer stack
 
-Deploy the layer as its own CloudFormation stack:
+Package the layer template (uploads local artifacts to S3) and deploy it as its own CloudFormation stack:
 
 ```bash
-sam deploy \
+aws cloudformation package \
     --template-file dynatrace-aws-s3-log-forwarder-layer.yaml \
+    --s3-bucket "${YOUR_S3_BUCKET}" \
+    --s3-prefix "dynatrace-s3-log-forwarder-layer" \
+    --output-template-file packaged-layer.yaml
+
+aws cloudformation deploy \
+    --template-file packaged-layer.yaml \
     --stack-name "${STACK_NAME}-layer" \
-    --resolve-s3 \
-    --capabilities CAPABILITY_IAM
+    --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND
 ```
 
 ### 3. Retrieve the deployed Layer ARN

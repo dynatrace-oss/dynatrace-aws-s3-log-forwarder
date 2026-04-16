@@ -14,15 +14,23 @@ aws ssm put-parameter --name "/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key"
 echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Building Lambda Layer"
 ./scripts/build_layer.sh
 
-# Step 2: Deploy the Lambda Layer stack
-echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Deploying the Lambda Layer stack"
-sam deploy \
+# Step 2: Package and deploy the Lambda Layer stack
+echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Packaging the Lambda Layer template"
+aws cloudformation package \
     --template-file dynatrace-aws-s3-log-forwarder-layer.yaml \
+    --s3-bucket "${E2E_TESTING_BUCKET_NAME}" \
+    --s3-prefix "sam-artifacts/${LAYER_STACK_NAME}" \
+    --output-template-file packaged-layer.yaml
+
+echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Deploying the Lambda Layer stack"
+aws cloudformation deploy \
+    --template-file packaged-layer.yaml \
     --stack-name "${LAYER_STACK_NAME}" \
-    --resolve-s3 \
-    --capabilities CAPABILITY_IAM \
+    --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
     --role-arn ${CFN_ROLE_ARN} \
     --no-fail-on-empty-changeset
+
+aws cloudformation wait stack-create-complete --stack-name ${LAYER_STACK_NAME}
 
 # Step 3: Retrieve the Layer ARN
 LAYER_ARN=$(aws cloudformation describe-stacks \
