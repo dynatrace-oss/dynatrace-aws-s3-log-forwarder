@@ -9,7 +9,10 @@ LAMBDA_FUNCTION_NAME=$(aws cloudformation describe-stacks --stack-name ${STACK_N
                          --output text | cut -d':' -f7)
 
 TIMESTAMP_FORMAT='+%Y-%m-%dT%H:%M:%SZ'
-log() { echo "[$(date -u "${TIMESTAMP_FORMAT}")] $*"; }
+log() {
+    echo "[$(date -u "${TIMESTAMP_FORMAT}")] $*"
+    return
+}
 
 export_cloudwatch_logs () {
     # Export Lambda Logs from AWS CloudWatch Logs to S3 and delete Lambda CloudWatch Log Group

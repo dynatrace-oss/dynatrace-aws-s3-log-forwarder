@@ -3,7 +3,10 @@
 set -e
 
 TIMESTAMP_FORMAT='+%Y-%m-%dT%H:%M:%SZ'
-log() { echo "[$(date -u "${TIMESTAMP_FORMAT}")] $*"; }
+log() {
+    echo "[$(date -u "${TIMESTAMP_FORMAT}")] $*"
+    return
+}
 
 log "Creating the SSM parameter"
 # e2e tests: Deploy dynatrace-aws-s3-log-forwarder stack

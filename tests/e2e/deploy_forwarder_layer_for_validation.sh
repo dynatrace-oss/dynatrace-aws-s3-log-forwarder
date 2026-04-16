@@ -7,7 +7,10 @@ set -e
 LAYER_STACK_NAME="${STACK_NAME}-layer"
 
 TIMESTAMP_FORMAT='+%Y-%m-%dT%H:%M:%SZ'
-log() { echo "[$(date -u "${TIMESTAMP_FORMAT}")] $*"; }
+log() {
+    echo "[$(date -u "${TIMESTAMP_FORMAT}")] $*"
+    return
+}
 
 log "Creating the SSM parameter"
 aws ssm put-parameter --name "/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key" \
