@@ -5,6 +5,7 @@
 set -e
 
 LAYER_STACK_NAME="${STACK_NAME}-layer"
+LAYER_ASSETS_BUCKET="dynatrace-aws-s3-log-forwarder-assets"
 
 echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Creating the SSM parameter"
 aws ssm put-parameter --name "/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key" \
@@ -19,7 +20,7 @@ echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Packaging the Lambda Layer template"
 aws cloudformation package \
     --template-file dynatrace-aws-s3-log-forwarder-layer.yaml \
     --s3-bucket "${E2E_TESTING_BUCKET_NAME}" \
-    --s3-prefix "sam-artifacts/${LAYER_STACK_NAME}" \
+    --s3-prefix "test/${LAYER_STACK_NAME}" \
     --output-template-file packaged-layer.yaml
 
 echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Deploying the Lambda Layer stack"
