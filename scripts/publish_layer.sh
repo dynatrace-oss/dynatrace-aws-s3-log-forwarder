@@ -48,15 +48,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Default to all enabled commercial regions if none specified
-if [ ${#REGIONS[@]} -eq 0 ]; then
+if [[ ${#REGIONS[@]} -eq 0 ]]; then
     echo "Querying available AWS regions..."
     REGIONS=($(aws ec2 describe-regions \
         --query "Regions[].RegionName" \
         --output text))
 fi
 
-if [ ! -f "$ZIP_FILE" ]; then
-    echo "Error: $ZIP_FILE not found. Run build_layer.sh first."
+if [[ ! -f "$ZIP_FILE" ]]; then
+    echo "Error: $ZIP_FILE not found. Run build_layer.sh first." >&2
     exit 1
 fi
 
@@ -111,13 +111,11 @@ echo "=== Publishing Summary ==="
 echo "Regions attempted: ${#REGIONS[@]}"
 echo "Failed: ${#FAILED_REGIONS[@]}"
 
-if [ ${#FAILED_REGIONS[@]} -gt 0 ]; then
+if [[ ${#FAILED_REGIONS[@]} -gt 0 ]]; then
     echo "Failed regions: ${FAILED_REGIONS[*]}"
     exit 1
 fi
 
 echo "All regions published successfully."
-
-
 
 

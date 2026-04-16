@@ -58,7 +58,7 @@ find "$LAYER_DIR" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || t
 # Copy license files
 echo "Copying license files..."
 for f in LICENSE NOTICE THIRD_PARTY_LICENSES; do
-    if [ -f "$f" ]; then
+    if [[ -f "$f" ]]; then
         cp "$f" "$LAYER_DIR/"
     fi
 done

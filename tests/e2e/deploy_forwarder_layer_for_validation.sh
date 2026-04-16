@@ -6,23 +6,26 @@ set -e
 
 LAYER_STACK_NAME="${STACK_NAME}-layer"
 
-echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Creating the SSM parameter"
+TIMESTAMP_FORMAT='+%Y-%m-%dT%H:%M:%SZ'
+log() { echo "[$(date -u "${TIMESTAMP_FORMAT}")] $*"; }
+
+log "Creating the SSM parameter"
 aws ssm put-parameter --name "/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key" \
                        --type SecureString --value $DT_TENANT_API_KEY
 
 # Step 1: Build the Lambda Layer
-echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Building Lambda Layer"
+log "Building Lambda Layer"
 ./scripts/build_layer.sh
 
 # Step 2: Package and deploy the Lambda Layer stack
-echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Packaging the Lambda Layer template"
+log "Packaging the Lambda Layer template"
 aws cloudformation package \
     --template-file dynatrace-aws-s3-log-forwarder-layer.yaml \
     --s3-bucket "${E2E_TESTING_BUCKET_NAME}" \
     --s3-prefix "test/${LAYER_STACK_NAME}" \
     --output-template-file packaged-layer.yaml
 
-echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Deploying the Lambda Layer stack"
+log "Deploying the Lambda Layer stack"
 aws cloudformation deploy \
     --template-file packaged-layer.yaml \
     --stack-name "${LAYER_STACK_NAME}" \
@@ -38,10 +41,10 @@ LAYER_ARN=$(aws cloudformation describe-stacks \
     --query "Stacks[0].Outputs[?OutputKey=='DynatraceS3LogForwarderLayerVersionArn'].OutputValue" \
     --output text)
 
-echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Layer ARN: ${LAYER_ARN}"
+log "Layer ARN: ${LAYER_ARN}"
 
 # Step 4: Deploy the main forwarder stack with the layer
-echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Deploying the log forwarder template (layer mode)"
+log "Deploying the log forwarder template (layer mode)"
 aws cloudformation deploy --stack-name ${STACK_NAME} --parameter-overrides \
                 DynatraceEnvironment1URL=${DT_TENANT_URL} \
                 DynatraceEnvironment1ApiKeyParameter="/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key" \
@@ -54,7 +57,7 @@ aws cloudformation deploy --stack-name ${STACK_NAME} --parameter-overrides \
 aws cloudformation wait stack-create-complete --stack-name ${STACK_NAME}
 
 # Step 5: Deploy the configuration stack
-echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Deploying the forwarder configuration template"
+log "Deploying the forwarder configuration template"
 aws cloudformation deploy --stack-name ${STACK_NAME}-configuration --parameter-overrides \
                 DynatraceAwsS3LogForwarderStackName=${STACK_NAME} \
                 --template-file dynatrace-aws-s3-log-forwarder-configuration.yaml \
@@ -63,7 +66,7 @@ aws cloudformation deploy --stack-name ${STACK_NAME}-configuration --parameter-o
 aws cloudformation wait stack-create-complete --stack-name ${STACK_NAME}-configuration
 
 # Step 6: Deploy the S3 Bucket Configuration stack
-echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] Deploying the S3 bucket configuration template"
+log "Deploying the S3 bucket configuration template"
 aws cloudformation deploy --stack-name ${STACK_NAME}-s3-bucket-configuration --parameter-overrides \
                 DynatraceAwsS3LogForwarderStackName=${STACK_NAME} \
                 LogsBucketName=${E2E_TESTING_BUCKET_NAME} \
@@ -73,5 +76,4 @@ aws cloudformation deploy --stack-name ${STACK_NAME}-s3-bucket-configuration --p
                 --role-arn ${CFN_ROLE_ARN}
 
 aws cloudformation wait stack-create-complete --stack-name ${STACK_NAME}-s3-bucket-configuration
-
 
