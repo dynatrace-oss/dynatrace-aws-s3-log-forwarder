@@ -29,7 +29,7 @@ You'll also need:
 
 If you want to build the Lambda Layer from source instead of using a pre-published Layer ARN, follow the steps below. This requires Python 3.14 + pip and the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
 
-### Build details
+### Lambda Layer build details
 
 From the project root directory:
 
@@ -43,7 +43,7 @@ This will:
 * Copy the application source code and license files
 * Produce a ZIP at `dist/dynatrace-aws-s3-log-forwarder-layer-x86_64.zip`
 
-### Deployment instructions
+### Lambda Layer deployment instructions
 
 1. Package the layer template (uploads local artifacts to S3) and deploy it as its own CloudFormation stack:
 
@@ -79,7 +79,9 @@ This will:
 
 After making source code changes, repeat steps 1-3 above to rebuild and redeploy the layer, then update the main stack with the new Layer ARN.
 
-## Build details
+## Building and deploying a Lambda ZIP from source
+
+### Lambda ZIP build details
 
 The build script `scripts/build_lambda_zip.sh` runs entirely inside an Amazon Linux 2023 Docker container. It:
 
@@ -90,7 +92,7 @@ The build script `scripts/build_lambda_zip.sh` runs entirely inside an Amazon Li
 
 At runtime, the `LD_LIBRARY_PATH` environment variable is set to `/var/task/lib` so the yajl library is found.
 
-## Deployment instructions
+### Lambda ZIP deployment instructions
 
 1. Clone the `dynatrace-aws-s3-log-forwarder` repository and checkout the latest version tag:
 
