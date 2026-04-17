@@ -6,3 +6,4 @@ aws-lambda-powertools==3.27.0
 ijson==3.5.0
 Jinja2==3.1.6
 urllib3==2.6.3
+pygrok==1.0.0

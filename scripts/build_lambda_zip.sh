@@ -50,8 +50,6 @@ docker run --rm \
         pip install --upgrade pip
         python3.14 -m pip install --no-cache-dir -r /src/src/requirements.txt \
             -t \${BUILD_DIR} --use-pep517 --quiet
-        python3.14 -m pip install --no-cache-dir -r /src/src/requirements-pure-python.txt \
-            -t \${BUILD_DIR} --use-pep517 --quiet
 
         # Copy application source code
         cp /src/src/app.py /src/src/index.py /src/src/version.py /src/src/__init__.py \${BUILD_DIR}/
