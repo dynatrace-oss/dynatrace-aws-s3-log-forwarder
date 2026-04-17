@@ -14,28 +14,51 @@
 # Build a Lambda Layer or Lambda deployment ZIP inside a Docker container.
 # This ensures binary compatibility with the Lambda runtime, and bundles the yajl
 # native library required by ijson's yajl2_c backend.
-# Usage: ./scripts/build_docker.sh <layer|zip> <output_path>
+# Usage: ./scripts/build_docker.sh <layer|zip> <output_path> [--arch x86_64|arm64]
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-BUILD_TYPE="${1:?Usage: $0 <layer|zip> <output_path>}"
-OUTPUT_PATH="${2:?Usage: $0 <layer|zip> <output_path>}"
+BUILD_TYPE="${1:?Usage: $0 <layer|zip> <output_path> [--arch x86_64|arm64]}"
+OUTPUT_PATH="${2:?Usage: $0 <layer|zip> <output_path> [--arch x86_64|arm64]}"
+ARCH="x86_64"
 
-LAMBDA_RUNTIME_IMAGE="public.ecr.aws/lambda/python:3.14.2026.03.31.12-x86_64"
+if [[ "${3:-}" == "--arch" ]]; then
+    ARCH="${4:?--arch requires a value (x86_64 or arm64)}"
+elif [[ -n "${3:-}" ]]; then
+    echo "Unknown option: $3" >&2
+    echo "Usage: $0 <layer|zip> <output_path> [--arch x86_64|arm64]" >&2
+    exit 1
+fi
+
+case "${ARCH}" in
+    x86_64|arm64) ;;
+    *) echo "ERROR: invalid arch '${ARCH}'. Use x86_64 or arm64." >&2; exit 1 ;;
+esac
+
+LAMBDA_IMAGE_X86_64="public.ecr.aws/lambda/python:3.14.2026.03.31.12-x86_64"
+LAMBDA_IMAGE_ARM64="public.ecr.aws/lambda/python:3.14.2026.03.31.12-arm64"
+
+if [[ "${ARCH}" == "arm64" ]]; then
+    LAMBDA_RUNTIME_IMAGE="${LAMBDA_IMAGE_ARM64}"
+    PLATFORM_ARGS=(--platform linux/arm64)
+else
+    LAMBDA_RUNTIME_IMAGE="${LAMBDA_IMAGE_X86_64}"
+    PLATFORM_ARGS=()
+fi
 
 OUTPUT_DIR="$(dirname "${OUTPUT_PATH}")"
 OUTPUT_FILENAME="$(basename "${OUTPUT_PATH}")"
 mkdir -p "${OUTPUT_DIR}"
 OUTPUT_DIR="$(cd "${OUTPUT_DIR}" && pwd)"
 
-echo "Building ${BUILD_TYPE} using ${LAMBDA_RUNTIME_IMAGE}..."
+echo "Building ${BUILD_TYPE} (${ARCH}) using ${LAMBDA_RUNTIME_IMAGE}..."
 
 case "${BUILD_TYPE}" in
     layer)
-        docker run --rm \
+        docker run --rm "${PLATFORM_ARGS[@]}" \
             -v "${REPO_ROOT}:/src:ro" \
             -v "${OUTPUT_DIR}:/output" \
             --entrypoint bash \
@@ -73,7 +96,7 @@ case "${BUILD_TYPE}" in
             "
         ;;
     zip)
-        docker run --rm \
+        docker run --rm "${PLATFORM_ARGS[@]}" \
             -v "${REPO_ROOT}:/src:ro" \
             -v "${OUTPUT_DIR}:/output" \
             --entrypoint bash \

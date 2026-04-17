@@ -1,11 +1,20 @@
 #!/bin/bash
 
 # Deploy the dynatrace-aws-s3-log-forwarder for e2e validation.
-# Usage: ./tests/e2e/deploy_forwarder.sh <layer|zip>
+# Usage: ./tests/e2e/deploy_forwarder.sh <layer|zip> [--arch x86_64|arm64]
 
 set -e
 
-DEPLOY_TYPE="${1:?Usage: $0 <layer|zip>}"
+DEPLOY_TYPE="${1:?Usage: $0 <layer|zip> [--arch x86_64|arm64]}"
+ARCH="x86_64"
+
+if [[ "${2:-}" == "--arch" ]]; then
+    ARCH="${3:?--arch requires a value (x86_64 or arm64)}"
+elif [[ -n "${2:-}" ]]; then
+    echo "Unknown option: $2" >&2
+    echo "Usage: $0 <layer|zip> [--arch x86_64|arm64]" >&2
+    exit 1
+fi
 
 TIMESTAMP_FORMAT='+%Y-%m-%dT%H:%M:%SZ'
 log() {
@@ -18,8 +27,8 @@ aws ssm put-parameter --name "/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key"
 
 case "${DEPLOY_TYPE}" in
     zip)
-        log "Building Lambda ZIP"
-        ./scripts/build_docker.sh zip dist/lambda.zip
+        log "Building Lambda ZIP (${ARCH})"
+        ./scripts/build_docker.sh zip "dist/lambda-${ARCH}.zip" --arch "${ARCH}"
 
         log "Deploying the log forwarder template"
         aws cloudformation deploy --stack-name ${STACK_NAME} --parameter-overrides \
@@ -27,6 +36,7 @@ case "${DEPLOY_TYPE}" in
                         DynatraceEnvironment1ApiKeyParameter="/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key" \
                         EnableCrossRegionCrossAccountForwarding=true \
                         DeploymentPackageType=zip \
+                        LambdaArchitecture="${ARCH}" \
                         --template-file template.yaml --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
                         --role-arn ${CFN_ROLE_ARN}
 
@@ -38,7 +48,7 @@ case "${DEPLOY_TYPE}" in
 
         log "Updating Lambda function code for ${FUNCTION_NAME}"
         aws lambda update-function-code --function-name ${FUNCTION_NAME} \
-            --zip-file fileb://dist/lambda.zip
+            --zip-file "fileb://dist/lambda-${ARCH}.zip"
 
         log "Waiting for function update to complete"
         aws lambda wait function-updated --function-name ${FUNCTION_NAME}
@@ -47,20 +57,28 @@ case "${DEPLOY_TYPE}" in
     layer)
         LAYER_STACK_NAME="${STACK_NAME}-layer"
 
-        log "Building Lambda Layer"
-        ./scripts/build_docker.sh layer dist/layer.zip
+        log "Building Lambda Layer (${ARCH})"
+        ./scripts/build_docker.sh layer "dist/layer-${ARCH}.zip" --arch "${ARCH}"
+        # cloudformation package reads ContentUri: dist/layer.zip from the template
+        ln -sf "layer-${ARCH}.zip" dist/layer.zip
 
         log "Packaging the Lambda Layer template"
-        # Note: template assumes that the layer.zip is available in `dist/layer.zip`
+        # Note: template expects dist/layer.zip (symlinked above)
         aws cloudformation package \
             --template-file dynatrace-aws-s3-log-forwarder-layer.yaml \
             --s3-bucket "${E2E_TESTING_BUCKET_NAME}" \
             --s3-prefix "test/${LAYER_STACK_NAME}" \
             --output-template-file packaged-layer.yaml
 
-
-
-        aws cloudformation wait stack-create-complete --stack-name ${LAYER_STACK_NAME}
+        aws cloudformation deploy \
+            --template-file packaged-layer.yaml \
+            --stack-name "${LAYER_STACK_NAME}" \
+            --parameter-overrides \
+                LayerName="dynatrace-aws-s3-log-forwarder-e2e-${ARCH}" \
+                CompatibleArchitecture="${ARCH}" \
+            --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
+            --no-fail-on-empty-changeset \
+            --role-arn ${CFN_ROLE_ARN}
 
         LAYER_ARN=$(aws cloudformation describe-stacks \
             --stack-name "${LAYER_STACK_NAME}" \
@@ -75,6 +93,7 @@ case "${DEPLOY_TYPE}" in
                         DynatraceEnvironment1ApiKeyParameter="/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key" \
                         EnableCrossRegionCrossAccountForwarding=true \
                         DeploymentPackageType=layer \
+                        LambdaArchitecture="${ARCH}" \
                         DynatraceS3LogForwarderLayerArn="${LAYER_ARN}" \
                         --template-file template.yaml --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
                         --role-arn ${CFN_ROLE_ARN}

@@ -11,6 +11,13 @@ Parameters:
     Type: String
     Default: dynatrace-aws-s3-log-forwarder
     Description: Name of the Lambda Layer. Override for non-production deployments (e.g. e2e testing).
+  CompatibleArchitecture:
+    Type: String
+    Default: x86_64
+    AllowedValues:
+      - x86_64
+      - arm64
+    Description: Compatible architecture for the Lambda Layer.
 
 Metadata:
 
@@ -22,12 +29,12 @@ Resources:
     Type: AWS::Serverless::LayerVersion
     Properties:
       LayerName: !Ref LayerName
-      Description: "Dynatrace AWS S3 Log Forwarder (x86_64)"
+      Description: !Sub "Dynatrace AWS S3 Log Forwarder (${CompatibleArchitecture})"
       ContentUri: dist/layer.zip
       CompatibleRuntimes:
         - python3.14
       CompatibleArchitectures:
-        - x86_64
+        - !Ref CompatibleArchitecture
       RetentionPolicy: Retain
 
 Outputs:

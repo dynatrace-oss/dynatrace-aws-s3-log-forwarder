@@ -32,14 +32,14 @@ If you want to build the Lambda Layer from source instead of using a pre-publish
 From the project root directory:
 
 ```bash
-./scripts/build_docker.sh layer dist/layer.zip
+./scripts/build_docker.sh layer dist/layer-x86_64.zip
 ```
 
 This will:
 
 * Install pip dependencies for the target platform into `build/layer/python/`
 * Copy the application source code and license files
-* Produce a layer ZIP at `dist/layer.zip`
+* Produce a layer ZIP at the specified output path
 
 ### Lambda Layer deployment instructions
 
@@ -85,7 +85,7 @@ After making source code changes, repeat steps 1-3 above to rebuild and redeploy
 From the project root directory:
 
 ```bash
-./scripts/build_docker.sh zip dist/lambda.zip
+./scripts/build_docker.sh zip dist/lambda-x86_64.zip
 ```
 
 This will:
@@ -136,8 +136,7 @@ This will:
 1. From the project root directory, execute the following command to build the Lambda deployment package:
 
     ```bash
-    mkdir -p build
-    ./scripts/build_docker.sh zip dist/lambda.zip
+    ./scripts/build_docker.sh zip dist/lambda-x86_64.zip
     ```
 
     > [!NOTE]
@@ -165,7 +164,7 @@ This will:
         --output text | rev | cut -d':' -f1 | rev)
 
     aws lambda update-function-code --function-name ${FUNCTION_NAME} \
-        --zip-file fileb://dist/lambda.zip
+        --zip-file fileb://dist/lambda-x86_64.zip
     ```
 
     If successfull, you'll see a JSON response with `"LastUpdateStatus": "InProgress"`.

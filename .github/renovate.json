@@ -14,12 +14,13 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Update Lambda Python image tag in build_docker.sh",
+      "description": "Update Lambda Python image tags in build_docker.sh",
       "managerFilePatterns": [
         "/^scripts/build_docker\\.sh$/"
       ],
       "matchStrings": [
-        "LAMBDA_RUNTIME_IMAGE=\"(?<depName>public\\.ecr\\.aws/lambda/python):(?<currentValue>[^\"]+)\""
+        "LAMBDA_IMAGE_X86_64=\"(?<depName>public\\.ecr\\.aws/lambda/python):(?<currentValue>[^\"]+)\"",
+        "LAMBDA_IMAGE_ARM64=\"(?<depName>public\\.ecr\\.aws/lambda/python):(?<currentValue>[^\"]+)\""
       ],
       "datasourceTemplate": "docker",
       "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+(?:\\.\\d+)*)(?:-(?<build>.+))?$"
