@@ -36,7 +36,6 @@ pip install \
     --target "$LAYER_DIR" \
     --platform "$PIP_PLATFORM" \
     --python-version 3.14 \
-    --only-binary=:all: \
     --implementation cp \
     --quiet
 
