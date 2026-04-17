@@ -64,8 +64,7 @@ jobs:
     script:
       - ./scripts/update_version.sh
       # Build Lambda ZIP inside AL2023 Docker container
-      - mkdir -p build
-      - ./scripts/build_lambda_zip.sh build/lambda.zip
+      - ./scripts/build_docker.sh zip dist/lambda.zip
 
   - stage: end-to-end-test
     name: End-to-end deployment test (ZIP)
@@ -127,10 +126,9 @@ jobs:
       # Update version in templates
       - ./scripts/update_version.sh
       # Build Lambda ZIP inside AL2023 Docker container
-      - mkdir -p build
-      - ./scripts/build_lambda_zip.sh build/lambda.zip
+      - ./scripts/build_docker.sh zip dist/lambda.zip
       # Upload Lambda ZIP to S3
-      - aws s3 cp build/lambda.zip s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/lambda.zip
+      - aws s3 cp dist/lambda.zip s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/lambda.zip
       # Upload all templates to S3
       - aws s3 cp template.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
       - aws s3 cp dynatrace-aws-s3-log-forwarder-configuration.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
@@ -142,9 +140,9 @@ jobs:
             dynatrace-aws-s3-log-forwarder-configuration.yaml \
             dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml \
             eventbridge-cross-region-or-account-forward-rules.yaml \
-            build/lambda.zip
+            dist/lambda.zip
       - aws s3 cp templates.zip s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
       # Build and publish Lambda Layer to all commercial regions
-      # - ./scripts/build_layer.sh
+      # - ./scripts/build_docker.sh layer dist/
       # - ./scripts/publish_layer.sh
 

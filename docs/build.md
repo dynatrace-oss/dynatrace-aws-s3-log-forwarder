@@ -4,8 +4,10 @@ If you're contributing to the project or if you want to build and deploy from so
 
 There are two build options:
 
-* **Lambda Layer** — built locally using pip (no Docker required). See `scripts/build_layer.sh`.
-* **Lambda ZIP** — built inside a Docker container for binary compatibility. See `scripts/build_lambda_zip.sh`.
+* **Lambda Layer**
+* **Lambda ZIP**
+
+Both options are built inside a Docker container for binary compatibility. See `scripts/build_docker.sh`.
 
 ## Prerequisites
 
@@ -15,11 +17,7 @@ You'll need the following software installed:
 
 * [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 * Git
-
-Additionally:
-
-* **For Lambda Layer builds:** Python 3.14 + pip, [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
-* **For Lambda ZIP builds:** Docker Engine
+* Docker Engine
 
 You'll also need:
 
@@ -27,27 +25,28 @@ You'll also need:
 
 ## Building and deploying a Lambda Layer from source
 
-If you want to build the Lambda Layer from source instead of using a pre-published Layer ARN, follow the steps below. This requires Python 3.14 + pip and the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
+If you want to build the Lambda Layer from source instead of using a pre-published Layer ARN, follow the steps below.
 
 ### Lambda Layer build details
 
 From the project root directory:
 
 ```bash
-bash scripts/build_layer.sh
+./scripts/build_docker.sh layer dist/layer.zip
 ```
 
 This will:
 
 * Install pip dependencies for the target platform into `build/layer/python/`
 * Copy the application source code and license files
-* Produce a ZIP at `dist/dynatrace-aws-s3-log-forwarder-layer-x86_64.zip`
+* Produce a layer ZIP at `dist/layer.zip`
 
 ### Lambda Layer deployment instructions
 
-1. Package the layer template (uploads local artifacts to S3) and deploy it as its own CloudFormation stack:
+1. Package the layer template (uploads local artifacts to S3) and deploy it as its own CloudFormation stack.
 
     ```bash
+   # Note: template assumes that the layer.zip is available in `dist/layer.zip`
     aws cloudformation package \
         --template-file dynatrace-aws-s3-log-forwarder-layer.yaml \
         --s3-bucket "${YOUR_S3_BUCKET}" \
@@ -83,14 +82,22 @@ After making source code changes, repeat steps 1-3 above to rebuild and redeploy
 
 ### Lambda ZIP build details
 
-The build script `scripts/build_lambda_zip.sh` runs entirely inside an Amazon Linux 2023 Docker container. It:
+From the project root directory:
 
-* Installs Python dependencies from `requirements.txt`
-* Copies application source code, configuration files, and license files
-* Installs and bundles the `libyajl.so.2` native library (required by the `ijson` `yajl2_c` backend for high-performance JSON streaming)
-* Produces a ready-to-deploy Lambda ZIP package
+```bash
+./scripts/build_docker.sh zip dist/lambda.zip
+```
 
-At runtime, the `LD_LIBRARY_PATH` environment variable is set to `/var/task/lib` so the yajl library is found.
+This will:
+
+* Install Python dependencies from `requirements.txt`
+* Copy application source code, configuration files, and license files
+* Bundle the `libyajl.so.2` native library (required by the `ijson` `yajl2_c` backend for high-performance JSON streaming)
+* Produce a ready-to-deploy Lambda ZIP at `dist/lambda.zip`
+
+> [!NOTE]
+>
+> At runtime, the `LD_LIBRARY_PATH` environment variable must be set to `/var/task/lib` so the yajl library is found.
 
 ### Lambda ZIP deployment instructions
 
@@ -130,7 +137,7 @@ At runtime, the `LD_LIBRARY_PATH` environment variable is set to `/var/task/lib`
 
     ```bash
     mkdir -p build
-    ./scripts/build_lambda_zip.sh build/lambda.zip
+    ./scripts/build_docker.sh zip dist/lambda.zip
     ```
 
     > [!NOTE]
@@ -158,7 +165,7 @@ At runtime, the `LD_LIBRARY_PATH` environment variable is set to `/var/task/lib`
         --output text | rev | cut -d':' -f1 | rev)
 
     aws lambda update-function-code --function-name ${FUNCTION_NAME} \
-        --zip-file fileb://build/lambda.zip
+        --zip-file fileb://dist/lambda.zip
     ```
 
     If successfull, you'll see a JSON response with `"LastUpdateStatus": "InProgress"`.

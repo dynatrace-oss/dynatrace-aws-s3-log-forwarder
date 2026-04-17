@@ -5,17 +5,17 @@ This guide covers how to build and publish the `dynatrace-aws-s3-log-forwarder` 
 ## Prerequisites
 
 * [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-* Python 3.14 + pip
+* Docker Engine
 
 ## Step 1. Build the Lambda Layer
 
 From the project root directory, run:
 
 ```bash
-bash scripts/build_layer.sh
+./scripts/build_docker.sh layer dist/layer.zip
 ```
 
-This will produce a ZIP at `dist/dynatrace-aws-s3-log-forwarder-layer-x86_64.zip`.
+This will produce a ZIP at `dist/layer.zip`.
 
 ## Step 2. Publish the Layer
 
@@ -24,13 +24,13 @@ Lambda Layers are regional — a layer must be published in each region where cu
 ### Publish to all commercial regions
 
 ```bash
-bash scripts/publish_layer.sh
+./scripts/publish_layer.sh dist/layer.zip
 ```
 
 ### Publish to specific regions
 
 ```bash
-bash scripts/publish_layer.sh --regions us-east-1,eu-west-1,eu-central-1
+./scripts/publish_layer.sh dist/layer.zip --regions us-east-1,eu-west-1,eu-central-1
 ```
 
 The script will output the `LayerVersionArn` for each region — share the appropriate ARN with customers based on their deployment region.
@@ -42,7 +42,7 @@ Alternatively, you can publish manually:
 ```bash
 aws lambda publish-layer-version \
     --layer-name dynatrace-aws-s3-log-forwarder \
-    --zip-file fileb://dist/dynatrace-aws-s3-log-forwarder-layer-x86_64.zip \
+    --zip-file fileb://dist/layer.zip \
     --compatible-runtimes python3.14 \
     --compatible-architectures x86_64 \
     --description "Dynatrace AWS S3 Log Forwarder (x86_64)"
@@ -64,7 +64,7 @@ Customers can then deploy the log forwarder using the [Lambda Layer](deployment_
 
 When releasing an update:
 
-1. Rebuild the layer: `bash scripts/build_layer.sh`
+1. Rebuild the layer: `./scripts/build_docker.sh layer dist/layer.zip`
 2. Publish new layer versions: `bash scripts/publish_layer.sh`
 3. Communicate the new Layer Version ARNs to customers
 

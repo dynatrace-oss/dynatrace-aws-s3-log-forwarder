@@ -12,16 +12,17 @@
 # limitations under the License.
 
 # Publish the Lambda Layer to one or more AWS regions with public access.
-# Assumes the layer has already been built with build_layer.sh.
+# Assumes the layer has already been built with build_docker.sh layer.
 #
 # Usage:
-#   ./scripts/publish_layer.sh                                             # All commercial regions
-#   ./scripts/publish_layer.sh --regions us-east-1,eu-west-1,eu-central-1  # Specific regions
+#   ./scripts/publish_layer.sh <zip_file>                                             # All commercial regions
+#   ./scripts/publish_layer.sh <zip_file> --regions us-east-1,eu-west-1,eu-central-1  # Specific regions
 
 set -e
 
 LAYER_NAME="dynatrace-aws-s3-log-forwarder"
-ZIP_FILE="dist/dynatrace-aws-s3-log-forwarder-layer-x86_64.zip"
+ZIP_FILE="${1:?Usage: $0 <zip_file> [--regions r1,r2,...]}"
+shift
 REGIONS=()
 
 while [[ $# -gt 0 ]]; do
@@ -31,7 +32,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --help)
-            echo "Usage: $0 [OPTIONS]"
+            echo "Usage: $0 <zip_file> [OPTIONS]"
             echo ""
             echo "Options:"
             echo "  --regions <r1,r2,...>  Publish to a comma-separated list of regions."
@@ -56,7 +57,7 @@ if [[ ${#REGIONS[@]} -eq 0 ]]; then
 fi
 
 if [[ ! -f "$ZIP_FILE" ]]; then
-    echo "Error: $ZIP_FILE not found. Run build_layer.sh first." >&2
+    echo "Error: $ZIP_FILE not found. Run build_docker.sh layer first." >&2
     exit 1
 fi
 

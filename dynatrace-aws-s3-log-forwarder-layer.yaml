@@ -17,7 +17,7 @@ Resources:
     Properties:
       LayerName: dynatrace-aws-s3-log-forwarder
       Description: "Dynatrace AWS S3 Log Forwarder (x86_64)"
-      ContentUri: build/layer/
+      ContentUri: dist/layer.zip
       CompatibleRuntimes:
         - python3.14
       CompatibleArchitectures:

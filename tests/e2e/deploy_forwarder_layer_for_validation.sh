@@ -18,10 +18,11 @@ aws ssm put-parameter --name "/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key"
 
 # Step 1: Build the Lambda Layer
 log "Building Lambda Layer"
-./scripts/build_layer.sh
+./scripts/build_docker.sh layer dist/layer.zip
 
 # Step 2: Package and deploy the Lambda Layer stack
 log "Packaging the Lambda Layer template"
+# Note: template assumes that the layer.zip is available in `dist/layer.zip`
 aws cloudformation package \
     --template-file dynatrace-aws-s3-log-forwarder-layer.yaml \
     --s3-bucket "${E2E_TESTING_BUCKET_NAME}" \

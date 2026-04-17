@@ -14,8 +14,7 @@ aws ssm put-parameter --name "/dynatrace/s3-log-forwarder/${STACK_NAME}/api-key"
                        --type SecureString --value $DT_TENANT_API_KEY
 
 log "Building Lambda ZIP"
-mkdir -p build
-./scripts/build_lambda_zip.sh build/lambda.zip
+./scripts/build_docker.sh zip dist/lambda.zip
 
 # Step 1: Deploy CloudFormation template (with inline dummy function code)
 log "Deploying the log forwarder template"
@@ -36,7 +35,7 @@ FUNCTION_NAME=$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} \
 
 log "Updating Lambda function code for ${FUNCTION_NAME}"
 aws lambda update-function-code --function-name ${FUNCTION_NAME} \
-    --zip-file fileb://build/lambda.zip
+    --zip-file fileb://dist/lambda.zip
 
 log "Waiting for function update to complete"
 aws lambda wait function-updated --function-name ${FUNCTION_NAME}
