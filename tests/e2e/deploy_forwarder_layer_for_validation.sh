@@ -35,7 +35,8 @@ aws cloudformation deploy \
     --stack-name "${LAYER_STACK_NAME}" \
     --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
     --role-arn ${CFN_ROLE_ARN} \
-    --no-fail-on-empty-changeset
+    --no-fail-on-empty-changeset \
+    --parameter-overrides LayerName=dynatrace-aws-s3-log-forwarder-e2e
 
 aws cloudformation wait stack-create-complete --stack-name ${LAYER_STACK_NAME}
 
