@@ -22,31 +22,15 @@ set -e
 
 LAYER_NAME="dynatrace-aws-s3-log-forwarder"
 ZIP_FILE="${1:?Usage: $0 <zip_file> [--regions r1,r2,...]}"
-shift
 REGIONS=()
 
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --regions)
-            IFS=',' read -ra REGIONS <<< "$2"
-            shift 2
-            ;;
-        --help)
-            echo "Usage: $0 <zip_file> [OPTIONS]"
-            echo ""
-            echo "Options:"
-            echo "  --regions <r1,r2,...>  Publish to a comma-separated list of regions."
-            echo "                        If not specified, publishes to all commercial regions."
-            echo "  --help                Show this help message."
-            exit 0
-            ;;
-        *)
-            echo "Unknown option: $1"
-            echo "Run '$0 --help' for usage."
-            exit 1
-            ;;
-    esac
-done
+if [[ "${2:-}" == "--regions" ]]; then
+    IFS=',' read -ra REGIONS <<< "${3:?--regions requires a value}"
+elif [[ -n "${2:-}" ]]; then
+    echo "Unknown option: $2"
+    echo "Run '$0 --help' for usage."
+    exit 1
+fi
 
 # Default to all enabled commercial regions if none specified
 if [[ ${#REGIONS[@]} -eq 0 ]]; then
