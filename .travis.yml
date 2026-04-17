@@ -78,7 +78,7 @@ jobs:
       - pip install argparse requests
     script:
       - ./scripts/update_version.sh
-      - ./tests/e2e/deploy_forwarder_for_validation.sh
+      - ./tests/e2e/deploy_forwarder.sh zip
 
       # Write logs to S3 and allow time for ingestion
       - |
@@ -102,7 +102,7 @@ jobs:
       - pip install argparse requests aws-sam-cli
     script:
       - ./scripts/update_version.sh
-      - ./tests/e2e/deploy_forwarder_layer_for_validation.sh
+      - ./tests/e2e/deploy_forwarder.sh layer
 
       # Write logs to S3 and allow time for ingestion
       - |
