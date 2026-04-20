@@ -76,37 +76,37 @@ echo ""
 FAILED_REGIONS=()
 
 publish_arch() {
-    local REGION="$1"
-    local ZIP_FILE="$2"
-    local ARCH="$3"
+    local region="$1"
+    local zip_file="$2"
+    local arch="$3"
 
     LAYER_VERSION_ARN=$(aws lambda publish-layer-version \
-        --region "$REGION" \
+        --region "$region" \
         --layer-name "$LAYER_NAME" \
-        --zip-file "fileb://$ZIP_FILE" \
+        --zip-file "fileb://$zip_file" \
         --compatible-runtimes python3.14 \
-        --compatible-architectures "$ARCH" \
-        --description "Dynatrace AWS S3 Log Forwarder ($ARCH)" \
+        --compatible-architectures "$arch" \
+        --description "Dynatrace AWS S3 Log Forwarder ($arch)" \
         --query 'LayerVersionArn' \
         --output text 2>&1) || {
-        echo "  FAILED to publish $ARCH in $REGION"
+        echo "  FAILED to publish $arch in $region"
         return 1
     }
 
     LAYER_VERSION=$(echo "$LAYER_VERSION_ARN" | grep -o '[0-9]*$')
-    echo "  Published ($ARCH): $LAYER_VERSION_ARN"
+    echo "  Published ($arch): $LAYER_VERSION_ARN"
 
     if aws lambda add-layer-version-permission \
-        --region "$REGION" \
+        --region "$region" \
         --layer-name "$LAYER_NAME" \
         --version-number "$LAYER_VERSION" \
         --statement-id allow-all-accounts \
         --principal "*" \
         --action lambda:GetLayerVersion \
         --output json > /dev/null 2>&1; then
-        echo "  Public access granted ($ARCH)."
+        echo "  Public access granted ($arch)."
     else
-        echo "  FAILED to grant public access for $ARCH in $REGION"
+        echo "  FAILED to grant public access for $arch in $region"
         return 1
     fi
 }

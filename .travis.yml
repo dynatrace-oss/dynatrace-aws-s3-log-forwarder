@@ -66,15 +66,6 @@ jobs:
       - ./scripts/update_version.sh
       - ./scripts/build_docker.sh zip dist/lambda-x86_64.zip
 
-  - stage: build
-    name: Build (arm64)
-    arch: arm64
-    services:
-    - docker
-    script:
-      - ./scripts/update_version.sh
-      - ./scripts/build_docker.sh zip dist/lambda-arm64.zip --arch arm64
-
   - stage: end-to-end-test
     name: End-to-end deployment test (ZIP, x86_64)
     arch: amd64
@@ -103,33 +94,6 @@ jobs:
       - ./tests/e2e/clean_up_resources.sh
 
   - stage: end-to-end-test
-    name: End-to-end deployment test (ZIP, arm64)
-    arch: arm64
-    if: fork = false AND ( branch == main OR type == pull_request )
-    services:
-    - docker
-    env:
-      - STACK_NAME=e2e-dt-s3-log-fwd-zip-arm64-${TRAVIS_BUILD_ID}
-      - E2E_TEST_PREFIX=test/${TRAVIS_BUILD_ID}/zip-arm64/validation
-    install:
-      - pip install argparse requests
-    script:
-      - ./scripts/update_version.sh
-      - ./tests/e2e/deploy_forwarder.sh zip --arch arm64
-
-      # Write logs to S3 and allow time for ingestion
-      - |
-        echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] E2E testing validation log entry" > ${TRAVIS_BUILD_ID}.log
-        aws s3 cp ${TRAVIS_BUILD_ID}.log s3://${E2E_TESTING_BUCKET_NAME}/${E2E_TEST_PREFIX}/test_log.log
-        sleep 120
-
-      # Validate log entry
-      - ./tests/e2e/validate_logs_exist.py --bucket ${E2E_TESTING_BUCKET_NAME} --key ${E2E_TEST_PREFIX}/test_log.log
-
-    after_script:
-      - ./tests/e2e/clean_up_resources.sh
-
-  - stage: end-to-end-test
     name: End-to-end deployment test (Lambda Layer, x86_64)
     arch: amd64
     if: fork = false AND ( branch == main OR type == pull_request )
@@ -139,7 +103,7 @@ jobs:
       - STACK_NAME=e2e-dt-s3-log-fwd-layer-${TRAVIS_BUILD_ID}
       - E2E_TEST_PREFIX=test/${TRAVIS_BUILD_ID}/layer/validation
     install:
-      - pip install argparse requests aws-sam-cli
+      - pip install argparse requests
     script:
       - ./scripts/update_version.sh
       - ./tests/e2e/deploy_forwarder.sh layer
@@ -156,33 +120,6 @@ jobs:
     after_script:
       - ./tests/e2e/clean_up_resources.sh
 
-  - stage: end-to-end-test
-    name: End-to-end deployment test (Lambda Layer, arm64)
-    arch: arm64
-    if: fork = false AND ( branch == main OR type == pull_request )
-    services:
-    - docker
-    env:
-      - STACK_NAME=e2e-dt-s3-log-fwd-layer-arm64-${TRAVIS_BUILD_ID}
-      - E2E_TEST_PREFIX=test/${TRAVIS_BUILD_ID}/layer-arm64/validation
-    install:
-      - pip install argparse requests aws-sam-cli
-    script:
-      - ./scripts/update_version.sh
-      - ./tests/e2e/deploy_forwarder.sh layer --arch arm64
-
-      # Write logs to S3 and allow time for ingestion
-      - |
-        echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] E2E testing validation log entry" > ${TRAVIS_BUILD_ID}.log
-        aws s3 cp ${TRAVIS_BUILD_ID}.log s3://${E2E_TESTING_BUCKET_NAME}/${E2E_TEST_PREFIX}/test_log.log
-        sleep 120
-
-      # Validate log entry
-      - ./tests/e2e/validate_logs_exist.py --bucket ${E2E_TESTING_BUCKET_NAME} --key ${E2E_TEST_PREFIX}/test_log.log
-
-    after_script:
-      - ./tests/e2e/clean_up_resources.sh
-  
   - stage: release
     name: Release
     arch: amd64
