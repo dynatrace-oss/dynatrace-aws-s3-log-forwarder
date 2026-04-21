@@ -95,7 +95,6 @@ aws cloudformation deploy \
     --parameter-overrides \
         DynatraceEnvironment1URL="https://$DYNATRACE_TENANT_UUID.live.dynatrace.com" \
         DynatraceEnvironment1ApiKeyParameter=$PARAMETER_NAME \
-        DeploymentPackageType="layer" \
         DynatraceS3LogForwarderLayerArn="$LAYER_ARN"
 ```
 
@@ -119,7 +118,8 @@ aws cloudformation deploy \
     --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
     --parameter-overrides \
         DynatraceEnvironment1URL="https://$DYNATRACE_TENANT_UUID.live.dynatrace.com" \
-        DynatraceEnvironment1ApiKeyParameter=$PARAMETER_NAME
+        DynatraceEnvironment1ApiKeyParameter=$PARAMETER_NAME \
+        DeploymentPackageType="zip"
 ```
 
 1. Update the Lambda function code with the deployment package:

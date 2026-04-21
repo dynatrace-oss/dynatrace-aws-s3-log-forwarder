@@ -64,10 +64,10 @@ Parameters:
   DeploymentPackageType:
     Description: "Deployment package type for the Lambda function."
     Type: String
+    Default: layer
     AllowedValues:
       - layer
       - zip
-    Default: layer
   DynatraceS3LogForwarderLayerArn:
     Type: String
     Description: ARN of the Lambda Layer Version containing the dynatrace-aws-s3-log-forwarder application code and dependencies (required when DeploymentPackageType is 'layer').
