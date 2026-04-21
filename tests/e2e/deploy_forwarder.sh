@@ -19,6 +19,7 @@ fi
 TIMESTAMP_FORMAT='+%Y-%m-%dT%H:%M:%SZ'
 log() {
     echo "[$(date -u "${TIMESTAMP_FORMAT}")] $*"
+    return
 }
 
 log "Creating the SSM parameter"
@@ -62,22 +63,18 @@ case "${DEPLOY_TYPE}" in
         # cloudformation package reads ContentUri: dist/layer.zip from the template
         ln -sf "layer-${ARCH}.zip" dist/layer.zip
 
-        log "Packaging the Lambda Layer template"
+        log "Deploying the Lambda Layer template"
         # Note: template expects dist/layer.zip (symlinked above)
-        aws cloudformation package \
+        sam deploy \
             --template-file dynatrace-aws-s3-log-forwarder-layer.yaml \
-            --s3-bucket "${E2E_TESTING_BUCKET_NAME}" \
-            --s3-prefix "test/${LAYER_STACK_NAME}" \
-            --output-template-file packaged-layer.yaml
-
-        aws cloudformation deploy \
-            --template-file packaged-layer.yaml \
             --stack-name "${LAYER_STACK_NAME}" \
+            --resolve-s3 \
             --parameter-overrides \
                 LayerName="dynatrace-aws-s3-log-forwarder-e2e-${ARCH}" \
                 CompatibleArchitecture="${ARCH}" \
             --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
             --no-fail-on-empty-changeset \
+            --no-confirm-changeset \
             --role-arn ${CFN_ROLE_ARN}
 
         LAYER_ARN=$(aws cloudformation describe-stacks \

@@ -16,6 +16,7 @@ The deployment instructions are written for Linux/MacOS. If you are running on W
 You'll need the following software installed:
 
 * [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+* [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)
 * Git
 * Docker Engine
 
@@ -43,19 +44,14 @@ This will:
 
 ### Lambda Layer deployment instructions
 
-1. Package the layer template (uploads local artifacts to S3) and deploy it as its own CloudFormation stack.
+1. Deploy the layer template as its own CloudFormation stack. SAM will automatically create and manage an S3 bucket for the artifact upload.
 
     ```bash
-   # Note: template assumes that the layer.zip is available in `dist/layer.zip`
-    aws cloudformation package \
+    # Note: template assumes that the layer.zip is available in `dist/layer.zip`
+    sam deploy \
         --template-file dynatrace-aws-s3-log-forwarder-layer.yaml \
-        --s3-bucket "${YOUR_S3_BUCKET}" \
-        --s3-prefix "dynatrace-s3-log-forwarder-layer" \
-        --output-template-file packaged-layer.yaml
-
-    aws cloudformation deploy \
-        --template-file packaged-layer.yaml \
         --stack-name "${STACK_NAME}-layer" \
+        --resolve-s3 \
         --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND
     ```
 
