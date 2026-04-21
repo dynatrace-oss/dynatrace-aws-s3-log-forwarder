@@ -24,6 +24,45 @@ You'll also need:
 
 * A [Dynatrace access token](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication) for your tenant with the `logs.ingest` APIv2 scope.
 
+## Setup
+
+Before deploying either option, complete the following steps.
+
+1. Clone the `dynatrace-aws-s3-log-forwarder` repository and checkout the latest version tag:
+
+    ```bash
+    export VERSION_TAG=$(curl -s https://api.github.com/repos/dynatrace-oss/dynatrace-aws-s3-log-forwarder/releases/latest | grep tag_name | cut -d'"' -f4)
+    git clone https://github.com/dynatrace-oss/dynatrace-aws-s3-log-forwarder.git
+    cd dynatrace-aws-s3-log-forwarder
+    git checkout $VERSION_TAG
+    ```
+
+1. Define a name for your `dynatrace-aws-s3-log-forwarder` deployment (e.g. mycompany-dynatrace-s3-log-forwarder) and your Dynatrace tenant UUID (e.g. `abc12345` if your Dynatrace environment url is `https://abc12345.live.dynatrace.com`) in environment variables that will be used along the deployment process.
+
+    ```bash
+    export STACK_NAME=replace_with_your_log_forwarder_stack_name
+    export DYNATRACE_TENANT_UUID=replace_with_your_dynatrace_tenant_uuid
+    ```
+
+    > [!IMPORTANT]
+    >
+    > Your stack name should have a maximum of 53 characters, otherwise deployment will fail.
+
+1. Create an AWS SSM SecureString Parameter to store your Dynatrace access token to ingest logs.
+
+    ```bash
+    export PARAMETER_NAME="/dynatrace/s3-log-forwarder/$STACK_NAME/$DYNATRACE_TENANT_UUID/api-key"
+    # Configure HISTCONTROL to avoid storing on the bash history the commands containing API keys
+    export HISTCONTROL=ignorespace
+     export PARAMETER_VALUE=your_dynatrace_api_key_here
+     aws ssm put-parameter --name $PARAMETER_NAME --type SecureString --value $PARAMETER_VALUE
+    ```
+
+    > [!NOTE]
+    >
+    > * It's important that your parameter name follows the structure above, as the solution grants permissions to AWS Lambda to the hierarchy `/dynatrace/s3-log-forwarder/your_stack_name/*`
+    > * Your API Key is stored encrypted with the default AWS-managed key alias: `aws/ssm`. If you want to use a Customer-managed Key, you'll need to grant Decrypt permissions to the AWS Lambda IAM Role that's deployed within the SAM template.
+
 ## Building and deploying a Lambda Layer from source
 
 If you want to build the Lambda Layer from source instead of using a pre-published Layer ARN, follow the steps below.
@@ -33,7 +72,7 @@ If you want to build the Lambda Layer from source instead of using a pre-publish
 From the project root directory:
 
 ```bash
-./scripts/build_docker.sh layer dist/layer-x86_64.zip
+./scripts/build_docker.sh layer dist/layer.zip
 ```
 
 This will:
@@ -81,7 +120,7 @@ After making source code changes, repeat steps 1-3 above to rebuild and redeploy
 From the project root directory:
 
 ```bash
-./scripts/build_docker.sh zip dist/lambda-x86_64.zip
+./scripts/build_docker.sh zip dist/lambda.zip
 ```
 
 This will:
@@ -97,42 +136,10 @@ This will:
 
 ### Lambda ZIP deployment instructions
 
-1. Clone the `dynatrace-aws-s3-log-forwarder` repository and checkout the latest version tag:
-
-    ```bash
-    export VERSION_TAG=$(curl -s https://api.github.com/repos/dynatrace-oss/dynatrace-aws-s3-log-forwarder/releases/latest | grep tag_name | cut -d'"' -f4)
-    git clone https://github.com/dynatrace-oss/dynatrace-aws-s3-log-forwarder.git
-    cd dynatrace-aws-s3-log-forwarder
-    git checkout $VERSION_TAG
-    ```
-
-1. Define a name for your `dynatrace-aws-s3-log-forwarder` deployment name (e.g. mycompany-dynatrace-s3-log-forwarder) and your dynatrace tenant UUID (e.g. `abc12345` if your Dynatrace environment url is `https://abc12345.live.dynatrace.com`) in environment variables that will be used along the deployment process.
-
-    ```bash
-    export STACK_NAME=replace_with_your_log_forwarder_stack_name
-    export DYNATRACE_TENANT_UUID=replace_with_your_dynatrace_tenant_uuid
-    ```
-
-    **IMPORTANT:** Your stack name should have a maximum of 53 characters, otherwise deployment will fail.
-
-1. Create an AWS SSM SecureString Parameter to store your Dynatrace access token to ingest logs.
-
-    ```bash
-    export PARAMETER_NAME="/dynatrace/s3-log-forwarder/$STACK_NAME/$DYNATRACE_TENANT_UUID/api-key"
-    # Configure HISTCONTROL to avoid storing on the bash history the commands containing API keys
-    export HISTCONTROL=ignorespace
-     export PARAMETER_VALUE=your_dynatrace_api_key_here
-     aws ssm put-parameter --name $PARAMETER_NAME --type SecureString --value $PARAMETER_VALUE
-    ```
-
-    **NOTES:**
-    * It's important that your parameter name follows the structure above, as the solution grants permissions to AWS Lambda to the hierarchy `/dynatrace/s3-log-forwarder/your_stack_name/*`
-    * Your API Key is stored encyrpted with the default AWS-managed key alias: `aws/ssm`. If you want to use a Customer-managed Key, you'll need to grant Decrypt permissions to the AWS Lambda IAM Role that's deployed within the SAM template.
-
 1. From the project root directory, execute the following command to build the Lambda deployment package:
 
     ```bash
-    ./scripts/build_docker.sh zip dist/lambda-x86_64.zip
+    ./scripts/build_docker.sh zip dist/lambda.zip
     ```
 
     > [!NOTE]
@@ -160,7 +167,7 @@ This will:
         --output text | rev | cut -d':' -f1 | rev)
 
     aws lambda update-function-code --function-name ${FUNCTION_NAME} \
-        --zip-file fileb://dist/lambda-x86_64.zip
+        --zip-file fileb://dist/lambda.zip
     ```
 
     If successfull, you'll see a JSON response with `"LastUpdateStatus": "InProgress"`.

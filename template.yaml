@@ -79,13 +79,6 @@ Parameters:
     Default: 256
     MinValue: 128
     MaxValue: 10240
-  LambdaArchitecture:
-    Description: Architecture for the Lambda function
-    Type: String
-    Default: x86_64
-    AllowedValues:
-      - x86_64
-      - arm64
   LambdaSubnetIds:
     Description: "If you're ingesting logs into a Dynatrace Managed cluster with no internet-facing Active Gates, specify a list of Subnet Ids of a VPC with network connectivity to the AGs where the AWS Lambda function needs to be deployed (for HA purposes select at least 2 subnets on different Availability Zones)."
     Type: CommaDelimitedList
@@ -214,7 +207,7 @@ Resources:
         - !Ref "AWS::NoValue"
       MemorySize: !Ref LambdaFunctionMemorySize
       Architectures:
-        - !Ref LambdaArchitecture
+        - x86_64
       Environment:
         Variables:
           LD_LIBRARY_PATH: !If [IsLayerDeployment, !Ref "AWS::NoValue", "/var/task/lib"]

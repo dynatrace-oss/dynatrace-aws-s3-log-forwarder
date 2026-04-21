@@ -58,16 +58,16 @@ jobs:
           python -m unittest discover -s ../tests -b
 
   - stage: build
-    name: Build (x86_64)
+    name: Build
     arch: amd64
     services:
     - docker
     script:
       - ./scripts/update_version.sh
-      - ./scripts/build_docker.sh zip dist/lambda-x86_64.zip
+      - ./scripts/build_docker.sh zip dist/lambda.zip
 
   - stage: end-to-end-test
-    name: End-to-end deployment test (ZIP, x86_64)
+    name: End-to-end deployment test (ZIP)
     arch: amd64
     if: fork = false AND ( branch == main OR type == pull_request )
     services:
@@ -94,7 +94,7 @@ jobs:
       - ./tests/e2e/clean_up_resources.sh
 
   - stage: end-to-end-test
-    name: End-to-end deployment test (Lambda Layer, x86_64)
+    name: End-to-end deployment test (Lambda Layer)
     arch: amd64
     if: fork = false AND ( branch == main OR type == pull_request )
     services:
@@ -129,25 +129,24 @@ jobs:
     script:
       # Update version in templates
       - ./scripts/update_version.sh
-      # Build Lambda ZIP (x86_64)
-      - ./scripts/build_docker.sh zip dist/lambda-x86_64.zip
+      # Build Lambda ZIP
+      - ./scripts/build_docker.sh zip dist/lambda.zip
       # Upload Lambda ZIP to S3
-      - aws s3 cp dist/lambda-x86_64.zip s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/lambda-x86_64.zip
+      - aws s3 cp dist/lambda.zip s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/lambda.zip
       # Upload all templates to S3
       - aws s3 cp template.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
       - aws s3 cp dynatrace-aws-s3-log-forwarder-configuration.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
       - aws s3 cp dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
       - aws s3 cp eventbridge-cross-region-or-account-forward-rules.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
-      # Create templates.zip for download (includes lambda-x86_64.zip)
+      # Create templates.zip for download
       - |
         zip templates.zip -j template.yaml \
             dynatrace-aws-s3-log-forwarder-configuration.yaml \
             dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml \
             eventbridge-cross-region-or-account-forward-rules.yaml \
-            dist/lambda-x86_64.zip
+            dist/lambda.zip
       - aws s3 cp templates.zip s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
-      # Build and publish Lambda Layers (x86_64 and arm64) to all commercial regions
-      - ./scripts/build_docker.sh layer dist/layer-x86_64.zip
-      - ./scripts/build_docker.sh layer dist/layer-arm64.zip --arch arm64
-      - ./scripts/publish_layer.sh --x86_64 dist/layer-x86_64.zip --arm64 dist/layer-arm64.zip
+      # Build and publish Lambda Layer to all commercial regions
+      - ./scripts/build_docker.sh layer dist/layer.zip
+      - ./scripts/publish_layer.sh dist/layer.zip
 
