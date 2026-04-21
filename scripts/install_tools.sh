@@ -20,5 +20,5 @@ else
 fi
 
 # Install AWS CLI v2
-if ! [ -x "$(command -v aws)" ]; then wget -nv "https://awscli.amazonaws.com/awscli-exe-linux-${AWSCLI_ARCH}.zip"; unzip -qq "awscli-exe-linux-${AWSCLI_ARCH}.zip"; sudo ./aws/install ; fi
+if ! [ -x "$(command -v aws)" ]; then wget -nv "https://awscli.amazonaws.com/awscli-exe-linux-${AWSCLI_ARCH}.zip"; unzip -qq awscli-exe-linux-x86_64.zip; sudo ./aws/install ; fi
 aws --version
