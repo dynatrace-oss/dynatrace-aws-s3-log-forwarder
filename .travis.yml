@@ -103,7 +103,7 @@ jobs:
       - STACK_NAME=e2e-dt-s3-log-fwd-layer-${TRAVIS_BUILD_ID}
       - E2E_TEST_PREFIX=test/${TRAVIS_BUILD_ID}/layer/validation
     install:
-      - pip install argparse requests
+      - pip install argparse requests aws-sam-cli
     script:
       - ./scripts/update_version.sh
       - ./tests/e2e/deploy_forwarder.sh layer
