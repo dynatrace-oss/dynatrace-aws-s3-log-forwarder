@@ -54,94 +54,61 @@ OUTPUT_FILENAME="$(basename "${OUTPUT_PATH}")"
 mkdir -p "${OUTPUT_DIR}"
 OUTPUT_DIR="$(cd "${OUTPUT_DIR}" && pwd)"
 
-echo "Building ${BUILD_TYPE} (${ARCH}) using ${LAMBDA_RUNTIME_IMAGE}..."
+BUILD_DIR=/tmp/lambda-build
 
 case "${BUILD_TYPE}" in
     layer)
-        docker run --rm "${PLATFORM_ARGS[@]}" \
-            -v "${REPO_ROOT}:/src:ro" \
-            -v "${OUTPUT_DIR}:/output" \
-            --entrypoint bash \
-            "${LAMBDA_RUNTIME_IMAGE}" \
-            -c "
-                set -euo pipefail
-
-                BUILD_DIR=/tmp/lambda-layer-build
-                mkdir -p \${BUILD_DIR}/python/lib
-
-                # Install build tools and yajl
-                dnf install -y zip yajl > /dev/null 2>&1
-
-                # Install Python dependencies
-                python3.14 -m pip install --upgrade pip > /dev/null
-                python3.14 -m pip install --no-cache-dir -r /src/src/requirements.txt \
-                    --target \${BUILD_DIR}/python \
-                    --use-pep517 \
-                    --quiet
-
-                # Copy application source code
-                cp -r /src/src/* \${BUILD_DIR}/python/
-                rm -f \${BUILD_DIR}/python/requirements.txt \${BUILD_DIR}/python/requirements-dev.txt
-
-                # Copy license files
-                cp /src/LICENSE /src/NOTICE /src/THIRD_PARTY_LICENSES \${BUILD_DIR}/python/ 2>/dev/null || true
-
-                # Copy yajl shared library and create symlink for compatibility
-                cp /usr/lib64/libyajl.so.2 \${BUILD_DIR}/python/lib/
-                cd \${BUILD_DIR}/python/lib && ln -sf libyajl.so.2 libyajl.so
-
-                # Create ZIP (python/ prefix is required by the Lambda layer spec)
-                cd \${BUILD_DIR}
-                zip -r /output/${OUTPUT_FILENAME} python/ -q
-            "
+        APP_DIR="${BUILD_DIR}/python"
+        ZIP_CMD="cd ${BUILD_DIR} && zip -r9q /output/${OUTPUT_FILENAME} python/ -x '*.pyc' '__pycache__/*' '*.dist-info/*'"
         ;;
     zip)
-        docker run --rm "${PLATFORM_ARGS[@]}" \
-            -v "${REPO_ROOT}:/src:ro" \
-            -v "${OUTPUT_DIR}:/output" \
-            --entrypoint bash \
-            "${LAMBDA_RUNTIME_IMAGE}" \
-            -c "
-                set -euo pipefail
-
-                BUILD_DIR=/tmp/lambda-build
-                mkdir -p \${BUILD_DIR}/lib
-
-                # Install build tools and yajl
-                dnf install -y zip yajl > /dev/null 2>&1
-
-                # Install python dependencies
-                python3.14 -m pip install --upgrade pip > /dev/null
-                python3.14 -m pip install --no-cache-dir -r /src/src/requirements.txt \
-                    --target \${BUILD_DIR} \
-                    --use-pep517 \
-                    --quiet
-
-                # Copy application source code
-                cp /src/src/app.py /src/src/index.py /src/src/version.py /src/src/__init__.py \${BUILD_DIR}/
-                cp -r /src/src/log \${BUILD_DIR}/
-                cp -r /src/src/utils \${BUILD_DIR}/
-
-                # Copy local configuration
-                cp -r /src/config \${BUILD_DIR}/
-
-                # Copy license files
-                cp /src/LICENSE /src/NOTICE /src/THIRD_PARTY_LICENSES \${BUILD_DIR}/ 2>/dev/null || true
-
-                # Copy yajl shared library and create symlink for compatibility
-                cp /usr/lib64/libyajl.so.2 \${BUILD_DIR}/lib/
-                cd \${BUILD_DIR}/lib && ln -sf libyajl.so.2 libyajl.so
-
-                # Create ZIP
-                cd \${BUILD_DIR}
-                zip -r9q /output/${OUTPUT_FILENAME} . -x '*.pyc' '__pycache__/*' '*.dist-info/*'
-            "
+        APP_DIR="${BUILD_DIR}"
+        ZIP_CMD="cd ${BUILD_DIR} && zip -r9q /output/${OUTPUT_FILENAME} . -x '*.pyc' '__pycache__/*' '*.dist-info/*'"
         ;;
     *)
         echo "ERROR: unknown build type '${BUILD_TYPE}'. Use 'layer' or 'zip'." >&2
         exit 1
         ;;
 esac
+
+echo "Building ${BUILD_TYPE} (${ARCH}) using ${LAMBDA_RUNTIME_IMAGE}..."
+
+docker run --rm "${PLATFORM_ARGS[@]}" \
+    -v "${REPO_ROOT}:/src:ro" \
+    -v "${OUTPUT_DIR}:/output" \
+    --entrypoint bash \
+    "${LAMBDA_RUNTIME_IMAGE}" \
+    -c "
+        set -euo pipefail
+
+        mkdir -p ${APP_DIR}/lib
+
+        # Install build tools and yajl
+        dnf install -y zip yajl > /dev/null 2>&1
+
+        # Install Python dependencies
+        python3.14 -m pip install --upgrade pip > /dev/null
+        python3.14 -m pip install --no-cache-dir -r /src/src/requirements.txt \
+            --target ${APP_DIR} \
+            --use-pep517 \
+            --quiet
+
+        # Copy application source code
+        cp -r /src/src/* ${APP_DIR}/
+        rm -f ${APP_DIR}/requirements.txt ${APP_DIR}/requirements-dev.txt
+
+        # Copy local configuration
+        cp -r /src/config ${APP_DIR}/
+
+        # Copy license files
+        cp /src/LICENSE /src/NOTICE /src/THIRD_PARTY_LICENSES ${APP_DIR}/ 2>/dev/null || trueCan
+
+        # Copy yajl shared library and create symlink for compatibility
+        cp /usr/lib64/libyajl.so.2 ${APP_DIR}/lib/
+        cd ${APP_DIR}/lib && ln -sf libyajl.so.2 libyajl.so
+
+        ${ZIP_CMD}
+    "
 
 echo ""
 echo "Done. Output:"

@@ -25,11 +25,13 @@ from log.processing.log_processing_rules import AVAILABLE_LOG_SOURCES
 from utils.helpers import ENCODING
 
 
+_PACKAGE_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # Old log forwarding rules format to be deprecated
-DEFAULT_FORWARING_RULES_PATH =  "./config/log_forwarding_rules"
+DEFAULT_FORWARING_RULES_PATH = os.path.join(_PACKAGE_ROOT, "config", "log_forwarding_rules")
 
 # Local log-forwarding-rules format, same as AppConfig but loading from local
-DEFAULT_FORWARDING_RULES_FILE = './config/log-forwarding-rules.yaml'
+DEFAULT_FORWARDING_RULES_FILE = os.path.join(_PACKAGE_ROOT, "config", "log-forwarding-rules.yaml")
 
 logger = logging.getLogger()
 

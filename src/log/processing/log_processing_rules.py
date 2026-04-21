@@ -23,8 +23,9 @@ BUILT_IN_PROCESSING_RULES_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "rules"
 )
-DEFAULT_CUSTOM_LOG_PROCESSING_RULES_PATH = "./config/log_processing_rules"
-DEFAULT_CUSTOM_LOG_PROCESSING_RULES_FILE = './config/log-processing-rules.yaml'
+_PACKAGE_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DEFAULT_CUSTOM_LOG_PROCESSING_RULES_PATH = os.path.join(_PACKAGE_ROOT, "config", "log_processing_rules")
+DEFAULT_CUSTOM_LOG_PROCESSING_RULES_FILE = os.path.join(_PACKAGE_ROOT, "config", "log-processing-rules.yaml")
 
 AVAILABLE_LOG_SOURCES = ['aws', 'generic', 'custom']
 
