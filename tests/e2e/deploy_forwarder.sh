@@ -56,8 +56,7 @@ case "${DEPLOY_TYPE}" in
             --template-file dynatrace-aws-s3-log-forwarder-layer.yaml \
             --s3-bucket ${E2E_TESTING_BUCKET_NAME} \
             --s3-prefix cfn-packages/${STACK_NAME} \
-            --output-template-file dist/packaged-layer.yaml \
-            --role-arn ${CFN_ROLE_ARN}
+            --output-template-file dist/packaged-layer.yaml
 
         log "Deploying the Lambda Layer template"
         aws cloudformation deploy \
