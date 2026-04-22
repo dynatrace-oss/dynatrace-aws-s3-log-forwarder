@@ -51,16 +51,21 @@ case "${DEPLOY_TYPE}" in
         log "Building Lambda Layer"
         ./scripts/build_docker.sh layer "dist/layer.zip"
 
-        log "Deploying the Lambda Layer template"
-        sam deploy \
+        log "Packaging the Lambda Layer template"
+        aws cloudformation package \
             --template-file dynatrace-aws-s3-log-forwarder-layer.yaml \
+            --s3-bucket "${E2E_TESTING_BUCKET_NAME}" \
+            --s3-prefix "test/${LAYER_STACK_NAME}" \
+            --output-template-file packaged-layer.yaml
+
+        log "Deploying the Lambda Layer template"
+        aws cloudformation deploy \
+            --template-file packaged-layer.yaml \
             --stack-name "${LAYER_STACK_NAME}" \
-            --resolve-s3 \
             --parameter-overrides \
                 LayerName="dynatrace-aws-s3-log-forwarder-e2e" \
             --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
             --no-fail-on-empty-changeset \
-            --no-confirm-changeset \
             --role-arn ${CFN_ROLE_ARN}
 
         LAYER_ARN=$(aws cloudformation describe-stacks \
