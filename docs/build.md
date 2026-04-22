@@ -2,6 +2,13 @@
 
 If you're contributing to the project or if you want to build and deploy from source, the following sections cover how to build and deploy the `dynatrace-aws-s3-log-forwarder`.
 
+There are two build options:
+
+* **Lambda Layer**
+* **Lambda ZIP**
+
+Both options are built inside a Docker container for binary compatibility. See `scripts/build_docker.sh`.
+
 ## Prerequisites
 
 The deployment instructions are written for Linux/MacOS. If you are running on Windows, use the Linux Subsystem for Windows or use an [AWS Cloud9](https://aws.amazon.com/cloud9/) instance.
@@ -9,25 +16,17 @@ The deployment instructions are written for Linux/MacOS. If you are running on W
 You'll need the following software installed:
 
 * [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-* Docker Engine (required to build the Lambda deployment package inside an Amazon Linux 2023 container)
+* [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)
 * Git
+* Docker Engine
 
 You'll also need:
 
 * A [Dynatrace access token](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication) for your tenant with the `logs.ingest` APIv2 scope.
 
-## Build details
+## Setup
 
-The build script `scripts/build_lambda_zip.sh` runs entirely inside an Amazon Linux 2023 Docker container. It:
-
-* Installs Python dependencies from `requirements.txt`
-* Copies application source code, configuration files, and license files
-* Installs and bundles the `libyajl.so.2` native library (required by the `ijson` `yajl2_c` backend for high-performance JSON streaming)
-* Produces a ready-to-deploy Lambda ZIP package
-
-At runtime, the `LD_LIBRARY_PATH` environment variable is set to `/var/task/lib` so the yajl library is found.
-
-## Deployment instructions
+Before deploying either option, complete the following steps.
 
 1. Clone the `dynatrace-aws-s3-log-forwarder` repository and checkout the latest version tag:
 
@@ -38,14 +37,16 @@ At runtime, the `LD_LIBRARY_PATH` environment variable is set to `/var/task/lib`
     git checkout $VERSION_TAG
     ```
 
-1. Define a name for your `dynatrace-aws-s3-log-forwarder` deployment name (e.g. mycompany-dynatrace-s3-log-forwarder) and your dynatrace tenant UUID (e.g. `abc12345` if your Dynatrace environment url is `https://abc12345.live.dynatrace.com`) in environment variables that will be used along the deployment process.
+1. Define a name for your `dynatrace-aws-s3-log-forwarder` deployment (e.g. mycompany-dynatrace-s3-log-forwarder) and your Dynatrace tenant UUID (e.g. `abc12345` if your Dynatrace environment url is `https://abc12345.live.dynatrace.com`) in environment variables that will be used along the deployment process.
 
     ```bash
     export STACK_NAME=replace_with_your_log_forwarder_stack_name
     export DYNATRACE_TENANT_UUID=replace_with_your_dynatrace_tenant_uuid
     ```
 
-    **IMPORTANT:** Your stack name should have a maximum of 53 characters, otherwise deployment will fail.
+    > [!IMPORTANT]
+    >
+    > Your stack name should have a maximum of 53 characters, otherwise deployment will fail.
 
 1. Create an AWS SSM SecureString Parameter to store your Dynatrace access token to ingest logs.
 
@@ -57,15 +58,88 @@ At runtime, the `LD_LIBRARY_PATH` environment variable is set to `/var/task/lib`
      aws ssm put-parameter --name $PARAMETER_NAME --type SecureString --value $PARAMETER_VALUE
     ```
 
-    **NOTES:**
-    * It's important that your parameter name follows the structure above, as the solution grants permissions to AWS Lambda to the hierarchy `/dynatrace/s3-log-forwarder/your_stack_name/*`
-    * Your API Key is stored encyrpted with the default AWS-managed key alias: `aws/ssm`. If you want to use a Customer-managed Key, you'll need to grant Decrypt permissions to the AWS Lambda IAM Role that's deployed within the SAM template.
+    > [!NOTE]
+    >
+    > * It's important that your parameter name follows the structure above, as the solution grants permissions to AWS Lambda to the hierarchy `/dynatrace/s3-log-forwarder/your_stack_name/*`
+    > * Your API Key is stored encrypted with the default AWS-managed key alias: `aws/ssm`. If you want to use a Customer-managed Key, you'll need to grant Decrypt permissions to the AWS Lambda IAM Role that's deployed within the SAM template.
+
+## Building and deploying a Lambda Layer from source
+
+If you want to build the Lambda Layer from source instead of using a pre-published Layer ARN, follow the steps below.
+
+### Lambda Layer build details
+
+From the project root directory:
+
+```bash
+./scripts/build_docker.sh layer dist/layer.zip
+```
+
+This will:
+
+* Install pip dependencies for the target platform into `build/layer/python/`
+* Copy the application source code and license files
+* Produce a layer ZIP at the specified output path
+
+### Lambda Layer deployment instructions
+
+1. Deploy the layer template as its own CloudFormation stack. SAM will automatically create and manage an S3 bucket for the artifact upload.
+
+    ```bash
+    # Note: template assumes that the layer.zip is available in `dist/layer.zip`
+    sam deploy \
+        --template-file dynatrace-aws-s3-log-forwarder-layer.yaml \
+        --stack-name "${STACK_NAME}-layer" \
+        --resolve-s3 \
+        --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND
+    ```
+
+1. Retrieve the deployed Layer ARN:
+
+    ```bash
+    export LAYER_ARN=$(aws cloudformation describe-stacks \
+        --stack-name "${STACK_NAME}-layer" \
+        --query "Stacks[0].Outputs[?OutputKey=='DynatraceS3LogForwarderLayerVersionArn'].OutputValue" \
+        --output text)
+
+    echo "Layer ARN: $LAYER_ARN"
+    ```
+
+1. Deploy the main forwarder stack.
+
+    Continue with the standard deployment from [the default option in the deployment guide](deployment_guide.md#default-option-lambda-layer), using the Layer ARN retrieved above.
+
+### Updating the layer after code changes
+
+After making source code changes, repeat steps 1-3 above to rebuild and redeploy the layer, then update the main stack with the new Layer ARN.
+
+## Building and deploying a Lambda ZIP from source
+
+### Lambda ZIP build details
+
+From the project root directory:
+
+```bash
+./scripts/build_docker.sh zip dist/lambda.zip
+```
+
+This will:
+
+* Install Python dependencies from `requirements.txt`
+* Copy application source code, configuration files, and license files
+* Bundle the `libyajl.so.2` native library (required by the `ijson` `yajl2_c` backend for high-performance JSON streaming)
+* Produce a ready-to-deploy Lambda ZIP at `dist/lambda.zip`
+
+> [!NOTE]
+>
+> At runtime, the `LD_LIBRARY_PATH` environment variable must be set to `/var/task/lib` so the yajl library is found.
+
+### Lambda ZIP deployment instructions
 
 1. From the project root directory, execute the following command to build the Lambda deployment package:
 
     ```bash
-    mkdir -p build
-    ./scripts/build_lambda_zip.sh build/lambda.zip
+    ./scripts/build_docker.sh zip dist/lambda.zip
     ```
 
     > [!NOTE]
@@ -93,7 +167,7 @@ At runtime, the `LD_LIBRARY_PATH` environment variable is set to `/var/task/lib`
         --output text | rev | cut -d':' -f1 | rev)
 
     aws lambda update-function-code --function-name ${FUNCTION_NAME} \
-        --zip-file fileb://build/lambda.zip
+        --zip-file fileb://dist/lambda.zip
     ```
 
     If successfull, you'll see a JSON response with `"LastUpdateStatus": "InProgress"`.

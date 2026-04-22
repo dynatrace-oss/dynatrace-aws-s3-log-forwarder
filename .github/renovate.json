@@ -14,9 +14,9 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Update Lambda Python image tag in build_lambda_zip.sh",
+      "description": "Update Lambda Python image tags in build_docker.sh",
       "managerFilePatterns": [
-        "/^scripts/build_lambda_zip\\.sh$/"
+        "/^scripts/build_docker\\.sh$/"
       ],
       "matchStrings": [
         "LAMBDA_RUNTIME_IMAGE=\"(?<depName>public\\.ecr\\.aws/lambda/python):(?<currentValue>[^\"]+)\""

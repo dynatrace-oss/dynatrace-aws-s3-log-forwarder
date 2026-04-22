@@ -12,15 +12,20 @@ You'll also need:
 
 * A [Dynatrace access token](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication) for your tenant with the `logs.ingest` APIv2 scope.
 
+## Deployment options
+
+The `dynatrace-aws-s3-log-forwarder` supports two deployment package types:
+
+| Option | Description |
+|--------|-------------|
+| **Lambda Layer** (default) | Use a Layer ARN provided by a maintainer (no build required) |
+| **ZIP** | Lambda function code and dependencies packaged as a ZIP file |
+
 ## Deploy the dynatrace-aws-s3-log-forwarder
 
 The deployment of the log forwarder is split into multiple CloudFormation templates. To get a high level view of what's deployed by which template, look at the diagram below:
 
 ![single-region-deployment](images/single-region-deployment.jpg)
-
-The AWS Lambda function that performs log forwarding is deployed as a ZIP package. If you want to build the package from source, go to the [docs/build.md](build.md) documentation.
-
-To deploy the `dynatrace-aws-s3-log-forwarder`, follow the instructions below:
 
 ### Step 1. Define a name for your `dynatrace-aws-s3-log-forwarder` deployment.
 
@@ -53,31 +58,71 @@ export HISTCONTROL=ignorespace
 > * It's important that your parameter name follows the structure above, as the solution grants permissions to AWS Lambda to the hierarchy `/dynatrace/s3-log-forwarder/your-stack-name/*`
 > * Your API Key is stored encyrpted with the default AWS-managed key alias: `aws/ssm`. If you want to use a Customer-managed Key, you'll need to grant Decrypt permissions to the AWS Lambda IAM Role that's deployed within the CloudFormation template.
 
-### Step 3. Download the CloudFormation templates and Lambda package for the latest version
+### Step 3. Download the CloudFormation templates and Lambda package
 
-Execute the following commands to download the CloudFormation templates and the Lambda deployment package for the latest version:
+Download the templates and pre-built Lambda ZIP for the latest release:
 
 ```bash
 export VERSION_TAG=$(curl -s https://api.github.com/repos/dynatrace-oss/dynatrace-aws-s3-log-forwarder/releases/latest | grep tag_name | cut -d'"' -f4)
-mkdir dynatrace-aws-s3-log-forwarder-templates && cd "$_"
+mkdir dynatrace-aws-s3-log-forwarder && cd "$_"
 wget https://dynatrace-aws-s3-log-forwarder-assets.s3.amazonaws.com/${VERSION_TAG}/templates.zip
 unzip templates.zip
 ```
 
-### Step 4. Deploy the CloudFormation stack and update the Lambda function code.
+### Step 4. Deploy the Lambda function
 
-The deployment is done in two steps: first deploy the CloudFormation stack (which creates all infrastructure with a placeholder Lambda function), then update the Lambda function code with the actual deployment package.
+Choose one of the deployment options below:
 
-**Step 4a.** Deploy the CloudFormation stack:
+---
+
+#### Default option: Lambda Layer
+
+This is the simplest option — no build tools, SAM CLI, or Python required.
+
+1. Set the Layer ARN:
 
 ```bash
-aws cloudformation deploy --stack-name ${STACK_NAME} --parameter-overrides \
-          DynatraceEnvironment1URL="https://$DYNATRACE_TENANT_UUID.live.dynatrace.com" \
-          DynatraceEnvironment1ApiKeyParameter=$PARAMETER_NAME \
-          --template-file template.yaml --capabilities CAPABILITY_IAM
+export LAYER_ARN=<layer-version-arn-provided-by-publisher>
 ```
 
-**Step 4b.** Update the Lambda function code with the deployment package:
+1. Deploy the main forwarder stack:
+
+```bash
+aws cloudformation deploy \
+    --stack-name ${STACK_NAME} \
+    --template-file template.yaml \
+    --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
+    --parameter-overrides \
+        DynatraceEnvironment1URL="https://$DYNATRACE_TENANT_UUID.live.dynatrace.com" \
+        DynatraceEnvironment1ApiKeyParameter=$PARAMETER_NAME \
+        DynatraceS3LogForwarderLayerArn="$LAYER_ARN"
+```
+
+> **Note:** When the publisher releases a new layer version, update the `DynatraceS3LogForwarderLayerArn` parameter with the new ARN and redeploy the stack to pick up the update.
+
+---
+
+> [!IMPORTANT]
+> If you deployed using the default Lambda Layer option above, continue directly to [Step 5. Deploy the log forwarding configuration](#step-5-deploy-the-log-forwarding-configuration).
+
+---
+
+#### Alternative option: ZIP deployment
+
+1. Deploy the CloudFormation stack:
+
+```bash
+aws cloudformation deploy \
+    --stack-name ${STACK_NAME} \
+    --template-file template.yaml \
+    --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
+    --parameter-overrides \
+        DynatraceEnvironment1URL="https://$DYNATRACE_TENANT_UUID.live.dynatrace.com" \
+        DynatraceEnvironment1ApiKeyParameter=$PARAMETER_NAME \
+        DeploymentPackageType="zip"
+```
+
+1. Update the Lambda function code with the deployment package:
 
 ```bash
 FUNCTION_NAME=$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} \
@@ -96,6 +141,8 @@ If successfull, you'll see a message similar to the below at the end of the exec
     "LastUpdateStatus": "InProgress"
 }
 ```
+
+---
 
 > [!NOTE]
 >

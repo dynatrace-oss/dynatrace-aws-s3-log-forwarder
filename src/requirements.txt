@@ -1,9 +1,9 @@
 requests==2.33.1
 jmespath==1.1.0
-pygrok==1.0.0
 PyYAML==6.0.3
 regex==2026.4.4
 aws-lambda-powertools==3.27.0
 ijson==3.5.0
 Jinja2==3.1.6
 urllib3==2.6.3
+pygrok==1.0.0

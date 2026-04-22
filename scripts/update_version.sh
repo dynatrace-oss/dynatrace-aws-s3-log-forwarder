@@ -25,5 +25,3 @@ for file in $(ls *.yaml);
 do
     yq -i -e '.Metadata.Version.Description = strenv(VERSION)' $file
 done
-
-    

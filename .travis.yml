@@ -42,6 +42,7 @@ jobs:
     name: Validate CloudFormation Templates
     script:
       - aws cloudformation validate-template --template-body file://template.yaml
+      - aws cloudformation validate-template --template-body file://dynatrace-aws-s3-log-forwarder-layer.yaml
       - aws cloudformation validate-template --template-body file://dynatrace-aws-s3-log-forwarder-configuration.yaml
       - aws cloudformation validate-template --template-body file://dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml
       - aws cloudformation validate-template --template-body file://eventbridge-cross-region-or-account-forward-rules.yaml
@@ -58,61 +59,94 @@ jobs:
 
   - stage: build
     name: Build
+    arch: amd64
     services:
     - docker
     script:
       - ./scripts/update_version.sh
-      # Build Lambda ZIP inside AL2023 Docker container
-      - mkdir -p build
-      - ./scripts/build_lambda_zip.sh build/lambda.zip
+      - ./scripts/build_docker.sh zip dist/lambda.zip
 
   - stage: end-to-end-test
-    name: End-to-end deployment test
+    name: End-to-end deployment test (ZIP)
+    arch: amd64
     if: fork = false AND ( branch == main OR type == pull_request )
     services:
     - docker
+    env:
+      - STACK_NAME=e2e-dt-s3-log-fwd-zip-${TRAVIS_BUILD_ID}
+      - E2E_TEST_PREFIX=test/${TRAVIS_BUILD_ID}/zip/validation
     install:
       - pip install argparse requests
     script:
       - ./scripts/update_version.sh
-      - ./tests/e2e/deploy_forwarder_for_validation.sh
+      - ./tests/e2e/deploy_forwarder.sh zip
 
       # Write logs to S3 and allow time for ingestion
       - |
         echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] E2E testing validation log entry" > ${TRAVIS_BUILD_ID}.log
-        aws s3 cp ${TRAVIS_BUILD_ID}.log s3://${E2E_TESTING_BUCKET_NAME}/test/${TRAVIS_BUILD_ID}/validation/test_log.log
+        aws s3 cp ${TRAVIS_BUILD_ID}.log s3://${E2E_TESTING_BUCKET_NAME}/${E2E_TEST_PREFIX}/test_log.log
         sleep 120
-      
+
       # Validate log entry
-      - ./tests/e2e/validate_logs_exist.py --bucket ${E2E_TESTING_BUCKET_NAME} --key test/${TRAVIS_BUILD_ID}/validation/test_log.log
-    
-    after_script: 
+      - ./tests/e2e/validate_logs_exist.py --bucket ${E2E_TESTING_BUCKET_NAME} --key ${E2E_TEST_PREFIX}/test_log.log
+
+    after_script:
       - ./tests/e2e/clean_up_resources.sh
-  
+
+  - stage: end-to-end-test
+    name: End-to-end deployment test (Lambda Layer)
+    arch: amd64
+    if: fork = false AND ( branch == main OR type == pull_request )
+    services:
+    - docker
+    env:
+      - STACK_NAME=e2e-dt-s3-log-fwd-layer-${TRAVIS_BUILD_ID}
+      - E2E_TEST_PREFIX=test/${TRAVIS_BUILD_ID}/layer/validation
+    install:
+      - pip install argparse requests aws-sam-cli
+    script:
+      - ./scripts/update_version.sh
+      - ./tests/e2e/deploy_forwarder.sh layer
+
+      # Write logs to S3 and allow time for ingestion
+      - |
+        echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] E2E testing validation log entry" > ${TRAVIS_BUILD_ID}.log
+        aws s3 cp ${TRAVIS_BUILD_ID}.log s3://${E2E_TESTING_BUCKET_NAME}/${E2E_TEST_PREFIX}/test_log.log
+        sleep 120
+
+      # Validate log entry
+      - ./tests/e2e/validate_logs_exist.py --bucket ${E2E_TESTING_BUCKET_NAME} --key ${E2E_TEST_PREFIX}/test_log.log
+
+    after_script:
+      - ./tests/e2e/clean_up_resources.sh
+
   - stage: release
     name: Release
+    arch: amd64
     if: tag =~ /^v.*$/
     services:
     - docker
     script:
       # Update version in templates
       - ./scripts/update_version.sh
-      # Build Lambda ZIP inside AL2023 Docker container
-      - mkdir -p build
-      - ./scripts/build_lambda_zip.sh build/lambda.zip
+      # Build Lambda ZIP
+      - ./scripts/build_docker.sh zip dist/lambda.zip
       # Upload Lambda ZIP to S3
-      - aws s3 cp build/lambda.zip s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/lambda.zip
+      - aws s3 cp dist/lambda.zip s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/lambda.zip
       # Upload all templates to S3
       - aws s3 cp template.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
       - aws s3 cp dynatrace-aws-s3-log-forwarder-configuration.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
       - aws s3 cp dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
       - aws s3 cp eventbridge-cross-region-or-account-forward-rules.yaml s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
-      # Create templates.zip for download (includes lambda.zip)
+      # Create templates.zip for download
       - |
         zip templates.zip -j template.yaml \
             dynatrace-aws-s3-log-forwarder-configuration.yaml \
             dynatrace-aws-s3-log-forwarder-s3-bucket-configuration.yaml \
             eventbridge-cross-region-or-account-forward-rules.yaml \
-            build/lambda.zip
+            dist/lambda.zip
       - aws s3 cp templates.zip s3://dynatrace-aws-s3-log-forwarder-assets/${TRAVIS_TAG}/
+      # Build and publish Lambda Layer to all commercial regions
+      - ./scripts/build_docker.sh layer dist/layer.zip
+      - ./scripts/publish_layer.sh dist/layer.zip
 

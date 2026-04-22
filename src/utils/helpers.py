@@ -64,7 +64,7 @@ def load_cloudwatch_logs_attribute_mappings() -> dict:
     Loads the YAML file with attribute mappings for CloudWatch Logs services
     '''
 
-    file = os.path.dirname(__file__) + "/config/cloudwatch_logs_attribute_map.yaml"
+    file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "cloudwatch_logs_attribute_map.yaml")
 
     with open(file, encoding=ENCODING) as mappings_file:
         cwl_mappings = yaml.load(mappings_file,Loader=yaml.loader.SafeLoader)

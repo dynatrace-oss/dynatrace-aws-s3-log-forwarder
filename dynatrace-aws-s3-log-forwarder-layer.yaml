@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  dynatrace-aws-s3-log-forwarder-layer
+
+  Lambda Layer containing the dynatrace-aws-s3-log-forwarder application code and dependencies.
+  https://github.com/dynatrace-oss/dynatrace-aws-s3-log-forwarder
+
+Parameters:
+  LayerName:
+    Type: String
+    Default: dynatrace-aws-s3-log-forwarder
+    Description: Name of the Lambda Layer. Override for non-production deployments (e.g. e2e testing).
+
+Metadata:
+
+  Version:
+    Description: dev
+
+Resources:
+  DynatraceS3LogForwarderLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Ref LayerName
+      Description: "Dynatrace AWS S3 Log Forwarder (x86_64)"
+      ContentUri: dist/layer.zip
+      CompatibleRuntimes:
+        - python3.14
+      CompatibleArchitectures:
+        - x86_64
+      RetentionPolicy: Retain
+
+Outputs:
+  DynatraceS3LogForwarderLayerVersionArn:
+    Description: Lambda Layer Version ARN for the Dynatrace S3 Log Forwarder. Pass this value to the DynatraceS3LogForwarderLayerArn parameter of the main stack.
+    Value: !Ref DynatraceS3LogForwarderLayer
+
