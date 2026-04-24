@@ -14,7 +14,6 @@
 
 
 import logging
-import os
 import re
 import sys
 import time
@@ -24,7 +23,8 @@ import boto3
 import jmespath
 from aws_lambda_powertools import Metrics
 from aws_lambda_powertools.metrics import MetricUnit
-import ijson
+import json_stream
+from json_stream_rs_tokenizer import rust_tokenizer_or_raise, ExtensionException
 
 from log.processing.log_processing_rule import LogProcessingRule
 from utils.helpers import ENCODING
@@ -32,22 +32,17 @@ from utils.helpers import ENCODING
 logger = logging.getLogger()
 metrics = Metrics()
 
-EXECUTION_REMAINING_TIME_LIMIT = 10000
-
-# Initialize ijson backend once at module level for better performance
-ijson_backend_name = os.getenv("IJSON_BACKEND", "yajl2_c")
+# Verify the Rust tokenizer is available at cold-start; fail fast rather than
+# silently falling back to the ~4× slower pure-Python tokenizer.
 try:
-    ijson_backend = ijson.get_backend(ijson_backend_name)
-except Exception as exc:
-    logger.error(
-        "Failed to load ijson backend '%s'. Ensure the backend is installed and "
-        "the IJSON_BACKEND environment variable is set correctly. Original error: %s",
-        ijson_backend_name,
-        exc,
-    )
+    rust_tokenizer_or_raise()
+except ExtensionException as exc:
     raise RuntimeError(
-        f"Unable to load ijson backend '{ijson_backend_name}' for log processing"
-    )
+        "json-stream Rust tokenizer (json-stream-rs-tokenizer) is not available. "
+        "Ensure a compatible wheel is installed in the deployment package."
+    ) from exc
+
+EXECUTION_REMAINING_TIME_LIMIT = 10000
 
 
 def _get_context_log_attributes(bucket: str, key: str):
@@ -97,16 +92,6 @@ def _resolve_aws_arn_from_pattern(attributes: dict):
 
     attributes['aws.arn'] = resolved_arn
 
-
-def get_ijson_path_from_jmespath_path(jmespath_expr: str):
-    '''
-    Given a jmespath entry (e.g. log.records), translates the expression into a path string
-    for processing with ijson. (this is a basic implementation, not jmespath spec compliant)
-    '''
-    # ijson uses dot notation with 'item' suffix for array elements
-    ijson_path = jmespath_expr + '.item'
-
-    return ijson_path
 
 def get_log_entry_size(log_entry):
     '''
@@ -158,25 +143,26 @@ def process_log_object(log_processing_rule: LogProcessingRule, bucket: str, key:
 
     # if JSON (we expect either a list[dict] or a JSON obj with a list of log entries in a key)
     if log_processing_rule.log_format == 'json':
+        _data = json_stream.load(log_stream)
         if log_processing_rule.log_entries_key is not None:
-            ijson_path = get_ijson_path_from_jmespath_path(
-                log_processing_rule.log_entries_key)
+            _node = _data
+            for _part in log_processing_rule.log_entries_key.split('.'):
+                _node = _node[_part]
+            log_entries = (json_stream.to_standard_types(item) for item in _node)
         else:
-            ijson_path = 'item'
-        log_entries = ijson_backend.items(
-            log_stream, ijson_path, use_float=True)
+            log_entries = (json_stream.to_standard_types(item) for item in _data)
 
     # if it's a stream of JSON objects, create an iterable list of dicts
     elif log_processing_rule.log_format == 'json_stream':
-        # if the rule is cw_to_fh, need to decompress data
+        # if the rule is cwl_to_fh, need to decompress data
         if log_processing_rule.name == "cwl_to_fh":
-            json_stream = gzip.GzipFile(mode='rb', fileobj=log_stream)
+            _ndjson_source = gzip.GzipFile(mode='rb', fileobj=log_stream)
         else:
-            json_stream = log_stream
-
-        # For json_stream with multiple root-level objects, use empty prefix
-        log_entries = ijson_backend.items(
-            json_stream, '', multiple_values=True, use_float=True)
+            _ndjson_source = log_stream
+        # botocore StreamingBody iterates in chunks, not lines — use iter_lines() when available
+        _line_iter = _ndjson_source.iter_lines() if hasattr(_ndjson_source, 'iter_lines') \
+            else _ndjson_source
+        log_entries = (json.loads(line) for line in _line_iter if line and line.strip())
 
     # if it's text, either iterate the GzipFile if compressed or botocore response body iter_lines() if plain text
     elif log_processing_rule.log_format == 'text':

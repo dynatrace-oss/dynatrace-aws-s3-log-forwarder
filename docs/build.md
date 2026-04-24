@@ -127,12 +127,7 @@ This will:
 
 * Install Python dependencies from `requirements.txt`
 * Copy application source code, configuration files, and license files
-* Bundle the `libyajl.so.2` native library (required by the `ijson` `yajl2_c` backend for high-performance JSON streaming)
 * Produce a ready-to-deploy Lambda ZIP at `dist/lambda.zip`
-
-> [!NOTE]
->
-> At runtime, the `LD_LIBRARY_PATH` environment variable must be set to `/var/task/lib` so the yajl library is found.
 
 ### Lambda ZIP deployment instructions
 
