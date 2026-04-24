@@ -130,4 +130,3 @@ attribute_mapping_from_json_keys: Optional[dict]         # --> (Experimental) Al
 ```
 
 You can find an example custom processing rule under `config/log-processing-rules.yaml` used to process [VPC DNS Query logs](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-query-logs.html) from AWS.
-

@@ -101,9 +101,11 @@ Both deployment modes are fully supported and updated in the same way as before.
 ### Layer mode (default)
 
 1. Build the new layer artifact:
+
    ```bash
    ./scripts/build_docker.sh layer build/lambda-layer.zip
    ```
+
 2. Publish the layer to AWS and obtain the new Layer Version ARN.
 3. Update the CloudFormation/SAM stack, passing the new ARN as `DynatraceS3LogForwarderLayerArn`.
 
@@ -112,9 +114,11 @@ The stack update replaces the layer reference on the Lambda function and perform
 ### ZIP mode
 
 1. Build the new ZIP artifact:
+
    ```bash
    ./scripts/build_docker.sh zip build/lambda.zip
    ```
+
 2. Upload the ZIP to the Lambda function (via `aws lambda update-function-code` or your CI/CD pipeline).
 3. If doing a full stack update, the CloudFormation template no longer sets `LD_LIBRARY_PATH` — this is applied atomically during the stack update with no downtime impact.
 
