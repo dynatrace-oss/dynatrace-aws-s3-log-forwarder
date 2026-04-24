@@ -12,8 +12,8 @@
 # limitations under the License.
 
 # Build a Lambda Layer or Lambda deployment ZIP inside a Docker container.
-# This ensures binary compatibility with the Lambda runtime, and bundles the yajl
-# native library required by ijson's yajl2_c backend.
+# This ensures binary compatibility with the Lambda runtime, and that
+# json-stream-rs-tokenizer's Rust extension is built for the correct platform.
 # Usage: ./scripts/build_docker.sh <layer|zip> <output_path>
 
 set -euo pipefail
@@ -58,10 +58,8 @@ docker run --rm \
     -c "
         set -euo pipefail
 
-        mkdir -p ${APP_DIR}/lib
-
-        # Install build tools and yajl
-        dnf install -y zip yajl > /dev/null 2>&1
+        # Install build tools
+        dnf install -y zip > /dev/null 2>&1
 
         # Install Python dependencies
         python3.14 -m pip install --upgrade pip > /dev/null
@@ -78,11 +76,7 @@ docker run --rm \
         cp -r /src/config ${APP_DIR}/
 
         # Copy license files
-        cp /src/LICENSE /src/NOTICE /src/THIRD_PARTY_LICENSES ${APP_DIR}/ 2>/dev/null || trueCan
-
-        # Copy yajl shared library and create symlink for compatibility
-        cp /usr/lib64/libyajl.so.2 ${APP_DIR}/lib/
-        cd ${APP_DIR}/lib && ln -sf libyajl.so.2 libyajl.so
+        cp /src/LICENSE /src/NOTICE /src/THIRD_PARTY_LICENSES ${APP_DIR}/ 2>/dev/null || true
 
         ${ZIP_CMD}
     "
