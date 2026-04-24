@@ -1,0 +1,1085 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: |
+  dynatrace-aws-s3-log-forwarder
+
+  SAM Template to deploy the dynatrace-aws-s3-log-forwarder core infrastructure:
+  Lambda function, IAM role, SQS queues, and AppConfig configuration with default rules.
+
+  https://github.com/dynatrace-oss/dynatrace-aws-s3-log-forwarder
+
+Metadata:
+  License:
+    Description: |
+      Copyright 2022 Dynatrace LLC
+
+      Licensed under the Apache License, Version 2.0 (the "License");
+      you may not use this file except in compliance with the License.
+      You may obtain a copy of the License at
+
+           https://www.apache.org/licenses/LICENSE-2.0
+
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      See the License for the specific language governing permissions and
+      limitations under the License.
+
+  Version:
+    Description: dev
+
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Dynatrace Configuration"
+        Parameters:
+          - DynatraceEnvironmentURL
+          - DynatraceApiKeyParameter
+      - Label:
+          default: "Deployment Package"
+        Parameters:
+          - DeploymentPackageType
+          - DynatraceS3LogForwarderLayerArn
+      - Label:
+          default: "S3 Bucket Access (Optional)"
+        Parameters:
+          - BucketNames
+          - KMSKeyArns
+      - Label:
+          default: "IAM Configuration"
+        Parameters:
+          - IAMRolePath
+      - Label:
+          default: "Lambda Configuration"
+        Parameters:
+          - LambdaFunctionMemorySize
+          - LambdaLoggingLevel
+          - MaximumLambdaConcurrency
+          - LambdaSQSMessageBatchSize
+          - LambdaMaximumExecutionTime
+          - LambdaSubnetIds
+          - LambdaSecurityGroupId
+      - Label:
+          default: "SQS Configuration"
+        Parameters:
+          - SQSVisibilityTimeout
+          - SQSLongPollingMaxSeconds
+          - MaximumSQSMessageRetries
+      - Label:
+          default: "Log Ingestion Settings"
+        Parameters:
+          - DynatraceLogIngestContentMaxLength
+          - VerifyLogEndpointSSLCerts
+          - LogForwarderConfigurationLocation
+      - Label:
+          default: "Notifications & Monitoring"
+        Parameters:
+          - NotificationsEmail
+          - DeployCloudWatchMonitoringDashboard
+          - CreateS3NotificationsSNSTopic
+    ParameterLabels:
+      DynatraceEnvironmentURL:
+        default: "Dynatrace Environment URL"
+      DynatraceApiKeyParameter:
+        default: "Dynatrace API Key SSM Parameter Name"
+      DeploymentPackageType:
+        default: "Deployment Package Type"
+      DynatraceS3LogForwarderLayerArn:
+        default: "Lambda Layer ARN"
+      BucketNames:
+        default: "S3 Bucket Names"
+      KMSKeyArns:
+        default: "KMS Key ARNs"
+      IAMRolePath:
+        default: "IAM Role Path"
+
+Parameters:
+  # ── Dynatrace ────────────────────────────────────────────────────────────────
+
+  DynatraceEnvironmentURL:
+    Description: >-
+      URL of your Dynatrace environment. For SaaS: https://{your-environment-id}.live.dynatrace.com.
+      For Managed via ActiveGate: https://{your-activegate-domain}:9999/e/{your-environment-id}
+    Type: String
+    AllowedPattern: "^https:\\/\\/[a-zA-Z0-9-]{2,}(\\.[a-zA-Z0-9-]{2,})(\\.[a-zA-Z0-9-]{2,})*(:9999\\/e\\/.[a-z0-9-]*)?$"
+    ConstraintDescription: >-
+      Must be a valid Dynatrace environment URL, e.g.
+      https://abc12345.live.dynatrace.com  or
+      https://your-ag.example.com:9999/e/env-id
+
+  DynatraceApiKeyParameter:
+    Description: >-
+      Name of the SecureString Parameter in AWS Systems Manager Parameter Store that stores the
+      Dynatrace Log Ingest API key. The parameter must exist before deploying this stack.
+    Type: String
+    Default: /dynatrace/s3-log-forwarder/dynatrace-aws-s3-log-forwarder/tenant/api-key
+    AllowedPattern: "^[a-zA-Z0-9_./-]+$"
+    ConstraintDescription: >-
+      Must be a valid SSM parameter name (alphanumeric characters, hyphens, underscores,
+      periods, and forward slashes only).
+
+  # ── Deployment package ───────────────────────────────────────────────────────
+
+  DeploymentPackageType:
+    Description: >-
+      How the Lambda function code is delivered. Use 'layer' (recommended) when a published
+      Lambda Layer is available. Use 'zip' to deploy a placeholder and update the function
+      code separately via aws lambda update-function-code.
+    Type: String
+    Default: layer
+    AllowedValues:
+      - layer
+      - zip
+
+  DynatraceS3LogForwarderLayerArn:
+    Description: >-
+      ARN of the Lambda Layer Version containing the dynatrace-aws-s3-log-forwarder application
+      code and dependencies. Required when DeploymentPackageType is 'layer'.
+    Type: String
+    Default: ""
+    AllowedPattern: "(arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}(-gov)?(-iso([a-z])?)?-[a-z]+-\\d{1}:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)?"
+    ConstraintDescription: >-
+      Must be a valid Lambda Layer Version ARN, e.g.
+      arn:aws:lambda:us-east-1:123456789012:layer:dynatrace-aws-s3-log-forwarder:1
+
+  # ── S3 bucket access ─────────────────────────────────────────────────────────
+
+  BucketNames:
+    Description: >-
+      [Optional] Comma-separated list of S3 bucket names to grant the Lambda function read
+      access to (e.g. my-logs-bucket,another-logs-bucket). Populates s3:GetObject permissions
+      on the Lambda IAM role and restricts the SQS queue policy to allow notifications from
+      these buckets. Leave empty to manage IAM permissions separately (the Lambda IAM role
+      name is available in the stack Outputs).
+    Type: CommaDelimitedList
+    Default: ""
+
+  KMSKeyArns:
+    Description: >-
+      [Optional] Comma-separated list of KMS Customer Managed Key ARNs the Lambda function
+      needs to decrypt objects in encrypted S3 buckets
+      (e.g. arn:aws:kms:us-east-1:123456789012:key/mrk-abc123). Leave empty if your buckets
+      use SSE-S3 or no encryption.
+    Type: CommaDelimitedList
+    Default: ""
+
+  # ── IAM ──────────────────────────────────────────────────────────────────────
+
+  IAMRolePath:
+    Description: >-
+      [Optional] IAM path for the Lambda execution role. Use this when your organization
+      enforces IAM role path requirements via SCPs or permission boundaries.
+    Type: String
+    Default: "/"
+    AllowedPattern: "^(\\/|(\\/[a-zA-Z0-9+=,.@_-]+)+\\/)$"
+    ConstraintDescription: >-
+      Must be a valid IAM path: either / or a slash-delimited path that starts and ends
+      with / (e.g. /my-team/my-app/)
+
+  # ── Lambda ───────────────────────────────────────────────────────────────────
+
+  LambdaFunctionMemorySize:
+    Description: Memory size in MB for the queue processing Lambda function.
+    Type: Number
+    Default: 256
+    MinValue: 128
+    MaxValue: 10240
+
+  LambdaSubnetIds:
+    Description: >-
+      [Optional] Comma-separated list of VPC Subnet IDs for the Lambda function. Required
+      only when ingesting logs into a Dynatrace Managed cluster without internet-facing
+      Active Gates. Specify at least 2 subnets in different Availability Zones for HA.
+    Type: CommaDelimitedList
+    Default: ""
+
+  LambdaSecurityGroupId:
+    Description: >-
+      [Optional] Security group ID to attach to the Lambda function when deployed in a VPC
+      (LambdaSubnetIds is specified). The security group must allow outbound access to the
+      Active Gate endpoints.
+    Type: String
+    Default: ""
+
+  LambdaLoggingLevel:
+    Description: Logging verbosity of the Lambda function.
+    Type: String
+    Default: "INFO"
+    AllowedValues:
+      - "DEBUG"
+      - "INFO"
+      - "WARNING"
+      - "ERROR"
+      - "CRITICAL"
+
+  MaximumLambdaConcurrency:
+    Description: >-
+      Reserved concurrent executions for the queue processing Lambda function. This reserves
+      capacity from the account-level concurrency pool.
+    Type: Number
+    Default: 30
+
+  LambdaSQSMessageBatchSize:
+    Description: Maximum number of SQS messages delivered to a single Lambda invocation.
+    Type: Number
+    Default: 4
+    MinValue: 1
+    MaxValue: 10
+
+  LambdaMaximumExecutionTime:
+    Description: >-
+      Maximum execution time in seconds for the Lambda function. Must be less than
+      SQSVisibilityTimeout.
+    Type: Number
+    Default: 300
+    MinValue: 1
+    MaxValue: 900
+
+  # ── SQS ──────────────────────────────────────────────────────────────────────
+
+  SQSVisibilityTimeout:
+    Description: >-
+      SQS message visibility timeout in seconds. Must be greater than LambdaMaximumExecutionTime.
+      See: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html
+    Type: Number
+    Default: 420
+
+  SQSLongPollingMaxSeconds:
+    Description: Maximum seconds to wait during a SQS ReceiveMessage long-polling request.
+    Type: Number
+    Default: 20
+    MinValue: 1
+    MaxValue: 20
+
+  MaximumSQSMessageRetries:
+    Description: >-
+      Number of times a message is retried before being sent to the Dead Letter Queue.
+    Type: Number
+    Default: 2
+    MinValue: 1
+
+  # ── Log ingestion ─────────────────────────────────────────────────────────────
+
+  DynatraceLogIngestContentMaxLength:
+    Description: Maximum byte length of a log entry's content field. Entries exceeding this limit are trimmed.
+    Type: Number
+    Default: 65536
+    MinValue: 8192
+    MaxValue: 1048576
+
+  VerifyLogEndpointSSLCerts:
+    Description: >-
+      Set to false only when ingesting logs via an Active Gate with a self-signed SSL
+      certificate. Leave as true for all SaaS deployments.
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "true"
+
+  LogForwarderConfigurationLocation:
+    Description: >-
+      Source for log forwarding and processing rules. Use 'aws-appconfig' (default) for
+      production deployments. Use 'local' for local testing only.
+    Type: String
+    Default: aws-appconfig
+    AllowedValues:
+      - aws-appconfig
+      - local
+
+  # ── Notifications & monitoring ────────────────────────────────────────────────
+
+  NotificationsEmail:
+    Description: "[Optional] Email address to receive CloudWatch alarm notifications."
+    Type: String
+    Default: ""
+
+  DeployCloudWatchMonitoringDashboard:
+    Description: Deploy a CloudWatch monitoring dashboard for the log forwarder.
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "true"
+
+  CreateS3NotificationsSNSTopic:
+    Description: >-
+      Create an SNS topic that receives S3 Object Created notifications before forwarding
+      them to the SQS queue. Useful for fan-out architectures where multiple consumers
+      need to process the same S3 events.
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+
+Rules:
+  LayerArnRequiredForLayerDeployment:
+    RuleCondition: !Equals [!Ref DeploymentPackageType, "layer"]
+    Assertions:
+      - Assert: !Not [!Equals [!Ref DynatraceS3LogForwarderLayerArn, ""]]
+        AssertDescription: >-
+          DynatraceS3LogForwarderLayerArn must be provided when DeploymentPackageType is
+          'layer'. Specify a valid Lambda Layer Version ARN, e.g.
+          arn:aws:lambda:us-east-1:123456789012:layer:dynatrace-aws-s3-log-forwarder:1
+
+  SecurityGroupRequiredWithVPC:
+    RuleCondition: !Not [!Equals [!Join ["", !Ref LambdaSubnetIds], ""]]
+    Assertions:
+      - Assert: !Not [!Equals [!Ref LambdaSecurityGroupId, ""]]
+        AssertDescription: >-
+          LambdaSecurityGroupId must be provided when LambdaSubnetIds is specified.
+
+Conditions:
+  IsLayerDeployment: !Equals [!Ref DeploymentPackageType, "layer"]
+  BucketNamesProvided: !Not [!Equals [!Join ["", !Ref BucketNames], ""]]
+  KMSKeyArnsProvided: !Not [!Equals [!Join ["", !Ref KMSKeyArns], ""]]
+  DeployMonitoringDashboard: !Equals [!Ref DeployCloudWatchMonitoringDashboard, "true"]
+  IsEmailConfigured: !Not [!Equals [!Ref NotificationsEmail, ""]]
+  CreateSNSTopicForS3Notifications: !Equals [!Ref CreateS3NotificationsSNSTopic, "true"]
+  LambdaVpcConfigSpecified: !Not [!Equals [!Join ["", !Ref LambdaSubnetIds], ""]]
+  LambdaVpcSecurityGroupSpecified: !Not [!Equals [!Ref LambdaSecurityGroupId, ""]]
+
+Globals:
+  Function:
+    Timeout: !Ref LambdaMaximumExecutionTime
+    Environment:
+      Variables:
+        POWERTOOLS_METRICS_NAMESPACE: dynatrace-aws-s3-log-forwarder
+        DEPLOYMENT_NAME: !Ref AWS::StackName
+
+Resources:
+  # ── IAM Role ─────────────────────────────────────────────────────────────────
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: !Ref IAMRolePath
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      # AWSLambdaVPCAccessExecutionRole is a superset of AWSLambdaBasicExecutionRole —
+      # use it when a VPC config is provided, basic execution role otherwise.
+      ManagedPolicyArns:
+        - !If
+          - LambdaVpcConfigSpecified
+          - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+          - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SQSPollerPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:ChangeMessageVisibility
+                Resource: !GetAtt S3NotificationsQueue.Arn
+        - PolicyName: SSMParameterReadPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource:
+                  # The specific API key parameter (supports leading-slash names)
+                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${DynatraceApiKeyParameter}"
+                  # Wildcard for any additional parameters under the stack namespace
+                  - !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/dynatrace/s3-log-forwarder/${AWS::StackName}/*"
+        - PolicyName: AppConfigReadPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - appconfig:StartConfigurationSession
+                  - appconfig:GetLatestConfiguration
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:appconfig:${AWS::Region}:${AWS::AccountId}:application/${AppConfigApplication}"
+                  - !Sub "arn:${AWS::Partition}:appconfig:${AWS::Region}:${AWS::AccountId}:application/${AppConfigApplication}/environment/${AppConfigEnvironment}/*"
+        # Conditionally grant s3:GetObject on the provided bucket list.
+        # Uses the Join/Sub/Split trick to build an ARN list from bucket names:
+        #   ["b1","b2"] → "arn:aws:s3:::b1/*,arn:aws:s3:::b2/*" → split → list of ARNs
+        - !If
+          - BucketNamesProvided
+          - PolicyName: S3GetObjectPolicy
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - s3:GetObject
+                    - s3:GetObjectVersion
+                  Resource: !Split
+                    - ","
+                    - !Sub
+                      - "arn:aws:s3:::${Buckets}/*"
+                      - Buckets: !Join ["/*,arn:aws:s3:::", !Ref BucketNames]
+          - !Ref AWS::NoValue
+        # Conditionally grant KMS decrypt access for CMK-encrypted buckets.
+        # KMSKeyArns are already full ARNs — no transformation needed.
+        - !If
+          - KMSKeyArnsProvided
+          - PolicyName: KMSDecryptPolicy
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - kms:Decrypt
+                    - kms:GenerateDataKey*
+                  Resource: !Ref KMSKeyArns
+          - !Ref AWS::NoValue
+
+  # ── Lambda function ───────────────────────────────────────────────────────────
+
+  QueueProcessingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Zip
+      # Using an explicit Role disables SAM's implicit role and Policies properties.
+      # All permissions are defined in LambdaExecutionRole above.
+      Role: !GetAtt LambdaExecutionRole.Arn
+      InlineCode: !If
+        - IsLayerDeployment
+        - |
+          from app import lambda_handler as handler
+        - |
+          def lambda_handler(event, context):
+              raise NotImplementedError("Placeholder function. Update the function code with the Lambda ZIP package.")
+      Handler: !If [IsLayerDeployment, "index.handler", "app.lambda_handler"]
+      Runtime: python3.14
+      Layers: !If
+        - IsLayerDeployment
+        - - !Ref DynatraceS3LogForwarderLayerArn
+        - !Ref AWS::NoValue
+      MemorySize: !Ref LambdaFunctionMemorySize
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          LD_LIBRARY_PATH: !If [IsLayerDeployment, !Ref AWS::NoValue, "/var/task/lib"]
+          DYNATRACE_1_ENV_URL: !Ref DynatraceEnvironmentURL
+          DYNATRACE_1_API_KEY_PARAM: !Ref DynatraceApiKeyParameter
+          QueueName: !GetAtt S3NotificationsQueue.QueueName
+          LOGGING_LEVEL: !Ref LambdaLoggingLevel
+          LOG_FORWARDER_CONFIGURATION_LOCATION: !Ref LogForwarderConfigurationLocation
+          VERIFY_DT_SSL_CERT: !Ref VerifyLogEndpointSSLCerts
+          DYNATRACE_LOG_INGEST_CONTENT_MAX_LENGTH: !Ref DynatraceLogIngestContentMaxLength
+      Events:
+        SQSMessages:
+          Type: SQS
+          Properties:
+            BatchSize: !Ref LambdaSQSMessageBatchSize
+            Enabled: true
+            MaximumBatchingWindowInSeconds: !Ref SQSLongPollingMaxSeconds
+            Queue: !GetAtt S3NotificationsQueue.Arn
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+            ScalingConfig:
+              MaximumConcurrency: !Ref MaximumLambdaConcurrency
+      ReservedConcurrentExecutions: !Ref MaximumLambdaConcurrency
+      VpcConfig:
+        SecurityGroupIds:
+          - !If [LambdaVpcSecurityGroupSpecified, !Ref LambdaSecurityGroupId, !Ref AWS::NoValue]
+        SubnetIds: !If [LambdaVpcConfigSpecified, !Ref LambdaSubnetIds, !Ref AWS::NoValue]
+
+  # ── SQS queues ────────────────────────────────────────────────────────────────
+
+  S3NotificationsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      # Crafted queue name to avoid circular dependency with RedriveAllowPolicy
+      QueueName: !Sub ${AWS::StackName}-S3NotificationsQueue
+      ReceiveMessageWaitTimeSeconds: !Ref SQSLongPollingMaxSeconds
+      VisibilityTimeout: !Ref SQSVisibilityTimeout
+      MessageRetentionPeriod: 43200
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SQSDeadLetterQueue.Arn
+        maxReceiveCount: !Ref MaximumSQSMessageRetries
+
+  SQSDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${AWS::StackName}-S3NotificationsDLQ
+      MessageRetentionPeriod: 86400
+      RedriveAllowPolicy:
+        redrivePermission: byQueue
+        # Hand-crafted ARN to avoid circular dependency
+        sourceQueueArns:
+          - !Join
+            - ":"
+            - - arn
+              - !Ref AWS::Partition
+              - sqs
+              - !Ref AWS::Region
+              - !Ref AWS::AccountId
+              - !Sub ${AWS::StackName}-S3NotificationsQueue
+
+  S3NotificationsQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Id: S3NotificationsSQSPolicy
+        Statement:
+          - Sid: AllowEventBridgeRulesToSendMessages
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt S3NotificationsQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !Sub "arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/${AWS::StackName}-*"
+
+          - !If
+            - CreateSNSTopicForS3Notifications
+            - Sid: AllowSNSTopicToSendMessages
+              Effect: Allow
+              Principal:
+                Service: sns.amazonaws.com
+              Action: sqs:SendMessage
+              Resource: !GetAtt S3NotificationsQueue.Arn
+              Condition:
+                ArnEquals:
+                  aws:SourceArn: !Ref S3NotificationsSNSTopic
+            - !Ref AWS::NoValue
+
+          # When specific bucket names are provided, restrict S3 notifications to those
+          # buckets. Otherwise fall back to account-level restriction.
+          - !If
+            - BucketNamesProvided
+            - Sid: AllowSpecificS3BucketsToSendMessages
+              Effect: Allow
+              Principal:
+                Service: s3.amazonaws.com
+              Action: sqs:SendMessage
+              Resource: !GetAtt S3NotificationsQueue.Arn
+              Condition:
+                ArnLike:
+                  aws:SourceArn: !Split
+                    - ","
+                    - !Sub
+                      - "arn:aws:s3:::${Buckets}"
+                      - Buckets: !Join [",arn:aws:s3:::", !Ref BucketNames]
+            - !Ref AWS::NoValue
+
+          - !If
+            - BucketNamesProvided
+            - !Ref AWS::NoValue
+            - Sid: AllowAccountS3BucketsToSendMessages
+              Effect: Allow
+              Principal:
+                Service: s3.amazonaws.com
+              Action: sqs:SendMessage
+              Resource: !GetAtt S3NotificationsQueue.Arn
+              Condition:
+                StringEquals:
+                  aws:SourceAccount: !Ref AWS::AccountId
+      Queues:
+        - !Ref S3NotificationsQueue
+
+  # ── Optional SNS fan-out topic ─────────────────────────────────────────────────
+
+  S3NotificationsSNSTopic:
+    Type: AWS::SNS::Topic
+    Condition: CreateSNSTopicForS3Notifications
+    Properties:
+      TopicName: !Sub ${AWS::StackName}-S3Notifications
+
+  S3NotificationsSNSSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: CreateSNSTopicForS3Notifications
+    Properties:
+      TopicArn: !Ref S3NotificationsSNSTopic
+      Protocol: sqs
+      Endpoint: !GetAtt S3NotificationsQueue.Arn
+      RawMessageDelivery: "false"
+
+  S3NotificationsSNSTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Condition: CreateSNSTopicForS3Notifications
+    Properties:
+      PolicyDocument:
+        Id: S3NotificationsSNSTopicPolicy
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowS3ToPublish
+            Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref S3NotificationsSNSTopic
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+      Topics:
+        - !Ref S3NotificationsSNSTopic
+
+  # ── Alarms & notifications ────────────────────────────────────────────────────
+
+  AlarmsSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${AWS::StackName}-Alarms
+
+  AlarmsEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: IsEmailConfigured
+    Properties:
+      TopicArn: !Ref AlarmsSNSTopic
+      Endpoint: !Ref NotificationsEmail
+      Protocol: email
+
+  AlarmsSNSTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Id: AlarmsSNSTopicPolicy
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudWatchAlarmsToPublish
+            Effect: Allow
+            Principal:
+              Service: cloudwatch.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref AlarmsSNSTopic
+      Topics:
+        - !Ref AlarmsSNSTopic
+
+  SQSDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: "Messages landed on the Dead Letter Queue"
+      AlarmName: !Sub "${AWS::StackName}-MessagesInDLQ"
+      Metrics:
+        - Id: m1
+          Label: MessagesVisibleMin
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: QueueName
+                  Value: !GetAtt SQSDeadLetterQueue.QueueName
+              MetricName: ApproximateNumberOfMessagesVisible
+              Namespace: AWS/SQS
+            Period: 300
+            Stat: Minimum
+            Unit: Count
+          ReturnData: false
+        - Id: m2
+          Label: MessagesVisibleMax
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: QueueName
+                  Value: !GetAtt SQSDeadLetterQueue.QueueName
+              MetricName: ApproximateNumberOfMessagesVisible
+              Namespace: AWS/SQS
+            Period: 300
+            Stat: Maximum
+            Unit: Count
+          ReturnData: false
+        - Expression: "m2-m1"
+          Id: e1
+          Label: ChangeInAmountVisible
+          ReturnData: true
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Threshold: 1
+      DatapointsToAlarm: 1
+      EvaluationPeriods: 1
+      AlarmActions:
+        - !Ref AlarmsSNSTopic
+
+  # ── AppConfig ─────────────────────────────────────────────────────────────────
+
+  AppConfigApplication:
+    Type: AWS::AppConfig::Application
+    Properties:
+      Description: dynatrace-aws-s3-log-forwarder application configuration
+      Name: !Sub ${AWS::StackName}-app-config
+
+  LogForwardingConfigurationProfile:
+    Type: AWS::AppConfig::ConfigurationProfile
+    Properties:
+      ApplicationId: !Ref AppConfigApplication
+      Description: dynatrace-aws-s3-log-forwarder log forwarding rules configuration profile
+      LocationUri: hosted
+      Name: log-forwarding-rules
+      Type: AWS.Freeform
+
+  LogProcessingConfigurationProfile:
+    Type: AWS::AppConfig::ConfigurationProfile
+    Properties:
+      ApplicationId: !Ref AppConfigApplication
+      Description: dynatrace-aws-s3-log-forwarder log processing rules configuration profile
+      LocationUri: hosted
+      Name: log-processing-rules
+      Type: AWS.Freeform
+
+  AppConfigDeploymentStrategy:
+    Type: AWS::AppConfig::DeploymentStrategy
+    Properties:
+      Name: !Sub ${AWS::StackName}-AllAtOnce
+      DeploymentDurationInMinutes: 0
+      FinalBakeTimeInMinutes: 0
+      GrowthFactor: 100
+      ReplicateTo: NONE
+
+  AppConfigEnvironment:
+    Type: AWS::AppConfig::Environment
+    Properties:
+      Name: !Sub ${AWS::StackName}
+      ApplicationId: !Ref AppConfigApplication
+
+  # Default log forwarding rules: forward all objects from any bucket using automatic
+  # AWS log source detection with fallback to generic text ingestion.
+  # To customise, update the hosted configuration version via the AppConfig console or API.
+  LogForwardingRulesHostedConfiguration:
+    Type: AWS::AppConfig::HostedConfigurationVersion
+    Properties:
+      Description: dynatrace-aws-s3-log-forwarder default log forwarding rules
+      ApplicationId: !Ref AppConfigApplication
+      ConfigurationProfileId: !Ref LogForwardingConfigurationProfile
+      ContentType: application/x-yaml
+      Content: |
+        ---
+        bucket_name: default
+        log_forwarding_rules:
+          - name: default_forward_all
+            # Match any object key in your buckets
+            prefix: ".*"
+            # Automatically detect AWS-vended log format; falls back to generic text ingestion
+            source: aws
+
+  LogProcessingRulesHostedConfiguration:
+    Type: AWS::AppConfig::HostedConfigurationVersion
+    Properties:
+      Description: dynatrace-aws-s3-log-forwarder default log processing rules
+      ApplicationId: !Ref AppConfigApplication
+      ConfigurationProfileId: !Ref LogProcessingConfigurationProfile
+      ContentType: application/x-yaml
+      Content: |
+        ---
+
+  LogForwardingRulesDeployment:
+    Type: AWS::AppConfig::Deployment
+    Properties:
+      ApplicationId: !Ref AppConfigApplication
+      ConfigurationProfileId: !Ref LogForwardingConfigurationProfile
+      DeploymentStrategyId: !Ref AppConfigDeploymentStrategy
+      EnvironmentId: !Ref AppConfigEnvironment
+      ConfigurationVersion: !Ref LogForwardingRulesHostedConfiguration
+
+  LogProcessingRulesDeployment:
+    Type: AWS::AppConfig::Deployment
+    DependsOn: LogForwardingRulesDeployment
+    Properties:
+      ApplicationId: !Ref AppConfigApplication
+      ConfigurationProfileId: !Ref LogProcessingConfigurationProfile
+      DeploymentStrategyId: !Ref AppConfigDeploymentStrategy
+      EnvironmentId: !Ref AppConfigEnvironment
+      ConfigurationVersion: !Ref LogProcessingRulesHostedConfiguration
+
+  # ── CloudWatch Dashboard ──────────────────────────────────────────────────────
+
+  CloudWatchDashboard:
+    Condition: DeployMonitoringDashboard
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub ${AWS::StackName}-monitoring-dashboard
+      DashboardBody:
+        !Sub >
+          {
+            "widgets": [
+              {
+                "height": 6,
+                "width": 6,
+                "y": 6,
+                "x": 0,
+                "type": "metric",
+                "properties": {
+                  "metrics": [
+                    ["dynatrace-aws-s3-log-forwarder", "LogProcessingFailures", "deployment", "${AWS::StackName}"],
+                    [".", "LogFilesProcessed", ".", "."],
+                    [".", "DroppedObjectsDecodingErrors", ".", ".", {"yAxis": "right"}],
+                    [".", "DroppedObjectsNotMatchingFwdRules", ".", ".", {"yAxis": "right"}],
+                    [".", "LogMessagesTrimmed", ".", ".", {"yAxis": "right"}]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "stat": "Sum",
+                  "period": 60,
+                  "title": "Log file processing"
+                }
+              },
+              {
+                "height": 6,
+                "width": 6,
+                "y": 0,
+                "x": 6,
+                "type": "metric",
+                "properties": {
+                  "metrics": [
+                    ["dynatrace-aws-s3-log-forwarder", "DynatraceHTTPErrors", "deployment", "${AWS::StackName}", {"yAxis": "right"}],
+                    [".", "DynatraceHTTP503SpaceLimitReached", ".", ".", {"yAxis": "right"}],
+                    [".", "DynatraceHTTP429Throttled", ".", ".", {"yAxis": "right"}],
+                    [".", "DynatraceHTTP400InvalidLogEntries", ".", ".", {"yAxis": "right"}],
+                    [".", "DynatraceHTTP200PartialSuccess", ".", ".", {"yAxis": "right"}],
+                    [".", "DynatraceHTTP204Success", ".", ".", {"yAxis": "left"}]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "stat": "Sum",
+                  "period": 60,
+                  "title": "Dynatrace API Responses"
+                }
+              },
+              {
+                "height": 6,
+                "width": 6,
+                "y": 0,
+                "x": 18,
+                "type": "metric",
+                "properties": {
+                  "metrics": [
+                    ["dynatrace-aws-s3-log-forwarder", "LogProcessingTime", "deployment", "${AWS::StackName}", {"label": "LogProcessingTime Avg", "stat": "Average"}],
+                    [".", "DTIngestionTime", ".", ".", {"yAxis": "right", "label": "DTIngestionTime Minimum"}],
+                    [".", "LogProcessingTime", ".", ".", {"stat": "Maximum"}],
+                    ["..."],
+                    [".", "DTIngestionTime", ".", ".", {"yAxis": "right", "stat": "Average"}],
+                    ["...", {"yAxis": "right", "stat": "Maximum"}],
+                    ["...", {"yAxis": "right", "stat": "p90"}],
+                    [".", "LogProcessingTime", ".", ".", {"stat": "p90"}]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "title": "QueueProcessing Lambda Function Log processing & Ingestion times",
+                  "period": 60,
+                  "stat": "Minimum"
+                }
+              },
+              {
+                "height": 6,
+                "width": 6,
+                "y": 12,
+                "x": 0,
+                "type": "metric",
+                "properties": {
+                  "metrics": [
+                    ["dynatrace-aws-s3-log-forwarder", "UncompressedLogDTPayloadSize", "deployment", "${AWS::StackName}", {"yAxis": "left"}],
+                    [".", "ReceivedUncompressedLogFileSize", ".", ".", {"yAxis": "left"}]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "stat": "Sum",
+                  "period": 60,
+                  "title": "Log Data throughput"
+                }
+              },
+              {
+                "height": 6,
+                "width": 6,
+                "y": 6,
+                "x": 6,
+                "type": "metric",
+                "properties": {
+                  "metrics": [
+                    ["AWS/Lambda", "Invocations", "FunctionName", "${QueueProcessingFunction}"],
+                    [".", "ConcurrentExecutions", ".", ".", {"stat": "Maximum"}],
+                    [".", "Throttles", ".", "."],
+                    [".", "Errors", ".", "."],
+                    ["dynatrace-aws-s3-log-forwarder", "NotEnoughExecutionTimeRemainingErrors", "deployment", "${AWS::StackName}", {"label": "NotEnoughExecutionTimeRemainingErrors"}]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "stat": "Sum",
+                  "period": 60,
+                  "title": "QueueProcessingFunction Executions"
+                }
+              },
+              {
+                "height": 6,
+                "width": 6,
+                "y": 6,
+                "x": 12,
+                "type": "metric",
+                "properties": {
+                  "metrics": [
+                    ["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", "${AWS::StackName}-S3NotificationsQueue", {"stat": "Average"}],
+                    [".", "ApproximateNumberOfMessagesNotVisible", ".", "."],
+                    [".", "ApproximateAgeOfOldestMessage", ".", ".", {"yAxis": "right", "stat": "Average"}],
+                    [".", "NumberOfMessagesSent", ".", "."],
+                    [".", "NumberOfMessagesDeleted", ".", "."]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "stat": "Sum",
+                  "period": 60,
+                  "title": "Processing SQS Queue Messages"
+                }
+              },
+              {
+                "height": 6,
+                "width": 6,
+                "y": 6,
+                "x": 18,
+                "type": "metric",
+                "properties": {
+                  "metrics": [
+                    ["AWS/SQS", "ApproximateAgeOfOldestMessage", "QueueName", "${AWS::StackName}-S3NotificationsDLQ", {"label": "DLQ ApproximateAgeOfOldestMessage"}],
+                    [".", "ApproximateNumberOfMessagesVisible", ".", ".", {"label": "DLQ ApproximateNumberOfMessagesVisible", "yAxis": "right"}]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "stat": "Average",
+                  "period": 60,
+                  "title": "DLQ Metrics"
+                }
+              },
+              {
+                "height": 7,
+                "width": 18,
+                "y": 12,
+                "x": 6,
+                "type": "log",
+                "properties": {
+                  "query": "SOURCE '/aws/lambda/${QueueProcessingFunction}' | fields @timestamp, @logStream, @message \n| sort @timestamp desc \n| limit 500",
+                  "region": "${AWS::Region}",
+                  "stacked": false,
+                  "view": "table",
+                  "title": "Lambda queue processing function logs"
+                }
+              },
+              {
+                "height": 6,
+                "width": 6,
+                "y": 0,
+                "x": 12,
+                "type": "metric",
+                "properties": {
+                  "metrics": [
+                    ["AWS/Lambda", "Duration", "FunctionName", "${QueueProcessingFunction}", {"stat": "Minimum"}],
+                    ["...", {"stat": "Average"}],
+                    ["..."],
+                    ["...", {"stat": "p90"}]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "title": "QueueProcessing Lambda Function Execution time",
+                  "region": "${AWS::Region}",
+                  "stat": "Maximum",
+                  "period": 60
+                }
+              },
+              {
+                "height": 6,
+                "width": 6,
+                "y": 0,
+                "x": 0,
+                "type": "metric",
+                "properties": {
+                  "metrics": [
+                    ["dynatrace-aws-s3-log-forwarder", "ReceivedUncompressedLogFileSize", "deployment", "${AWS::StackName}"],
+                    [".", "UncompressedLogDTPayloadSize", ".", ".", {"id": "m1"}]
+                  ],
+                  "view": "singleValue",
+                  "region": "${AWS::Region}",
+                  "stat": "Sum",
+                  "period": 60,
+                  "setPeriodToTimeRange": true,
+                  "sparkline": false,
+                  "trend": false,
+                  "title": "Total log data processed over timeframe"
+                }
+              }
+            ]
+          }
+
+Outputs:
+  QueueProcessingFunction:
+    Description: Queue Processing Lambda Function ARN
+    Value: !GetAtt QueueProcessingFunction.Arn
+
+  QueueProcessingFunctionIamRole:
+    Description: >-
+      Name of the Lambda execution IAM role. Attach additional policies here if you need
+      to grant access to S3 buckets not listed in the BucketNames parameter.
+    Value: !Ref LambdaExecutionRole
+    Export:
+      Name: !Sub "${AWS::StackName}:QueueProcessingFunctionIamRole"
+
+  SQSProcessingQueue:
+    Description: >-
+      ARN of the SQS queue that receives S3 Object Created notifications. Use this ARN
+      as the target when creating EventBridge rules for S3 buckets.
+    Value: !GetAtt S3NotificationsQueue.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}:S3NotificationsQueueArn"
+
+  SQSDeadLetterQueue:
+    Description: ARN of the Dead Letter Queue for failed message processing.
+    Value: !GetAtt SQSDeadLetterQueue.Arn
+
+  SNSAlertsTopic:
+    Description: ARN of the SNS topic receiving monitoring alerts.
+    Value: !Ref AlarmsSNSTopic
+
+  S3NotificationsSNSTopic:
+    Condition: CreateSNSTopicForS3Notifications
+    Description: >-
+      ARN of the SNS topic for S3 Object Created notifications. Subscribe your S3 buckets
+      to this topic to fan-out events to multiple consumers.
+    Value: !Ref S3NotificationsSNSTopic
+    Export:
+      Name: !Sub "${AWS::StackName}:S3NotificationsSNSTopicArn"
+
+  CloudWatchDashboardURL:
+    Condition: DeployMonitoringDashboard
+    Description: URL of the CloudWatch monitoring dashboard.
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home#dashboards:name=${CloudWatchDashboard}"
+
+  AppConfigApplicationId:
+    Description: >-
+      AppConfig Application ID. Use this to deploy custom log forwarding and processing
+      rules via the AppConfig console, CLI, or a separate CloudFormation stack.
+    Value: !Ref AppConfigApplication
+    Export:
+      Name: !Sub "${AWS::StackName}:AppConfigApplicationId"
+
+  AppConfigEnvironmentId:
+    Description: AppConfig Environment ID.
+    Value: !Ref AppConfigEnvironment
+    Export:
+      Name: !Sub "${AWS::StackName}:AppConfigEnvironmentId"
+
+  LogForwardingConfigurationProfileId:
+    Description: AppConfig Configuration Profile ID for log forwarding rules.
+    Value: !Ref LogForwardingConfigurationProfile
+    Export:
+      Name: !Sub "${AWS::StackName}:LogForwardingConfigurationProfileId"
+
+  LogProcessingConfigurationProfileId:
+    Description: AppConfig Configuration Profile ID for log processing rules.
+    Value: !Ref LogProcessingConfigurationProfile
+    Export:
+      Name: !Sub "${AWS::StackName}:LogProcessingConfigurationProfileId"
+
+  AppConfigDeploymentStrategyId:
+    Description: AppConfig Deployment Strategy ID (AllAtOnce, zero bake time).
+    Value: !Ref AppConfigDeploymentStrategy
+    Export:
+      Name: !Sub "${AWS::StackName}:AppConfigDeploymentStrategyId"
