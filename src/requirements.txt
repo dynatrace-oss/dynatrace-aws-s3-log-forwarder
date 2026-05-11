@@ -6,4 +6,4 @@ regex==2026.4.4
 aws-lambda-powertools==3.29.0
 ijson==3.5.0
 Jinja2==3.1.6
-urllib3==2.6.3
+urllib3==2.7.0
