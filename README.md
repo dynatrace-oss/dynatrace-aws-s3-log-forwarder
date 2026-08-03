@@ -1,5 +1,8 @@
 # dynatrace-aws-s3-log-forwarder
 
+> [!IMPORTANT]
+> This project is intended for environments using Dynatrace Classic for cloud monitoring. For environments using the new Dynatrace Cloud Platform Monitoring, please use [dynatrace-aws-platform-monitoring-s3-log-forwarder](https://github.com/Dynatrace/dynatrace-aws-platform-monitoring-s3-log-forwarder) instead.
+
 This project deploys a Serverless architecture to forward logs from Amazon S3 to Dynatrace.
 
 ![Architecture](docs/images/architecture.jpg)
