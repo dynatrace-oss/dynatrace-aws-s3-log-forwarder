@@ -3,7 +3,7 @@ jmespath==1.1.0
 pygrok==1.0.0
 PyYAML==6.0.3
 regex==2026.7.19
-aws-lambda-powertools==3.31.1
+aws-lambda-powertools==3.34.0
 ijson==3.5.1
 Jinja2==3.1.6
 urllib3==2.7.0
