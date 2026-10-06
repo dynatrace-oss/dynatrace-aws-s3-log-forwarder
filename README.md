@@ -9,7 +9,7 @@ This project deploys a Serverless architecture to forward logs from Amazon S3 to
 
 ## Support
 
-This project is officially supported by Dynatrace. Before you create a ticket check the documentation in the `docs` folder. If you didn't find a solution please [contact Dynatrace support](https://www.dynatrace.com/support/contact-support/).
+This project is officially supported by Dynatrace. Before you create a ticket, work through the [troubleshooting guide](docs/troubleshooting.md) — it covers the most common deployment, notification, token, processing and ingestion issues you can resolve yourself — and check the other documentation in the `docs` folder. If you didn't find a solution please [contact Dynatrace support](https://www.dynatrace.com/support/contact-support/). Include the failed CloudFormation event or the relevant Lambda log entries from the troubleshooting guide in your ticket.
 
 ## Supported AWS Services
 
