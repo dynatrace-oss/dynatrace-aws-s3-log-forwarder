@@ -3,7 +3,7 @@
 Self-diagnosable and self-fixable issues for the `dynatrace-aws-s3-log-forwarder` (container-image Lambda + SQS, deployed with CloudFormation, for Dynatrace Classic). Work through the section that matches your symptom before raising a support ticket.
 
 > [!NOTE]
-> This guide is for the `dynatrace-aws-s3-log-forwarder`. You are using it if your main stack has the parameters `DynatraceEnvironment1URL`, `DynatraceEnvironment1ApiKeyParameter` and `ContainerImageUri`. For the Dynatrace Cloud Platform Monitoring forwarder (`dynatrace-aws-platform-monitoring-s3-log-forwarder`) use the troubleshooting guide in that repository instead — its deployment, token storage, notification options and defaults differ.
+> This guide is for the `dynatrace-aws-s3-log-forwarder`. You are using it if your main stack has the parameters `DynatraceEnvironment1URL`, `DynatraceEnvironment1ApiKeyParameter` and `ContainerImageUri`. For the Dynatrace AWS Cloud Platform Monitoring forwarder (`dynatrace-aws-platform-monitoring-s3-log-forwarder`) use the troubleshooting guide in that repository instead — its deployment, token storage, notification options and defaults differ.
 
 Throughout this guide, `<STACK_NAME>` is the name of your main forwarder CloudFormation stack. A deployment consists of several stacks:
 
