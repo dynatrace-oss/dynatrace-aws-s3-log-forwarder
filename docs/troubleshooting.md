@@ -236,9 +236,11 @@ aws cloudformation describe-stacks --stack-name <STACK_NAME> \
 
 ### 2i. Old log entries are not ingested
 
-**Symptom:** Some or all entries of a file are missing in Dynatrace. The [Lambda logs](#lambda-logs) show `Parts of batch <n> were not successfully posted: ...` (HTTP 200 or 400 from Dynatrace); the metrics `DynatraceHTTP200PartialSuccess` or `DynatraceHTTP400InvalidLogEntries` are above 0.
+**Symptom:** Some or all entries of a file are missing in Dynatrace. The [Lambda logs](#lambda-logs) show `Parts of batch <n> were rejected or trimmed - check details in response message: ...` (HTTP 200 from Dynatrace) or `Parts of batch <n> were not successfully posted: ...` (HTTP 400); the metrics `DynatraceHTTP200PartialSuccess` or `DynatraceHTTP400InvalidLogEntries` are above 0.
 
-**Cause:** Dynatrace drops log events with timestamps older than 24 hours (see the note in the [README](../README.md#supported-aws-services)). This happens when log files are delivered to S3 late, when old files are copied into the bucket, or when an outage kept notifications waiting. The text after the warning is the Dynatrace response and lists the rejected entries.
+**Cause:** Dynatrace drops log events with timestamps older than 24 hours (see the note in the [README](../README.md#supported-aws-services)). This happens when log files are delivered to S3 late, when old files are copied into the bucket, or when an outage kept notifications waiting. The text after the warning is the Dynatrace response and describes what was rejected or corrected.
+
+An HTTP 200 does not always mean entries were lost: Dynatrace also uses it when entries were accepted but corrected. In that case the Dynatrace response, which the forwarder logs after the warning, looks like `{"details":{"code":200,"message":"Trimmed and accepted 2 record(s): 2 record(s) with 'timestamp' corrected."}}`. Read the message to see whether anything was actually dropped.
 
 **Fix:** Not fixable on the forwarder side for old entries. Make sure new log files reach the bucket and are processed promptly (sections 2, 5). Other causes of rejected entries are shown in the same response text.
 
@@ -480,7 +482,8 @@ aws cloudformation describe-stacks \
 | `DroppedObjectsNotMatchingFwdRules` | Objects with no matching forwarding rule | 2e |
 | `DroppedObjectsDecodingErrors` | Objects that are not valid UTF-8 text | 2h |
 | `NotEnoughExecutionTimeRemainingErrors` | Lambda timed out on a file | 5b |
-| `DynatraceHTTP200PartialSuccess`, `DynatraceHTTP400InvalidLogEntries` | Dynatrace rejected some entries | 2i |
+| `DynatraceHTTP200PartialSuccess` | Dynatrace accepted the batch but rejected or corrected some entries | 2i |
+| `DynatraceHTTP400InvalidLogEntries` | Dynatrace rejected invalid log entries | 2i |
 | `DynatraceHTTP429Throttled`, `DynatraceHTTP503SpaceLimitReached`, `DynatraceHTTPErrors` | Dynatrace rejected requests | 5a, 3b |
 
 For the SQS queue `<STACK_NAME>-S3NotificationsQueue` and the DLQ, look at `NumberOfMessagesSent` and `ApproximateNumberOfMessagesVisible`.
