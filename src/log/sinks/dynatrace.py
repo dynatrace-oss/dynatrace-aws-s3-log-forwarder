@@ -219,7 +219,7 @@ class DynatraceSink():
                                unit=MetricUnit.Count, value=1)
         elif resp.status_code == 200:
             logger.warning(
-                '%s: Parts of batch %s were not successfully posted: %s. Source file: %s',tenant_id, batch_num, resp.text, self._s3_source)
+                '%s: Parts of batch %s were rejected or trimmed - check details in response message: %s. Source file: %s',tenant_id, batch_num, resp.text, self._s3_source)
             metrics.add_metric(
                 name='DynatraceHTTP200PartialSuccess', unit=MetricUnit.Count, value=1)
         elif resp.status_code == 400:
