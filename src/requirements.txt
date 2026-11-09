@@ -3,7 +3,7 @@ certifi==2026.10.19
 jmespath==1.1.0
 pygrok==1.0.0
 PyYAML==6.0.3
-regex==2026.9.29
+regex==2026.11.9
 aws-lambda-powertools==3.36.0
 ijson==3.5.1
 Jinja2==3.1.6
