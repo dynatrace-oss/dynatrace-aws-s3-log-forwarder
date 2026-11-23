@@ -5,6 +5,6 @@ pygrok==1.0.0
 PyYAML==6.0.4
 regex==2026.11.18
 aws-lambda-powertools==3.41.0
-ijson==3.5.1
+ijson==3.6.0
 Jinja2==3.1.6
 urllib3==2.8.0
